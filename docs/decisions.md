@@ -688,7 +688,8 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - Cheap to revisit: if we later want a TS source of truth (e.g., for design-token tooling), we can flip direction with codegen and the consumers don't change.
 
 **Trade-offs accepted:**
-- MUI's theme typing doesn't fully understand CSS-variable values — runtime overrides like `palette.primary.main: 'var(--color-brand-purple)'` typecheck fine but bypass MUI's color-manipulation helpers (e.g., `theme.palette.primary.dark` auto-derivation). This isn't currently used; if/when it is, we'll inline a hex.
+- **Palette is the documented exception.** MUI's `createPalette` calls `darken()`/`lighten()` on every `main` to derive `dark`/`light` variants, and color-manipulator throws on CSS-variable strings ("Unsupported `var(--*)` color"). So `palette.primary.main`, `palette.text.*`, `palette.background.*`, and `palette.divider` are hardcoded hex/rgba values that mirror the `@theme` block by hand. Keep these in sync — there is no automated check.
+- Typography, shape, and component style overrides DO use `var(--*)` references successfully (MUI passes those through to CSS unchanged).
 - Slightly less ergonomic IDE autocomplete on MUI theme values vs. native MUI hex tokens.
 
 **How to apply:**

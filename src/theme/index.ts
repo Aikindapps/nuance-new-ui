@@ -1,27 +1,31 @@
 import { createTheme } from "@mui/material/styles";
 
 // MUI theme that mirrors the canonical CSS-variable definitions in
-// src/index.css (@theme block). Decisions #19 + #23: `@theme` is the
-// single source of truth for tokens; this MUI theme references those
-// CSS variables via `var(--*)` so both layers stay in sync without a
-// codegen step.
+// src/index.css (@theme block). Decisions #19 + #23.
+//
+// Palette colors are hardcoded hex/rgba (not `var(--*)`) because MUI's
+// createPalette calls darken()/lighten() on every `main` to derive
+// dark/light variants, and color-manipulator can't decompose CSS-var
+// strings. Keep these in sync with the @theme block by hand. Typography
+// and component style overrides below DO use `var(--*)` since MUI
+// passes those through to CSS as-is.
 export const muiTheme = createTheme({
   palette: {
     primary: {
-      main: "var(--color-brand-purple)",
-      light: "var(--color-brand-purple-light)",
+      main: "#5405d4",
+      light: "#935bfb",
       contrastText: "#ffffff",
     },
     text: {
-      primary: "var(--color-ink)",
-      secondary: "var(--color-ink-80)",
-      disabled: "var(--color-ink-60)",
+      primary: "#202123",
+      secondary: "rgba(32, 33, 35, 0.8)",
+      disabled: "rgba(32, 33, 35, 0.6)",
     },
     background: {
-      default: "var(--color-surface)",
-      paper: "var(--color-surface)",
+      default: "#ffffff",
+      paper: "#ffffff",
     },
-    divider: "var(--color-ink-border)",
+    divider: "#373a49",
   },
   shape: {
     borderRadius: 8,
