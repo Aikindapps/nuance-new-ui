@@ -1,3 +1,4 @@
+import Skeleton from "@mui/material/Skeleton";
 import { Hero } from "../features/home/sections/Hero";
 import { TabBar } from "../features/home/sections/TabBar";
 import { ArticleGrid } from "../features/home/sections/ArticleGrid";
@@ -161,17 +162,18 @@ function LoadingSkeleton() {
 function SkeletonCard({ large = false }: { large?: boolean }) {
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
-      <div
-        className={
-          large
-            ? "aspect-[628/400] w-full animate-pulse rounded-card bg-ink-60/20"
-            : "aspect-[416/242] w-full animate-pulse rounded-card bg-ink-60/20"
-        }
+      <Skeleton
+        variant="rectangular"
+        sx={{
+          width: "100%",
+          aspectRatio: large ? "628 / 400" : "416 / 242",
+          borderRadius: "var(--radius-card)",
+        }}
       />
       <div className="flex flex-col gap-3">
-        <div className="h-4 w-2/3 animate-pulse rounded bg-ink-60/20" />
-        <div className="h-6 w-full animate-pulse rounded bg-ink-60/20" />
-        <div className="h-6 w-5/6 animate-pulse rounded bg-ink-60/20" />
+        <Skeleton variant="text" sx={{ height: 16, width: "67%" }} />
+        <Skeleton variant="text" sx={{ height: 24, width: "100%" }} />
+        <Skeleton variant="text" sx={{ height: 24, width: "83%" }} />
       </div>
     </div>
   );

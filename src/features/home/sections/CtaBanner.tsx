@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import Button from "@mui/material/Button";
 
 export function CtaBanner() {
   return (
@@ -14,18 +15,40 @@ export function CtaBanner() {
       </div>
 
       <div className="flex w-full flex-col gap-5 md:w-[280px] md:shrink-0">
-        <Link
+        <Button
+          component={Link}
           to="/signup"
-          className="flex h-12 items-center justify-center rounded-card bg-white px-6 text-body font-medium text-brand-purple transition-opacity hover:opacity-90"
+          variant="contained"
+          fullWidth
+          sx={{
+            height: 48,
+            borderRadius: "var(--radius-card)",
+            backgroundColor: "#ffffff",
+            color: "var(--color-brand-purple)",
+            "&:hover": { backgroundColor: "#ffffff", opacity: 0.9 },
+          }}
         >
           Get started
-        </Link>
-        <Link
+        </Button>
+        <Button
+          component={Link}
           to="/login"
-          className="flex h-12 items-center justify-center rounded-card border border-white px-6 text-body font-medium text-white transition-colors hover:bg-white-10"
+          variant="outlined"
+          fullWidth
+          sx={{
+            height: 48,
+            borderRadius: "var(--radius-card)",
+            backgroundColor: "transparent",
+            borderColor: "#ffffff",
+            color: "#ffffff",
+            "&:hover": {
+              backgroundColor: "var(--color-white-10)",
+              borderColor: "#ffffff",
+            },
+          }}
         >
           Login
-        </Link>
+        </Button>
       </div>
     </section>
   );
