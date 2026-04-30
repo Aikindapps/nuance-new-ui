@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getPostBucketActor, getPostCoreActor, getUserActor } from "../../../lib/actors";
+import { useActors, type ActorsValue } from "../../../contexts/ActorsContext";
 import type { Article } from "../types";
 
 type Variant = "popular" | "new";
@@ -40,10 +40,12 @@ type ArticlesPage = {
 };
 
 async function fetchArticles(
+  actors: ActorsValue,
   variant: Variant,
   skip: number,
   count: number,
 ): Promise<ArticlesPage> {
+  const { getPostCoreActor, getPostBucketActor, getUserActor } = actors;
   // PostCore's getPopular*/getLatestPosts take (indexFrom, indexTo) — a range,
   // NOT (skip, count). Convert at the boundary.
   // "Popular" uses the 7-day window (getPopularThisWeek) rather than all-time
@@ -147,12 +149,13 @@ async function fetchArticles(
 }
 
 export function useArticles(variant: Variant) {
+  const actors = useActors();
   return useInfiniteQuery({
     queryKey: ["articles", variant],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => {
       const count = pageParam === 0 ? FEATURED_PAGE_SIZE : INFINITE_PAGE_SIZE;
-      return fetchArticles(variant, pageParam as number, count);
+      return fetchArticles(actors, variant, pageParam as number, count);
     },
     // Pagination math runs on raw keyProps counts (the actual indexFrom/indexTo
     // PostCore uses), not on filtered Article counts — otherwise dropped posts

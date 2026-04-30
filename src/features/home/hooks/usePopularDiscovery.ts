@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPostBucketActor, getPostCoreActor, getUserActor } from "../../../lib/actors";
+import { useActors, type ActorsValue } from "../../../contexts/ActorsContext";
 import type { UserListItem } from "../../../candid/User/User";
 import type { PostKeyProperties__1 } from "../../../candid/PostCore/PostCore";
 
@@ -19,7 +19,8 @@ const TOP_WRITERS = 5;
 const TOP_PUBLICATIONS = 2;
 const TOP_TOPICS = 20;
 
-async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
+async function fetchPopularDiscovery(actors: ActorsValue): Promise<PopularDiscovery> {
+  const { getPostCoreActor, getPostBucketActor, getUserActor } = actors;
   // Sample from the 7-day popular window to match the Popular tab's canister
   // call (useArticles uses getPopularThisWeek). Keeps writers / publications /
   // topics rails thematically consistent with the articles grid.
@@ -132,9 +133,10 @@ async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
 }
 
 export function usePopularDiscovery() {
+  const actors = useActors();
   return useQuery({
     queryKey: ["popular-discovery"],
-    queryFn: fetchPopularDiscovery,
+    queryFn: () => fetchPopularDiscovery(actors),
     staleTime: 1000 * 60 * 5,
   });
 }
