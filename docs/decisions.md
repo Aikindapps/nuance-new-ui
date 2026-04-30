@@ -362,6 +362,8 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 
 **Date:** 2026-04-22
 
+**Status:** Active
+
 **Decision:** Use **Manrope** (Google Fonts, free) as the project's type face. Supersedes the earlier Poppins substitute. GT Walsheim licensing is explicitly not pursued.
 
 **Inputs:**
