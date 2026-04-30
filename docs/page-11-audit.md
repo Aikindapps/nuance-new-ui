@@ -1,8 +1,24 @@
 # Page 11 — Figma Fidelity Audit
 
 **Compiled:** 2026-04-22
+**Last verified against commit:** PR #2 head, 2026-04-30
 **Method:** `get_design_context` on every major component on Page 11 (`1:51806`), compared against the corresponding React component in `nuance-ui/src/`.
 **Goal:** catalog every gap between what ships and what Figma specifies. Mr Nick reviews before Chunk 2.
+
+## Audit status as of 2026-04-30 (PR #1 + PR #2)
+
+The original tables below remain as historical reference. Items shipped or supersededas of PR #2 head:
+
+- Header logo + search icon swapped to real `LogoNuance` + `IconSearch` SVG components — original CRITICAL items 1–2 in the Header table **RESOLVED**.
+- Claps icon, NFT badge, verified icon all now use the `NUR / *` SVG component set — corresponding CRITICAL items in the ArticleSummary tables **RESOLVED**.
+- Section heading specs (font weight + color) corrected per the 2026-04-22 resolution. Hero topics heading (item 4) now `text-body lg:text-lg font-bold text-white` — **RESOLVED**.
+- Cross-cutting token findings (`--color-ink-border`, `--shadow-purple-glow`, `--shadow-purple-glow-hover`) added to `@theme` — **RESOLVED**.
+- `src/assets/icons/nft-logo.svg` deletion — file no longer present, **RESOLVED**.
+- Publication article counts (item 3 in resolutions) — **DEFERRED** to publication detail screen as documented; still applicable.
+- Gradient angle drift (3°) — **ACCEPTED** as documented. No change needed.
+- Mobile patterns invented post-decision-#13 — see decision #13 for the responsive trade-off; not part of this audit's Figma-fidelity scope (Figma file is desktop-only).
+
+Items still applicable for future PRs are flagged in the tables themselves; treat anything not listed above as still open until re-verified.
 
 ## Resolutions (2026-04-22)
 

@@ -661,3 +661,38 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - Lexical + Quill: install when the first writing surface lands (article editor screen, comment composer). Both wired to the browser save-state service.
 - Frontend error reporting: anonymous by default. Surface in the UI via toast ("something went wrong; reported to Nuance team"). The reporting canister is TBD — flag at first need.
 - Lazy load: enable Vite's route-level code splitting once there are 3+ routes. Service workers wait until offline mode is a real requirement (likely the article editor).
+
+---
+
+## #23 — Token source-of-truth: CSS variables in `@theme`; MUI references via `var(--*)`
+
+**Date:** 2026-04-30
+
+**Status:** Active. Clarifies #19's "defined once, exported both directions."
+
+**Decision:** Token values (colors, type scale, radii, shadows, spacing) live as CSS custom properties in the `@theme { ... }` block in `src/index.css`. The MUI theme in `src/theme/index.ts` references the same values via `var(--color-brand-purple)`, `var(--text-body)`, `var(--radius-card)`, etc. — it does not re-declare them. Both layers consume the single CSS-variables source.
+
+**Inputs:**
+- Decision #19 framed MUI theme as "the source of truth for component-level tokens" with Tailwind `@theme` mirroring it.
+- Implementing that literally would require either (a) defining values in TS and codegen-ing them into CSS, or (b) defining values twice and policing drift. Both are friction not justified by the benefit.
+- Tailwind v4's `@theme` directive already produces real CSS custom properties at runtime. MUI theme objects accept any CSS-valid value, including `var(--*)` references.
+
+**Options considered:**
+- A. Define tokens in TS, codegen `@theme` CSS at build time. Rejected — overengineered for a 4-person codebase; adds a build step.
+- B. Define tokens twice (once in `@theme`, once in TS for MUI). Rejected — drift is inevitable.
+- C. **Define once in `@theme`; MUI references via `var(--*)`.** Chosen.
+
+**Rationale:**
+- Tailwind utilities that consume `--color-brand-purple` and MUI theme entries that consume `var(--color-brand-purple)` resolve to the same CSS-variable value at runtime. There is exactly one place to change a token.
+- Honors decision #19's "defined once, exported both directions" intent without inventing a TS→CSS pipeline.
+- Cheap to revisit: if we later want a TS source of truth (e.g., for design-token tooling), we can flip direction with codegen and the consumers don't change.
+
+**Trade-offs accepted:**
+- MUI's theme typing doesn't fully understand CSS-variable values — runtime overrides like `palette.primary.main: 'var(--color-brand-purple)'` typecheck fine but bypass MUI's color-manipulation helpers (e.g., `theme.palette.primary.dark` auto-derivation). This isn't currently used; if/when it is, we'll inline a hex.
+- Slightly less ergonomic IDE autocomplete on MUI theme values vs. native MUI hex tokens.
+
+**How to apply:**
+- New tokens get added to `src/index.css` `@theme` first.
+- MUI components reference them via `var(--token-name)` in `sx` / `styleOverrides` / theme entries.
+- Tailwind utilities that need the token are derived automatically from the `@theme` declaration (e.g., `--color-brand-purple` → `bg-brand-purple`).
+- Do not add token values directly to the MUI theme literal except for values that are exclusively MUI-internal (e.g., breakpoint definitions where MUI's `breakpoints.values` differs from Tailwind's `screens`).
