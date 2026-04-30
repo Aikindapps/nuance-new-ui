@@ -1,21 +1,22 @@
 import { Link } from "react-router-dom";
 import { LogoNuance } from "./icons/LogoNuance";
 import { IconSearch } from "./icons/IconSearch";
+import { headerCopy } from "../../constants/copy";
 
 export function Header() {
   return (
     <header className="flex h-16 w-full items-center border-b border-white-20 px-4 md:h-20 md:px-8 lg:h-[88px] lg:px-12">
-      <Link to="/" aria-label="Nuance home" className="shrink-0 text-white">
+      <Link to="/" aria-label={headerCopy.homeAriaLabel} className="shrink-0 text-white">
         <LogoNuance className="h-9 w-auto lg:h-[51px]" />
       </Link>
 
       {/* Primary nav — hidden on mobile, shown md+ */}
       <nav className="ml-6 hidden items-center gap-6 font-bold text-white md:flex lg:ml-10 lg:gap-10">
         <Link to="/" className="text-body hover:underline lg:text-lg">
-          Discover
+          {headerCopy.navDiscover}
         </Link>
         <Link to="/about" className="text-body text-white-80 hover:underline lg:text-lg">
-          About Nuance
+          {headerCopy.navAbout}
         </Link>
       </nav>
 
@@ -23,7 +24,7 @@ export function Header() {
         {/* Search — icon-only on mobile, input md+ */}
         <button
           type="button"
-          aria-label="Search"
+          aria-label={headerCopy.searchAriaLabel}
           className="flex size-10 items-center justify-center text-white md:hidden"
         >
           <IconSearch className="size-5" />
@@ -35,20 +36,20 @@ export function Header() {
           to="/login"
           className="hidden h-10 items-center justify-center rounded-card border border-white px-4 text-body font-medium text-white transition-colors hover:bg-white-10 md:flex lg:h-12 lg:px-6"
         >
-          Login
+          {headerCopy.login}
         </Link>
 
         <Link
           to="/signup"
           className="flex h-10 items-center justify-center rounded-card bg-white px-3 text-sm font-medium text-brand-purple transition-opacity hover:opacity-90 md:px-4 md:text-body lg:h-12 lg:px-6"
         >
-          Get started
+          {headerCopy.getStarted}
         </Link>
 
         {/* Hamburger — mobile only */}
         <button
           type="button"
-          aria-label="Open menu"
+          aria-label={headerCopy.openMenuAriaLabel}
           className="flex size-10 items-center justify-center text-white md:hidden"
         >
           <MenuIcon />
@@ -67,13 +68,13 @@ function SearchInput({ className = "" }: { className?: string }) {
     >
       <input
         type="search"
-        placeholder="Search"
-        aria-label="Search Nuance"
+        placeholder={headerCopy.searchPlaceholder}
+        aria-label={headerCopy.searchInputAriaLabel}
         className="min-w-0 flex-1 bg-transparent text-body italic text-white placeholder:text-white-80 focus:outline-none"
       />
       <button
         type="submit"
-        aria-label="Submit search"
+        aria-label={headerCopy.searchSubmitAriaLabel}
         className="flex size-6 shrink-0 items-center justify-center text-white lg:size-8"
       >
         <IconSearch className="size-5 lg:size-6" />

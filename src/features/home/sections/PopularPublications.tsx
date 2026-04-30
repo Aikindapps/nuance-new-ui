@@ -1,6 +1,7 @@
 import { PublicationBlock } from "../../../components/ui/PublicationBlock";
 import { SectionHeading } from "../../../components/ui/SectionHeading";
 import { usePopularDiscovery } from "../hooks/usePopularDiscovery";
+import { popularPublicationsCopy } from "../../../constants/copy";
 
 export function PopularPublications() {
   const { data, isLoading } = usePopularDiscovery();
@@ -12,13 +13,13 @@ export function PopularPublications() {
     <section aria-labelledby="popular-publications-heading">
       <div className="mb-6 flex items-center justify-between gap-4">
         <SectionHeading id="popular-publications-heading">
-          Popular publications you might like
+          {popularPublicationsCopy.heading}
         </SectionHeading>
         <a
           href="/publications"
           className="shrink-0 text-body font-medium text-brand-purple hover:underline"
         >
-          View all publications
+          {popularPublicationsCopy.viewAllLabel}
         </a>
       </div>
 

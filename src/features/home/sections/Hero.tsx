@@ -1,23 +1,14 @@
 import { Header } from "../../../components/ui/Header";
 import { Tag } from "../../../components/ui/Tag";
 import { usePopularDiscovery } from "../hooks/usePopularDiscovery";
-
-// Shown on first paint before canister data loads, and if the data call fails.
-// Replaced by the top-K tags from the live popular+latest sample once loaded.
-const FALLBACK_TOPICS = [
-  "Crypto",
-  "DAO",
-  "Digital",
-  "Trading",
-  "Logistics",
-  "Education",
-  "Investing",
-  "Web 3.0",
-];
+import { heroCopy } from "../../../constants/copy";
 
 export function Hero() {
   const { data } = usePopularDiscovery();
-  const topics = data?.topics.length ? data.topics : FALLBACK_TOPICS;
+  // Fallback topics shown on first paint before canister data loads, and if
+  // the data call fails. Replaced by the top-K tags from the live
+  // popular+latest sample once loaded.
+  const topics = data?.topics.length ? data.topics : heroCopy.fallbackTopics;
 
   return (
     <div className="bg-brand-gradient w-full text-white">
@@ -31,7 +22,7 @@ export function Hero() {
           id="topics-heading"
           className="text-body font-bold text-white lg:text-lg"
         >
-          Topics that might interest you:
+          {heroCopy.topicsHeading}
         </h2>
 
         <ul className="scrollbar-hide mt-4 flex gap-3 overflow-x-auto lg:mt-6 lg:gap-4">
@@ -46,7 +37,7 @@ export function Hero() {
           href="/topics"
           className="mt-4 inline-block text-body font-medium text-white underline underline-offset-4 hover:no-underline lg:mt-6"
         >
-          Explore all topics
+          {heroCopy.exploreAllLabel}
         </a>
       </section>
     </div>

@@ -1,6 +1,7 @@
 import { AuthorBlock } from "../../../components/ui/AuthorBlock";
 import { SectionHeading } from "../../../components/ui/SectionHeading";
 import { usePopularDiscovery } from "../hooks/usePopularDiscovery";
+import { popularWritersCopy } from "../../../constants/copy";
 
 export function PopularWriters() {
   const { data, isLoading } = usePopularDiscovery();
@@ -11,7 +12,7 @@ export function PopularWriters() {
   return (
     <section aria-labelledby="popular-writers-heading">
       <SectionHeading id="popular-writers-heading" className="mb-6">
-        Popular writers you might like
+        {popularWritersCopy.heading}
       </SectionHeading>
 
       {isLoading ? (
