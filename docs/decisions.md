@@ -390,3 +390,272 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - Font family is set in exactly two places: `nuance-ui/index.html` (Google Fonts `<link>`) and `nuance-ui/src/index.css` (`@theme --font-sans`). All components reference `var(--font-sans)` through Tailwind's default `font-sans` utility.
 - Do not introduce additional fonts without a new decision entry.
 - When adding weights outside 400-700, update both the Google Fonts URL in `index.html` and whatever component needs it.
+
+---
+
+## #16 — nuance-new-ui source tree lives outside iCloud, this machine only
+
+**Date:** 2026-04-22 (move-out decision) / 2026-04-23 (final location chosen and executed)
+
+**Status:** Active
+
+**Decision:** The `nuance-new-ui` repo lives at **`~/Projects/nuance-new-ui/`** on this machine (hostname: `Mac`). Outside iCloud Drive. Mirrors the pattern of decision #9 for the vendor repo.
+
+**Inputs:**
+- Mr Nick observed iCloud sync issues on 2026-04-22 while the repo was tracked in iCloud (`IC Dev/nuance-ui/`).
+- Specific pain: `.git/` contains thousands of small files; iCloud serializes metadata operations and can evict or partially sync `.git/objects/*`, which corrupts git state.
+- Same class of risk flagged in decision #9 but not acted on for nuance-ui at the time — it was accepted there because the frontend tree was expected to be small.
+
+**Options considered:**
+- A. Keep in iCloud, accept occasional sync glitches. **Rejected** — active development, corruption risk is real.
+- B. Keep in iCloud, but exclude `.git/` via `.nosync` convention. **Rejected** — iCloud ignores non-Apple exclusion mechanisms; only `.icloud` placeholder files work, and those can't be applied retroactively to `.git`.
+- C. Move to a sibling folder outside iCloud on this machine only (`~/Projects/nuance-new-ui/`). **Chosen.** Matches decision #9; predictable; zero sync involvement.
+- D. Use a git worktree outside iCloud with `.git` elsewhere. **Rejected** — complexity without meaningful benefit.
+
+**Rationale:**
+- iCloud + `.git/` is a known-bad combination across the industry. Moving out is the lowest-friction fix.
+- Project-level state (`CLAUDE.md`, `decisions.md`, `memory.md`, `icp-skills.md`, `tasks/`) stays in iCloud — those are small, text-only, and benefit from cross-machine sync. Only the code tree moves.
+- `~/Projects/` aligns with decision #9 (vendor repo at `~/Projects/aikindapps-Nuance/`). Consistent mental model.
+
+**Trade-offs accepted:**
+- **Code is now machine-specific.** Cross-machine resumption requires a fresh `git clone` — scripted as a one-liner:
+  ```
+  git clone https://github.com/Aikindapps/nuance-new-ui.git ~/Projects/nuance-new-ui
+  ```
+- Build artifacts (`node_modules/`, `dist/`) also machine-specific. Requires `npm install` on new machine.
+- Project-level state (this file, CLAUDE.md, memory.md) remains in iCloud — Mr Nick accepts that the mental model now has two homes (project state in iCloud, code on disk).
+
+**How to apply:**
+- Any session working on the frontend: `cd ~/Projects/nuance-new-ui`. **Do not** expect code at `IC Dev/nuance-ui/`.
+- The old iCloud `nuance-ui/` folder is retained as a stub with a README pointing to the new location (see README at `IC Dev/nuance-ui/README.md`). If Claude ever finds code there, assume it's stale and investigate before editing.
+- On a new machine: first clone the repo to `~/Projects/nuance-new-ui/` before any work that reads or edits source files.
+
+---
+
+## #17 — Canonical decision log lives in this repo (`docs/decisions.md`)
+
+**Date:** 2026-04-23
+
+**Status:** Active
+
+**Decision:** This file — `docs/decisions.md` inside the `nuance-new-ui` repo — is the single source of truth for project decisions. The duplicate at `IC Dev/decisions.md` (in iCloud) is retired and replaced with a stub pointing here.
+
+**Inputs:**
+- During decision #16 write-up (2026-04-23), noticed the two files had diverged zero times only because they'd both been updated manually in the same session. Maintenance smell flagged.
+- Mr Nick chose Option A from three presented: repo-only, project-root-only, or split-by-scope.
+
+**Options considered:**
+- A. **Repo-only, stub in iCloud pointing here.** **Chosen.**
+- B. Project-root-only in iCloud; no decision log in repo.
+- C. Split by scope — repo-level decisions in repo, meta decisions at project root.
+
+**Rationale:**
+- 16 of 16 existing decisions are about the code (stack, architecture, deps, tokens) or the code's physical location (#9, #16). They belong next to the code.
+- Git history upgrades the log: every edit becomes a dated, attributed commit. Rationale can live in commit messages when the diff itself is enough.
+- PR workflow naturally updates the log when architecture changes — the dep bump and its decision land in the same diff.
+- Public collaborators who clone the repo see the reasoning for every choice — consistent with the ADR (architecture decision record) convention most OSS projects follow.
+- The one cross-machine concern (reading decisions without a repo clone) is weak: any substantive work requires the clone anyway.
+
+**Trade-offs accepted:**
+- The decision log is no longer readable on a machine without the repo cloned. Mitigated: clone is a one-liner documented in `CLAUDE.md`.
+- Future process-level decisions (e.g., new tooling, workflow changes) will need to fit inside the repo's decision log even when the scope is broader than code. Acceptable — the alternative (splitting) created a harder problem of scope judgment at write time.
+
+**How to apply:**
+- All future decisions go here, as `## #N — Title`, with full metadata (Date, Status, Decision, Inputs, Options considered, Rationale, Trade-offs, How to apply).
+- The stub at `IC Dev/decisions.md` exists only to redirect a session that naively looks there. If that stub ever acquires content beyond the pointer, treat it as stale.
+- Session-start reading: Claude reads this file (`~/Projects/nuance-new-ui/docs/decisions.md`) alongside `CLAUDE.md`, `memory.md`, and `icp-skills.md`.
+
+---
+
+## #18 — Backend calls exported via React Context; React Query layered on top for caching
+
+**Date:** 2026-04-30
+
+**Status:** Active
+
+**Decision:** All canister/backend calls are declared and exported through **React Context** providers. Components and hooks consume the context-exposed call surface — they do not import from `src/lib/actors.ts` directly. **React Query** wraps these context calls when caching, deduplication, or stale-while-revalidate behavior is needed. When caching would be counterproductive (e.g., a one-shot mutation, or a call whose result must not pollute the cache), components call the context-exposed function directly. **Exception:** authentication state lives in context state (not just function exports), because it must be readable everywhere in the app at minimal latency.
+
+**Inputs:**
+- Human engineer review of PR #1 (2026-04-30) flagged the architectural problem: the existing Nuance frontend uses **Zustand**, where backend calls mutate large amounts of local state, making it hard to reason about which call touches what. The team has decided not to repeat that pattern.
+- Mr Nick endorsed the engineer's recommendation directly.
+- Current PR #1 hooks (`useArticles.ts`, `usePopularDiscovery.ts`) call `getActor*()` from `src/lib/actors.ts` directly inside `useQuery` `queryFn`. That works but bypasses the new architectural boundary — every hook becomes its own ad-hoc binding to the canister surface.
+
+**Options considered:**
+- A. Keep current pattern (direct singleton actor imports inside React Query hooks). **Rejected** — no central place to swap, mock, or instrument backend calls.
+- B. **Context-exported call surface; React Query wraps it for caching; auth state is the documented exception.** **Chosen.**
+- C. Zustand (matches existing Nuance frontend). **Rejected** — explicitly the pattern the human engineer wants to move away from.
+- D. Plain singletons + React Query (no context). Rejected — loses the swap/mock/instrument seam that Context provides.
+
+**Rationale:**
+- Context as the **declaration boundary** for backend calls means every backend dependency in the app is reachable from a single tree of providers. Tests, mocks, and instrumentation slot in via provider replacement.
+- React Query as the **caching layer** keeps cache logic out of the call definitions themselves — a function can be cached or not depending on how a consumer chooses to call it.
+- Auth in context state (rather than as a query) avoids the per-component subscription cost of "is the user logged in" — every screen needs that answer, fast.
+- This separation is the inverse of Zustand's "calls mutate state" pattern, which is the explicit thing being avoided.
+
+**Trade-offs accepted:**
+- Slightly more ceremony than direct imports — every backend call surface needs a provider and a hook (`useXContext`).
+- Context re-renders are coarser than Zustand selectors. Mitigated by keeping Context values to function references (stable across renders) and minimal state (auth only).
+- Existing PR #1 hooks predate this decision and will be migrated in PR #2 (the MUI + Context migration PR). Not a blocker for landing PR #1.
+
+**How to apply:**
+- Backend call surfaces live under `src/contexts/` (e.g., `PostCoreContext.tsx`, `UserContext.tsx`, `PostBucketContext.tsx`). Each provider exposes call functions and any minimal shared state.
+- Hooks that need caching: `useQuery({ queryFn: () => useXContext().getY(...) })` — the `queryFn` calls into context, React Query owns the cache.
+- Hooks that don't need caching: call the context function directly (mutations, side-effecting calls, or anywhere caching would mislead).
+- Auth context (`AuthContext`) holds identity/principal/login state directly — read everywhere via `useAuth()`.
+- Do not add new direct imports from `src/lib/actors.ts` outside `src/contexts/`. The actors module becomes the transport layer that contexts consume; everything else consumes contexts.
+
+---
+
+## #19 — Component library: MUI (replaces bare Tailwind components)
+
+**Date:** 2026-04-30
+
+**Status:** Active. Partially supersedes the implicit "build components from scratch with Tailwind utilities" stance in #7 / #11.
+
+**Decision:** Use **Material UI (MUI)** as the component library. Skeleton loading is provided by MUI's `Skeleton`. Tailwind v4 + `@theme` tokens (decisions #7, #8, #11) remain for layout, spacing, and one-off styling, but interactive components (buttons, inputs, modals, menus, etc.) come from MUI.
+
+**Inputs:**
+- Human engineer review of PR #1 (2026-04-30) listed MUI as a baseline architectural commitment alongside React Query, React Router, React Context, centralized colors, and a service catalog (modal, toast, image processing, QR, reload, toolbar).
+- The current PR #1 ships hand-rolled `Tab`, `ArticleSummary`, `Header`, etc. as bare Tailwind divs. They look right for the home page but provide none of the a11y/keyboard/focus baseline that MUI components ship with.
+
+**Options considered:**
+- A. Bare Tailwind components, hand-rolled. **Rejected** — every component re-implements a11y, focus, keyboard, theming.
+- B. Headless UI (Radix / Headless UI / Ark UI) + Tailwind. Rejected — capable but doesn't match the engineer's stated direction.
+- C. **MUI for components + Tailwind for layout.** **Chosen.**
+- D. shadcn/ui registry. Rejected — same reason as B.
+
+**Rationale:**
+- MUI ships skeleton loading, modals, toasts, toolbars, and form controls out of the box — directly maps to several items on the engineer's service-catalog list.
+- A11y and keyboard behavior are MUI's strongest selling point; the four blocking issues in the PR review include two a11y bugs that MUI components would not have shipped with.
+- Tailwind v4 stays for layout (`flex`, `grid`, spacing, breakpoints) — MUI doesn't compete there.
+- Theming via MUI's theme system aligns with the "centralized colors / radii / line widths / font sizes" mandate.
+
+**Trade-offs accepted:**
+- Bundle size grows. Acceptable for an SPA; revisit if Lighthouse mobile suffers.
+- MUI's default look is opinionated — every component will need theme overrides to match Figma's `NUR/` component set. Manageable; MUI's theme system is the right place to centralize that.
+- Existing PR #1 components (`Tab`, `ArticleSummary`, `AuthorBlock`, `PublicationBlock`, `Header`, `CtaBanner`, `Hero`) will be rebuilt on MUI in PR #2. Hand-rolled versions stay only long enough to land the blocking-fix PR.
+- Tailwind `@theme` tokens and MUI theme tokens overlap. Resolution: MUI theme is the source of truth for component-level tokens (colors, radii, type scale); Tailwind `@theme` mirrors them for utility-class consumption. Defined once, exported both directions.
+
+**How to apply:**
+- New components: prefer MUI primitives. If MUI doesn't have what's needed, build with Tailwind utilities and a `<Box>` / `<Stack>` shell.
+- Skeleton loading uses `<Skeleton variant="..." />` everywhere a query is loading.
+- MUI theme lives in `src/theme/` (created in PR #2). Color, radius, typography tokens declared once and consumed by both MUI's `ThemeProvider` and Tailwind's `@theme` block.
+- Centralized colors / standard radii / line widths / font sizes (engineer mandate) live in this MUI theme. Hardcoded `[Npx]` values in JSX become theme references.
+
+---
+
+## #20 — Authentication: Identity Kit (replaces direct II/Plug/NFID wiring)
+
+**Date:** 2026-04-30
+
+**Status:** Active. Supersedes the auth approach declared in `CLAUDE.md` ("Internet Identity (also Plug and NFID — matches existing Nuance login options)") interpreted as direct integration.
+
+**Decision:** Authentication is implemented via **Identity Kit** (the multi-provider ICP wallet/auth abstraction that handles II, Plug, NFID, and other ICP-compatible signers behind a single API). Direct wiring of `@icp-sdk/auth/client` for II and direct Plug/NFID adapter integration is **not** the path — Identity Kit replaces both.
+
+**Inputs:**
+- Human engineer mandate (2026-04-30): "Use identity kit."
+- Mr Nick confirmed Identity Kit **replaces** the previous direct-integration plan, not wraps it.
+- Decision #10 deferred the Plug/NFID adapter compatibility question ("verify adapter compatibility when we actually wire Plug/NFID") — Identity Kit moots that question by abstracting it.
+
+**Options considered:**
+- A. Direct integration: `@icp-sdk/auth/client` for II + manual Plug/NFID adapters. **Rejected** — multi-provider integration cost, every new wallet means new code.
+- B. **Identity Kit, single integration covers all supported wallets.** **Chosen.**
+
+**Rationale:**
+- Identity Kit is the community-adopted "log in with any ICP wallet" layer. Centralizes the provider-selection UI and the principal/identity surface.
+- The auth context (decision #18 exception) consumes whatever Identity Kit returns — the rest of the app sees `principal`, `agent`, `isAuthenticated` regardless of provider.
+- Removes the open follow-up from decision #10 (Plug/NFID adapter compatibility with `@icp-sdk/core`) — Identity Kit handles provider compatibility.
+
+**Trade-offs accepted:**
+- Adds a dependency that wraps `@icp-sdk/core`. Need to verify Identity Kit's `@icp-sdk/core` (vs deprecated `@dfinity/*`) compatibility before wiring — flagged as a pre-implementation check in PR #2.
+- Less control over provider-selection UX. Acceptable; matches what the engineer wants.
+- If Identity Kit lags behind a new wallet or breaks on a `@icp-sdk/core` upgrade, we inherit that lag. Mitigated by: Identity Kit is actively maintained by the ICP community; we revisit if it stalls.
+
+**How to apply:**
+- PR #2 wires Identity Kit into `AuthContext`. The provider-selection modal and login/logout flow live behind `useAuth()`.
+- No direct `AuthClient` (from `@icp-sdk/auth/client`) instantiation in app code — Identity Kit owns the auth client.
+- Logged-in screens read `principal`, `identity`, `isAuthenticated` from `useAuth()`. Authenticated canister calls get the `identity` from context, pass to `HttpAgent.create({ identity })`.
+- Pre-implementation check (PR #2 step 1): confirm Identity Kit's installed version is compatible with `@icp-sdk/core` (decision #10). If not, decision #10 or #20 needs re-evaluation; flag immediately.
+
+---
+
+## #21 — Centralization standards: colors, copy, images, dimensional tokens
+
+**Date:** 2026-04-30
+
+**Status:** Active
+
+**Decision:** Project-wide centralization rules:
+- **Colors** centralized (in MUI theme — see decision #19).
+- **Landing page copy** in a constants file (`src/constants/copy.ts` or per-page equivalent).
+- **Images** all referenced through `src/images.ts` (re-exports / imports of every image used in the app).
+- **Standard dimensional tokens** — radii, line widths, font sizes — centralized (in MUI theme + Tailwind `@theme`, single source per decision #19).
+
+**Inputs:**
+- Human engineer mandate (2026-04-30) explicitly listed all four as baseline standards.
+- Current PR #1 inlines copy in JSX, references images via direct `import` per file, and uses raw `[Npx]` values in components — every one of these is the pattern being phased out.
+
+**Options considered:**
+- A. Inline copy/images/values per component (current PR #1 pattern). **Rejected.**
+- B. **Centralize all four into named modules / theme tokens.** **Chosen.**
+
+**Rationale:**
+- Copy in a constants file lets non-engineers (Mr Nick) edit headlines without touching JSX, and unblocks future i18n with zero refactor.
+- A single `images.ts` makes it obvious which images are referenced, simplifies bundle splitting, and gives one place to swap a logo or hero image.
+- Dimensional tokens centralized in MUI theme (mirrored into Tailwind `@theme`) directly address PR #1 review item: "Raw pixel values in JSX that should be `@theme` tokens."
+
+**Trade-offs accepted:**
+- One-time refactor cost (PR #2 absorbs it).
+- Constants files can drift from usage. Mitigated by: every JSX literal that's user-facing copy goes through the constants file; lint rule could be added later if drift becomes a problem.
+
+**How to apply:**
+- Copy: create `src/constants/copy.ts` (or feature-scoped equivalents like `src/features/home/copy.ts`). All landing-page strings live there. Components import named exports.
+- Images: create `src/images.ts` that imports every used image and re-exports as named values. Components import from `images.ts`, not from `assets/` directly.
+- Dimensional tokens: defined in MUI theme (`src/theme/`); mirrored into Tailwind `@theme` block. JSX references theme values, not raw pixels.
+
+---
+
+## #22 — Service catalog as backlog (modal, toast, image processing, QR, reload, toolbar, save-state, error reporting, lazy load)
+
+**Date:** 2026-04-30
+
+**Status:** Active — backlog only; nothing built until a screen needs it.
+
+**Decision:** A set of cross-cutting services is committed-to architecturally but built **on demand** as the first screen needing each lands. The catalog:
+
+- **Modal service** — programmatic modal/dialog API on top of MUI `Dialog`.
+- **Toast service** — programmatic toast/snackbar API on top of MUI `Snackbar`.
+- **Image processing service** — cropping (and likely resizing/format) for user-uploaded images (article cover images, avatars).
+- **QR service** — primarily for wallet flows (e.g., displaying a wallet address as a QR for mobile signing).
+- **Reload service** — detects stale frontend cache after backend/frontend upgrades; prompts re-login or hard reload. Exists because canister upgrades can invalidate session state.
+- **Toolbar service** — the new design uses a toolbar in multiple screens; centralize its mount points.
+- **Browser save-state for articles/comments** — drafts persist in browser storage so a refresh doesn't lose work. Pairs with the article editor (Lexical) and comment fields (Quill).
+- **Frontend error reporting** — anonymous frontend errors reported to a canister via the toast service path; doubles as usage stats. Tip-off mechanism for production bugs.
+- **Lazy load / service workers** — bundle splitting + offline support / asset caching.
+
+**Editor stack** (related to save-state):
+- **Lexical** for the long-form article editor.
+- **Quill** for shorter text fields. Both must work in offline mode and persist state.
+
+**Inputs:**
+- Human engineer mandate (2026-04-30) listed all of these as architectural commitments alongside React Context, MUI, and Identity Kit.
+- None are needed for the current home page (PR #1) or the immediate MUI/Context migration (PR #2). They're committed direction but not committed scope.
+
+**Options considered:**
+- A. Build the full service catalog now. **Rejected** — scope balloon, and several services have no consumer yet.
+- B. **Treat as backlog; build each when its first consumer screen arrives.** **Chosen.**
+- C. Build only what's used today. Rejected — leaves no architectural commitment in writing; future sessions will re-debate each one.
+
+**Rationale:**
+- Each service has a clear future consumer screen (article editor → Lexical + save-state; login → QR for wallet flows; any screen with mutations → toast; canister upgrades → reload service). No premature abstraction.
+- Recording them in the decision log now means future sessions don't reinvent the choice — they implement against a committed direction.
+
+**Trade-offs accepted:**
+- Risk: a service gets built ad-hoc inside a feature when it should have been factored out from the start. Mitigated by: when a screen needs a service from this catalog, build the service in `src/services/<name>/` and consume it, rather than inlining the logic into the feature.
+- Catalog will likely grow as more screens land. Each addition gets its own mini-decision (or appended to this one with a date) so the rationale stays visible.
+
+**How to apply:**
+- When a new screen needs one of these services, build it under `src/services/` (or `src/contexts/` if it's primarily a Context-based surface) at first use. Don't pre-build.
+- Lexical + Quill: install when the first writing surface lands (article editor screen, comment composer). Both wired to the browser save-state service.
+- Frontend error reporting: anonymous by default. Surface in the UI via toast ("something went wrong; reported to Nuance team"). The reporting canister is TBD — flag at first need.
+- Lazy load: enable Vite's route-level code splitting once there are 3+ routes. Service workers wait until offline mode is a real requirement (likely the article editor).
