@@ -8,24 +8,24 @@ let postCoreActor: ReturnType<typeof createPostCore> | null = null;
 let userActor: ReturnType<typeof createUser> | null = null;
 const bucketActors = new Map<string, ReturnType<typeof createPostBucket>>();
 
-export function getPostCoreActor() {
+export async function getPostCoreActor() {
   if (!postCoreActor) {
-    postCoreActor = createPostCore(canisterIds.PostCore.ic, { agent: getAgent() });
+    postCoreActor = createPostCore(canisterIds.PostCore.ic, { agent: await getAgent() });
   }
   return postCoreActor;
 }
 
-export function getUserActor() {
+export async function getUserActor() {
   if (!userActor) {
-    userActor = createUser(canisterIds.User.ic, { agent: getAgent() });
+    userActor = createUser(canisterIds.User.ic, { agent: await getAgent() });
   }
   return userActor;
 }
 
-export function getPostBucketActor(bucketCanisterId: string) {
+export async function getPostBucketActor(bucketCanisterId: string) {
   let actor = bucketActors.get(bucketCanisterId);
   if (!actor) {
-    actor = createPostBucket(bucketCanisterId, { agent: getAgent() });
+    actor = createPostBucket(bucketCanisterId, { agent: await getAgent() });
     bucketActors.set(bucketCanisterId, actor);
   }
   return actor;

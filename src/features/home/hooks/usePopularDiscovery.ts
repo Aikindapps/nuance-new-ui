@@ -23,7 +23,7 @@ async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
   // Sample from the 7-day popular window to match the Popular tab's canister
   // call (useArticles uses getPopularThisWeek). Keeps writers / publications /
   // topics rails thematically consistent with the articles grid.
-  const postCore = getPostCoreActor();
+  const postCore = await getPostCoreActor();
   const [popular, latest] = await Promise.all([
     postCore.getPopularThisWeek(0, SAMPLE_POPULAR).then((r) => r.posts).catch(() => []),
     postCore.getLatestPosts(0, SAMPLE_LATEST).then((r) => r.posts).catch(() => []),
@@ -42,11 +42,10 @@ async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
   }
 
   const bucketResults = await Promise.all(
-    Array.from(byBucket.entries()).map(([id, ids]) =>
-      getPostBucketActor(id)
-        .getPostsByPostIds(Array.from(ids), false)
-        .catch(() => []),
-    ),
+    Array.from(byBucket.entries()).map(async ([id, ids]) => {
+      const actor = await getPostBucketActor(id);
+      return actor.getPostsByPostIds(Array.from(ids), false).catch(() => []);
+    }),
   );
   const postMap = new Map(bucketResults.flat().map((p) => [p.postId, p]));
 
@@ -71,8 +70,10 @@ async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
     }
   }
 
-  const topWriters = authorOrder.slice(0, TOP_WRITERS);
-  const topPubs = pubOrder.slice(0, TOP_PUBLICATIONS);
+  // Over-fetch by 2x: User hydration may drop suspended/deleted accounts.
+  // Final slice to TOP_* happens after the User filter below.
+  const topWritersPool = authorOrder.slice(0, TOP_WRITERS * 2);
+  const topPubsPool = pubOrder.slice(0, TOP_PUBLICATIONS * 2);
 
   // Aggregate tag frequencies across the popular+latest keyProps (tags live
   // on PostKeyProperties from PostCore, not on PostBucket's bucket type).
@@ -96,25 +97,38 @@ async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
   // User.getUsersByHandles looks up via a lowercase reverse index — pass
   // lowercased handles or the canister silently returns nothing.
   const allHandles = Array.from(
-    new Set([...topWriters, ...topPubs].map((h) => h.toLowerCase())),
+    new Set([...topWritersPool, ...topPubsPool].map((h) => h.toLowerCase())),
   );
+  const userActor = await getUserActor();
   const users =
     allHandles.length > 0
-      ? await getUserActor()
+      ? await userActor
           .getUsersByHandles(allHandles)
           .catch(() => [] as UserListItem[])
       : [];
   const byHandle = new Map(users.map((u) => [u.handle.toLowerCase(), u]));
 
-  return {
-    writers: topWriters
-      .map((h) => byHandle.get(h.toLowerCase()))
-      .filter((u): u is UserListItem => u != null),
-    publications: topPubs
-      .map((h) => byHandle.get(h.toLowerCase()))
-      .filter((u): u is UserListItem => u != null),
-    topics,
-  };
+  const writers = topWritersPool
+    .map((h) => byHandle.get(h.toLowerCase()))
+    .filter((u): u is UserListItem => u != null)
+    .slice(0, TOP_WRITERS);
+  const publications = topPubsPool
+    .map((h) => byHandle.get(h.toLowerCase()))
+    .filter((u): u is UserListItem => u != null)
+    .slice(0, TOP_PUBLICATIONS);
+
+  // Sample produced data but every rail is empty — treat as an error so React
+  // Query retries instead of leaving discovery rails permanently blank.
+  if (
+    allKeys.length > 0 &&
+    writers.length === 0 &&
+    publications.length === 0 &&
+    topics.length === 0
+  ) {
+    throw new Error("Discovery hydration produced zero data");
+  }
+
+  return { writers, publications, topics };
 }
 
 export function usePopularDiscovery() {

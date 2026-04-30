@@ -9,16 +9,18 @@ import { useInView } from "../lib/useInView";
 
 type Variant = "popular" | "new";
 
-const metadata: Record<Variant, { title: string; description: string }> = {
+const metadata: Record<Variant, { title: string; description: string; h1: string }> = {
   popular: {
     title: "Nuance — Popular articles on the blockchain",
     description:
       "Discover popular articles from writers on Nuance, the on-chain blogging platform. Read the best stories on crypto, DAOs, Web3, and more.",
+    h1: "Popular articles on Nuance",
   },
   new: {
     title: "Nuance — New articles on the blockchain",
     description:
       "The latest articles from writers on Nuance, the on-chain blogging platform. Fresh stories on crypto, DAOs, Web3, and more.",
+    h1: "New articles on Nuance",
   },
 };
 
@@ -48,6 +50,7 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
       <meta property="og:type" content="website" />
 
       <main className="min-h-screen">
+        <h1 className="sr-only">{meta.h1}</h1>
         <Hero />
 
         <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-8 md:py-12 lg:px-14 lg:py-16">
@@ -56,10 +59,10 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
           <div className="mt-10 md:mt-12">
             {isLoading && <LoadingSkeleton />}
             {isError && <ErrorState message={String(error)} />}
-            {data && data.pages[0]?.length === 0 && <EmptyState />}
-            {data && data.pages[0]?.length > 0 && (
+            {data && data.pages[0]?.articles.length === 0 && <EmptyState />}
+            {data && data.pages[0] && data.pages[0].articles.length > 0 && (
               <>
-                <FeaturedSection page={data.pages[0]} />
+                <FeaturedSection articles={data.pages[0].articles} />
                 <div className="mt-12 md:mt-14 lg:mt-16">
                   <CtaBanner />
                 </div>
@@ -73,7 +76,7 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
                   {data.pages.slice(1).map((page, i) => (
                     <ArticleGrid
                       key={`page-${i + 1}`}
-                      articles={page}
+                      articles={page.articles}
                       layout="grid"
                       ariaLabel={`More articles, page ${i + 2}`}
                     />
@@ -105,10 +108,10 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
   );
 }
 
-function FeaturedSection({ page }: { page: import("../features/home/types").Article[] }) {
-  const heroArticles = page.slice(0, 2);
-  const firstRow = page.slice(2, 5);
-  const secondRow = page.slice(5, 8);
+function FeaturedSection({ articles }: { articles: import("../features/home/types").Article[] }) {
+  const heroArticles = articles.slice(0, 2);
+  const firstRow = articles.slice(2, 5);
+  const secondRow = articles.slice(5, 8);
 
   return (
     <div className="flex flex-col gap-12 md:gap-14 lg:gap-16">
@@ -184,9 +187,11 @@ function ErrorState({ message }: { message: string }) {
       <p className="mt-2 text-body">
         Something went wrong talking to the Nuance canisters.
       </p>
-      <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-sm text-ink-60">
-        {message}
-      </pre>
+      {import.meta.env.DEV && (
+        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-sm text-ink-60">
+          {message}
+        </pre>
+      )}
     </div>
   );
 }

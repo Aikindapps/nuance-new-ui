@@ -22,7 +22,8 @@ export function ArticleSummary({
     >
       <a
         href={`/article/${article.id}`}
-        aria-label={`Read ${article.title}`}
+        aria-hidden="true"
+        tabIndex={-1}
         className={
           large
             ? "block aspect-[628/400] w-full overflow-hidden rounded-card bg-ink-80"

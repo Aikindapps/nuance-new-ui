@@ -32,11 +32,18 @@ function formatPublishedDate(publishedDate: string, created: string): string {
   return formatDate(publishedDate) || formatDate(created);
 }
 
+type ArticlesPage = {
+  articles: Article[];
+  // Raw PostCore keyProps count for this page — drives pagination math
+  // independent of how many keyProps survive bucket/user hydration.
+  keyPropsLength: number;
+};
+
 async function fetchArticles(
   variant: Variant,
   skip: number,
   count: number,
-): Promise<Article[]> {
+): Promise<ArticlesPage> {
   // PostCore's getPopular*/getLatestPosts take (indexFrom, indexTo) — a range,
   // NOT (skip, count). Convert at the boundary.
   // "Popular" uses the 7-day window (getPopularThisWeek) rather than all-time
@@ -44,13 +51,13 @@ async function fetchArticles(
   // same on every variant: popularity = (claps + applauds + 1) × (views + 1).
   const indexFrom = skip;
   const indexTo = skip + count;
-  const postCore = getPostCoreActor();
+  const postCore = await getPostCoreActor();
   const { posts: keyProps } =
     variant === "popular"
       ? await postCore.getPopularThisWeek(indexFrom, indexTo)
       : await postCore.getLatestPosts(indexFrom, indexTo);
 
-  if (keyProps.length === 0) return [];
+  if (keyProps.length === 0) return { articles: [], keyPropsLength: 0 };
 
   const byBucket = new Map<string, string[]>();
   for (const kp of keyProps) {
@@ -59,10 +66,17 @@ async function fetchArticles(
     byBucket.set(kp.bucketCanisterId, list);
   }
 
+  // Per-bucket catch: a single failing bucket drops its posts but leaves the
+  // rest of the page intact. Top-level PostCore failures above stay uncaught
+  // so React Query handles the truly-broken case.
   const bucketResults = await Promise.all(
-    Array.from(byBucket.entries()).map(([bucketId, ids]) =>
-      getPostBucketActor(bucketId).getPostsByPostIds(ids, false),
-    ),
+    Array.from(byBucket.entries()).map(async ([bucketId, ids]) => {
+      const actor = await getPostBucketActor(bucketId);
+      return actor.getPostsByPostIds(ids, false).catch((e) => {
+        console.warn(`[useArticles] bucket ${bucketId} failed:`, e);
+        return [];
+      });
+    }),
   );
   const postMap = new Map(bucketResults.flat().map((p) => [p.postId, p]));
 
@@ -74,13 +88,19 @@ async function fetchArticles(
     if (p.isPublication && p.creatorHandle) handles.add(p.creatorHandle.toLowerCase());
   }
 
+  // User-hydration failure degrades author/avatar fields but doesn't block the
+  // feed (display already falls back to handle / empty avatar).
+  const userActor = await getUserActor();
   const userList =
     handles.size > 0
-      ? await getUserActor().getUsersByHandles(Array.from(handles))
+      ? await userActor.getUsersByHandles(Array.from(handles)).catch((e) => {
+          console.warn("[useArticles] user hydration failed:", e);
+          return [];
+        })
       : [];
   const userMap = new Map(userList.map((u) => [u.handle.toLowerCase(), u]));
 
-  return keyProps
+  const articles = keyProps
     .map((kp): Article | null => {
       const post = postMap.get(kp.postId);
       if (!post) return null;
@@ -88,6 +108,9 @@ async function fetchArticles(
       const isPub = post.isPublication;
       const authorHandle =
         isPub && post.creatorHandle ? post.creatorHandle : post.handle;
+      // Skip posts with no usable handle — would render byline as "@".
+      if (!authorHandle) return null;
+
       const pubHandle = isPub ? post.handle : null;
       const author = userMap.get(authorHandle.toLowerCase());
       const pub = pubHandle ? userMap.get(pubHandle.toLowerCase()) : null;
@@ -113,6 +136,14 @@ async function fetchArticles(
       };
     })
     .filter((a): a is Article => a !== null);
+
+  // PostCore returned posts but every one failed to hydrate — treat as an
+  // error so React Query retries instead of rendering an empty feed.
+  if (keyProps.length > 0 && articles.length === 0) {
+    throw new Error("All posts failed to hydrate from buckets");
+  }
+
+  return { articles, keyPropsLength: keyProps.length };
 }
 
 export function useArticles(variant: Variant) {
@@ -123,11 +154,14 @@ export function useArticles(variant: Variant) {
       const count = pageParam === 0 ? FEATURED_PAGE_SIZE : INFINITE_PAGE_SIZE;
       return fetchArticles(variant, pageParam as number, count);
     },
+    // Pagination math runs on raw keyProps counts (the actual indexFrom/indexTo
+    // PostCore uses), not on filtered Article counts — otherwise dropped posts
+    // cause pageParam to drift and re-fetch already-shown posts.
     getNextPageParam: (lastPage, allPages) => {
       const expectedCount =
         allPages.length === 1 ? FEATURED_PAGE_SIZE : INFINITE_PAGE_SIZE;
-      if (lastPage.length < expectedCount) return undefined;
-      return allPages.reduce((sum, p) => sum + p.length, 0);
+      if (lastPage.keyPropsLength < expectedCount) return undefined;
+      return allPages.reduce((sum, p) => sum + p.keyPropsLength, 0);
     },
     staleTime: 1000 * 60 * 2,
   });

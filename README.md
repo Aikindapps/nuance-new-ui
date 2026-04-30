@@ -23,7 +23,7 @@ standalone [`aikindapps/nuance-frontend`](https://github.com/aikindapps/nuance-f
 | Framework    | React 19 + TypeScript                                          |
 | Styling      | Tailwind v4 (CSS-first, `@theme` in `src/index.css`)           |
 | Routing      | React Router v7                                                |
-| Data         | TanStack Query over `@dfinity/agent` + generated Candid bindings |
+| Data         | TanStack Query over `@icp-sdk/core` + generated Candid bindings |
 | Font         | Manrope (Google Fonts — free substitute for Figma's GT Walsheim) |
 | Auth (soon)  | Internet Identity + Plug + NFID                                |
 
