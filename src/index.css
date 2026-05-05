@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Canonical token definitions live in this @theme block.
+   The MUI theme in src/theme/index.ts references the same CSS variables
+   (`var(--color-...)`, etc.) so both layers consume one source. See
+   decisions.md #19 + #23. */
 @theme {
   /* ------------------------------------------------------------------
      Design tokens — extracted from Figma as components are implemented.

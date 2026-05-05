@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getPostBucketActor, getPostCoreActor, getUserActor } from "../../../lib/actors";
+import { useActors, type ActorsValue } from "../../../contexts/ActorsContext";
 import type { Article } from "../types";
 
 type Variant = "popular" | "new";
@@ -40,10 +40,12 @@ type ArticlesPage = {
 };
 
 async function fetchArticles(
+  actors: ActorsValue,
   variant: Variant,
   skip: number,
   count: number,
 ): Promise<ArticlesPage> {
+  const { getPopularThisWeek, getLatestPosts, getPostsByPostIds, getUsersByHandles } = actors;
   // PostCore's getPopular*/getLatestPosts take (indexFrom, indexTo) — a range,
   // NOT (skip, count). Convert at the boundary.
   // "Popular" uses the 7-day window (getPopularThisWeek) rather than all-time
@@ -51,11 +53,10 @@ async function fetchArticles(
   // same on every variant: popularity = (claps + applauds + 1) × (views + 1).
   const indexFrom = skip;
   const indexTo = skip + count;
-  const postCore = await getPostCoreActor();
   const { posts: keyProps } =
     variant === "popular"
-      ? await postCore.getPopularThisWeek(indexFrom, indexTo)
-      : await postCore.getLatestPosts(indexFrom, indexTo);
+      ? await getPopularThisWeek(indexFrom, indexTo)
+      : await getLatestPosts(indexFrom, indexTo);
 
   if (keyProps.length === 0) return { articles: [], keyPropsLength: 0 };
 
@@ -70,13 +71,12 @@ async function fetchArticles(
   // rest of the page intact. Top-level PostCore failures above stay uncaught
   // so React Query handles the truly-broken case.
   const bucketResults = await Promise.all(
-    Array.from(byBucket.entries()).map(async ([bucketId, ids]) => {
-      const actor = await getPostBucketActor(bucketId);
-      return actor.getPostsByPostIds(ids, false).catch((e) => {
+    Array.from(byBucket.entries()).map(([bucketId, ids]) =>
+      getPostsByPostIds(bucketId, ids, false).catch((e) => {
         console.warn(`[useArticles] bucket ${bucketId} failed:`, e);
         return [];
-      });
-    }),
+      }),
+    ),
   );
   const postMap = new Map(bucketResults.flat().map((p) => [p.postId, p]));
 
@@ -90,10 +90,9 @@ async function fetchArticles(
 
   // User-hydration failure degrades author/avatar fields but doesn't block the
   // feed (display already falls back to handle / empty avatar).
-  const userActor = await getUserActor();
   const userList =
     handles.size > 0
-      ? await userActor.getUsersByHandles(Array.from(handles)).catch((e) => {
+      ? await getUsersByHandles(Array.from(handles)).catch((e) => {
           console.warn("[useArticles] user hydration failed:", e);
           return [];
         })
@@ -147,12 +146,13 @@ async function fetchArticles(
 }
 
 export function useArticles(variant: Variant) {
+  const actors = useActors();
   return useInfiniteQuery({
     queryKey: ["articles", variant],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => {
       const count = pageParam === 0 ? FEATURED_PAGE_SIZE : INFINITE_PAGE_SIZE;
-      return fetchArticles(variant, pageParam as number, count);
+      return fetchArticles(actors, variant, pageParam as number, count);
     },
     // Pagination math runs on raw keyProps counts (the actual indexFrom/indexTo
     // PostCore uses), not on filtered Article counts — otherwise dropped posts

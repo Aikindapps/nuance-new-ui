@@ -1,3 +1,4 @@
+import Skeleton from "@mui/material/Skeleton";
 import { Hero } from "../features/home/sections/Hero";
 import { TabBar } from "../features/home/sections/TabBar";
 import { ArticleGrid } from "../features/home/sections/ArticleGrid";
@@ -6,26 +7,12 @@ import { PopularWriters } from "../features/home/sections/PopularWriters";
 import { PopularPublications } from "../features/home/sections/PopularPublications";
 import { useArticles } from "../features/home/hooks/useArticles";
 import { useInView } from "../lib/useInView";
+import { homeMetadata, homeStatus } from "../constants/copy";
 
 type Variant = "popular" | "new";
 
-const metadata: Record<Variant, { title: string; description: string; h1: string }> = {
-  popular: {
-    title: "Nuance — Popular articles on the blockchain",
-    description:
-      "Discover popular articles from writers on Nuance, the on-chain blogging platform. Read the best stories on crypto, DAOs, Web3, and more.",
-    h1: "Popular articles on Nuance",
-  },
-  new: {
-    title: "Nuance — New articles on the blockchain",
-    description:
-      "The latest articles from writers on Nuance, the on-chain blogging platform. Fresh stories on crypto, DAOs, Web3, and more.",
-    h1: "New articles on Nuance",
-  },
-};
-
 export function HomeLoggedOut({ variant }: { variant: Variant }) {
-  const meta = metadata[variant];
+  const meta = homeMetadata[variant];
   const query = useArticles(variant);
   const {
     data,
@@ -90,13 +77,13 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
                     aria-live="polite"
                   >
                     {isFetchingNextPage
-                      ? "Loading more articles…"
-                      : "Scroll for more"}
+                      ? homeStatus.loadingMore
+                      : homeStatus.scrollForMore}
                   </div>
                 )}
                 {!hasNextPage && data.pages.length > 1 && (
                   <p className="mt-12 py-10 text-center text-body text-ink-60">
-                    You&rsquo;re all caught up.
+                    {homeStatus.allCaughtUp}
                   </p>
                 )}
               </>
@@ -153,7 +140,7 @@ function LoadingSkeleton() {
           <SkeletonCard key={`r1-${i}`} />
         ))}
       </div>
-      <span className="sr-only">Loading articles…</span>
+      <span className="sr-only">{homeStatus.loadingSrLabel}</span>
     </div>
   );
 }
@@ -161,17 +148,18 @@ function LoadingSkeleton() {
 function SkeletonCard({ large = false }: { large?: boolean }) {
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
-      <div
-        className={
-          large
-            ? "aspect-[628/400] w-full animate-pulse rounded-card bg-ink-60/20"
-            : "aspect-[416/242] w-full animate-pulse rounded-card bg-ink-60/20"
-        }
+      <Skeleton
+        variant="rectangular"
+        sx={{
+          width: "100%",
+          aspectRatio: large ? "628 / 400" : "416 / 242",
+          borderRadius: "var(--radius-card)",
+        }}
       />
       <div className="flex flex-col gap-3">
-        <div className="h-4 w-2/3 animate-pulse rounded bg-ink-60/20" />
-        <div className="h-6 w-full animate-pulse rounded bg-ink-60/20" />
-        <div className="h-6 w-5/6 animate-pulse rounded bg-ink-60/20" />
+        <Skeleton variant="text" sx={{ height: 16, width: "67%" }} />
+        <Skeleton variant="text" sx={{ height: 24, width: "100%" }} />
+        <Skeleton variant="text" sx={{ height: 24, width: "83%" }} />
       </div>
     </div>
   );
@@ -183,10 +171,8 @@ function ErrorState({ message }: { message: string }) {
       role="alert"
       className="rounded-card border border-ink-60/30 bg-ink-60/5 p-6 text-ink-80"
     >
-      <p className="font-bold text-ink">Couldn't load articles right now.</p>
-      <p className="mt-2 text-body">
-        Something went wrong talking to the Nuance canisters.
-      </p>
+      <p className="font-bold text-ink">{homeStatus.errorTitle}</p>
+      <p className="mt-2 text-body">{homeStatus.errorBody}</p>
       {import.meta.env.DEV && (
         <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-sm text-ink-60">
           {message}
@@ -199,10 +185,8 @@ function ErrorState({ message }: { message: string }) {
 function EmptyState() {
   return (
     <div className="rounded-card border border-ink-60/30 bg-ink-60/5 p-6 text-ink-80">
-      <p className="font-bold text-ink">No articles yet.</p>
-      <p className="mt-2 text-body">
-        Be the first to publish something worth reading.
-      </p>
+      <p className="font-bold text-ink">{homeStatus.emptyTitle}</p>
+      <p className="mt-2 text-body">{homeStatus.emptyBody}</p>
     </div>
   );
 }

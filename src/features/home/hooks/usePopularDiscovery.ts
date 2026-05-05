@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPostBucketActor, getPostCoreActor, getUserActor } from "../../../lib/actors";
+import { useActors, type ActorsValue } from "../../../contexts/ActorsContext";
 import type { UserListItem } from "../../../candid/User/User";
 import type { PostKeyProperties__1 } from "../../../candid/PostCore/PostCore";
 
@@ -19,14 +19,14 @@ const TOP_WRITERS = 5;
 const TOP_PUBLICATIONS = 2;
 const TOP_TOPICS = 20;
 
-async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
+async function fetchPopularDiscovery(actors: ActorsValue): Promise<PopularDiscovery> {
+  const { getPopularThisWeek, getLatestPosts, getPostsByPostIds, getUsersByHandles } = actors;
   // Sample from the 7-day popular window to match the Popular tab's canister
   // call (useArticles uses getPopularThisWeek). Keeps writers / publications /
   // topics rails thematically consistent with the articles grid.
-  const postCore = await getPostCoreActor();
   const [popular, latest] = await Promise.all([
-    postCore.getPopularThisWeek(0, SAMPLE_POPULAR).then((r) => r.posts).catch(() => []),
-    postCore.getLatestPosts(0, SAMPLE_LATEST).then((r) => r.posts).catch(() => []),
+    getPopularThisWeek(0, SAMPLE_POPULAR).then((r) => r.posts).catch(() => []),
+    getLatestPosts(0, SAMPLE_LATEST).then((r) => r.posts).catch(() => []),
   ]);
 
   // Popular first so its authors/publications sort to the top
@@ -42,10 +42,9 @@ async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
   }
 
   const bucketResults = await Promise.all(
-    Array.from(byBucket.entries()).map(async ([id, ids]) => {
-      const actor = await getPostBucketActor(id);
-      return actor.getPostsByPostIds(Array.from(ids), false).catch(() => []);
-    }),
+    Array.from(byBucket.entries()).map(([id, ids]) =>
+      getPostsByPostIds(id, Array.from(ids), false).catch(() => []),
+    ),
   );
   const postMap = new Map(bucketResults.flat().map((p) => [p.postId, p]));
 
@@ -99,12 +98,9 @@ async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
   const allHandles = Array.from(
     new Set([...topWritersPool, ...topPubsPool].map((h) => h.toLowerCase())),
   );
-  const userActor = await getUserActor();
   const users =
     allHandles.length > 0
-      ? await userActor
-          .getUsersByHandles(allHandles)
-          .catch(() => [] as UserListItem[])
+      ? await getUsersByHandles(allHandles).catch(() => [] as UserListItem[])
       : [];
   const byHandle = new Map(users.map((u) => [u.handle.toLowerCase(), u]));
 
@@ -132,9 +128,10 @@ async function fetchPopularDiscovery(): Promise<PopularDiscovery> {
 }
 
 export function usePopularDiscovery() {
+  const actors = useActors();
   return useQuery({
     queryKey: ["popular-discovery"],
-    queryFn: fetchPopularDiscovery,
+    queryFn: () => fetchPopularDiscovery(actors),
     staleTime: 1000 * 60 * 5,
   });
 }

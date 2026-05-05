@@ -1,6 +1,8 @@
+import Skeleton from "@mui/material/Skeleton";
 import { AuthorBlock } from "../../../components/ui/AuthorBlock";
 import { SectionHeading } from "../../../components/ui/SectionHeading";
 import { usePopularDiscovery } from "../hooks/usePopularDiscovery";
+import { popularWritersCopy } from "../../../constants/copy";
 
 export function PopularWriters() {
   const { data, isLoading } = usePopularDiscovery();
@@ -11,15 +13,21 @@ export function PopularWriters() {
   return (
     <section aria-labelledby="popular-writers-heading">
       <SectionHeading id="popular-writers-heading" className="mb-6">
-        Popular writers you might like
+        {popularWritersCopy.heading}
       </SectionHeading>
 
       {isLoading ? (
         <div className="flex gap-4 overflow-hidden">
           {[0, 1, 2, 3, 4].map((i) => (
-            <div
+            <Skeleton
               key={i}
-              className="h-[340px] w-[220px] shrink-0 animate-pulse rounded-card bg-ink-60/20 md:w-[240px] lg:w-[248px]"
+              variant="rounded"
+              className="shrink-0"
+              sx={{
+                height: 340,
+                width: { xs: 220, md: 240, lg: 248 },
+                borderRadius: "var(--radius-card)",
+              }}
             />
           ))}
         </div>
