@@ -1,3 +1,4 @@
+import Skeleton from "@mui/material/Skeleton";
 import { PublicationBlock } from "../../../components/ui/PublicationBlock";
 import { SectionHeading } from "../../../components/ui/SectionHeading";
 import { usePopularDiscovery } from "../hooks/usePopularDiscovery";
@@ -26,9 +27,10 @@ export function PopularPublications() {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
           {[0, 1].map((i) => (
-            <div
+            <Skeleton
               key={i}
-              className="h-[180px] animate-pulse rounded-card bg-ink-60/20"
+              variant="rounded"
+              sx={{ height: 180, borderRadius: "var(--radius-card)" }}
             />
           ))}
         </div>

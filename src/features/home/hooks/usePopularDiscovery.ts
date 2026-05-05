@@ -20,14 +20,13 @@ const TOP_PUBLICATIONS = 2;
 const TOP_TOPICS = 20;
 
 async function fetchPopularDiscovery(actors: ActorsValue): Promise<PopularDiscovery> {
-  const { getPostCoreActor, getPostBucketActor, getUserActor } = actors;
+  const { getPopularThisWeek, getLatestPosts, getPostsByPostIds, getUsersByHandles } = actors;
   // Sample from the 7-day popular window to match the Popular tab's canister
   // call (useArticles uses getPopularThisWeek). Keeps writers / publications /
   // topics rails thematically consistent with the articles grid.
-  const postCore = await getPostCoreActor();
   const [popular, latest] = await Promise.all([
-    postCore.getPopularThisWeek(0, SAMPLE_POPULAR).then((r) => r.posts).catch(() => []),
-    postCore.getLatestPosts(0, SAMPLE_LATEST).then((r) => r.posts).catch(() => []),
+    getPopularThisWeek(0, SAMPLE_POPULAR).then((r) => r.posts).catch(() => []),
+    getLatestPosts(0, SAMPLE_LATEST).then((r) => r.posts).catch(() => []),
   ]);
 
   // Popular first so its authors/publications sort to the top
@@ -43,10 +42,9 @@ async function fetchPopularDiscovery(actors: ActorsValue): Promise<PopularDiscov
   }
 
   const bucketResults = await Promise.all(
-    Array.from(byBucket.entries()).map(async ([id, ids]) => {
-      const actor = await getPostBucketActor(id);
-      return actor.getPostsByPostIds(Array.from(ids), false).catch(() => []);
-    }),
+    Array.from(byBucket.entries()).map(([id, ids]) =>
+      getPostsByPostIds(id, Array.from(ids), false).catch(() => []),
+    ),
   );
   const postMap = new Map(bucketResults.flat().map((p) => [p.postId, p]));
 
@@ -100,12 +98,9 @@ async function fetchPopularDiscovery(actors: ActorsValue): Promise<PopularDiscov
   const allHandles = Array.from(
     new Set([...topWritersPool, ...topPubsPool].map((h) => h.toLowerCase())),
   );
-  const userActor = await getUserActor();
   const users =
     allHandles.length > 0
-      ? await userActor
-          .getUsersByHandles(allHandles)
-          .catch(() => [] as UserListItem[])
+      ? await getUsersByHandles(allHandles).catch(() => [] as UserListItem[])
       : [];
   const byHandle = new Map(users.map((u) => [u.handle.toLowerCase(), u]));
 
