@@ -1,0 +1,45 @@
+type SupportedStandard = 
+ record {
+   name: text;
+   url: text;
+ };
+type SearchByTagsResponse = 
+ record {
+   postIds: vec text;
+   totalCount: text;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: nat;
+ };
+type IndexPostModel = 
+ record {
+   content: text;
+   postId: text;
+   subtitle: text;
+   tags: vec text;
+   title: text;
+ };
+type Icrc28TrustedOriginsResponse = record {trusted_origins: vec text;};
+service : {
+  acceptCycles: () -> ();
+  availableCycles: () -> (nat) query;
+  debug_print_everything: () -> () query;
+  getCanisterVersion: () -> (text) query;
+  getMaxMemorySize: () -> (nat) query;
+  getMemorySize: () -> (nat) query;
+  getRelatedPosts: (text) -> (vec text) query;
+  icrc10_supported_standards: () -> (vec SupportedStandard) query;
+  icrc28_trusted_origins: () -> (Icrc28TrustedOriginsResponse);
+  indexPost: (IndexPostModel) -> ();
+  indexPosts: (vec IndexPostModel) -> ();
+  isThereEnoughMemory: () -> (bool) query;
+  removePost: (text) -> ();
+  searchByTag: (text) -> (vec text) query;
+  searchByTagWithinPublication: (text, text) -> (vec text) composite_query;
+  searchByTags: (vec text, nat32, nat32) -> (SearchByTagsResponse) query;
+  searchPost: (text) -> (vec text) query;
+  searchPublicationPosts: (text, text) -> (vec text) composite_query;
+  setMaxMemorySize: (nat) -> (Result);
+}
