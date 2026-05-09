@@ -75,4 +75,18 @@ export const headerCopy = {
   login: "Login",
   getStarted: "Get started",
   openMenuAriaLabel: "Open menu",
+  userMenuAriaLabel: "Account menu",
+  logout: "Logout",
+};
+
+export const loginModalCopy = {
+  heading: "Welcome to Nuance",
+  body: "Register or login with one of the options below to start writing or explore unlimited knowledge.",
+  iiLabel: "Continue with Internet Identity",
+  googleLabel: "Continue with Google",
+  appleLabel: "Continue with Apple",
+  microsoftLabel: "Continue with Microsoft",
+  cancelLabel: "Cancel",
+  loadingLabel: "Signing in…",
+  errorFallback: "Sign-in failed. Please try again.",
 };

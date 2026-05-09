@@ -1,9 +1,17 @@
 import { Link } from "react-router-dom";
 import { LogoNuance } from "./icons/LogoNuance";
 import { IconSearch } from "./icons/IconSearch";
+import { UserMenu } from "./UserMenu";
+import { useAuth } from "../../contexts/AuthContext";
+import { useModal } from "../../services/modal";
+import { LoginModal } from "../LoginModal/LoginModal";
 import { headerCopy } from "../../constants/copy";
 
 export function Header() {
+  const { isAuthenticated } = useAuth();
+  const modal = useModal();
+  const openLogin = () => modal.open(<LoginModal />);
+
   return (
     <header className="flex h-16 w-full items-center border-b border-white-20 px-4 md:h-20 md:px-8 lg:h-[88px] lg:px-12">
       <Link to="/" aria-label={headerCopy.homeAriaLabel} className="shrink-0 text-white">
@@ -31,20 +39,28 @@ export function Header() {
         </button>
         <SearchInput className="hidden md:flex md:w-48 lg:w-[320px] xl:w-[405px]" />
 
-        {/* Login — hidden on mobile */}
-        <Link
-          to="/login"
-          className="hidden h-10 items-center justify-center rounded-card border border-white px-4 text-body font-medium text-white transition-colors hover:bg-white-10 md:flex lg:h-12 lg:px-6"
-        >
-          {headerCopy.login}
-        </Link>
+        {isAuthenticated ? (
+          <UserMenu />
+        ) : (
+          <>
+            {/* Login — hidden on mobile */}
+            <button
+              type="button"
+              onClick={openLogin}
+              className="hidden h-10 items-center justify-center rounded-card border border-white px-4 text-body font-medium text-white transition-colors hover:bg-white-10 md:flex lg:h-12 lg:px-6"
+            >
+              {headerCopy.login}
+            </button>
 
-        <Link
-          to="/signup"
-          className="flex h-10 items-center justify-center rounded-card bg-white px-3 text-sm font-medium text-brand-purple transition-opacity hover:opacity-90 md:px-4 md:text-body lg:h-12 lg:px-6"
-        >
-          {headerCopy.getStarted}
-        </Link>
+            <button
+              type="button"
+              onClick={openLogin}
+              className="flex h-10 items-center justify-center rounded-card bg-white px-3 text-sm font-medium text-brand-purple transition-opacity hover:opacity-90 md:px-4 md:text-body lg:h-12 lg:px-6"
+            >
+              {headerCopy.getStarted}
+            </button>
+          </>
+        )}
 
         {/* Hamburger — mobile only */}
         <button
