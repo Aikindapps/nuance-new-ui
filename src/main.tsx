@@ -6,6 +6,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import "./index.css";
 import { ActorsProvider } from "./contexts/ActorsContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ModalProvider } from "./services/modal";
 import { muiTheme } from "./theme";
 import { HomeLoggedOut } from "./routes/HomeLoggedOut";
 
@@ -29,7 +30,9 @@ createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ActorsProvider>
-            <RouterProvider router={router} />
+            <ModalProvider>
+              <RouterProvider router={router} />
+            </ModalProvider>
           </ActorsProvider>
         </AuthProvider>
       </QueryClientProvider>
