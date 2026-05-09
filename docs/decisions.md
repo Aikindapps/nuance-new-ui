@@ -697,3 +697,51 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - MUI components reference them via `var(--token-name)` in `sx` / `styleOverrides` / theme entries.
 - Tailwind utilities that need the token are derived automatically from the `@theme` declaration (e.g., `--color-brand-purple` → `bg-brand-purple`).
 - Do not add token values directly to the MUI theme literal except for values that are exclusively MUI-internal (e.g., breakpoint definitions where MUI's `breakpoints.values` differs from Tailwind's `screens`).
+
+---
+
+## #24 — Auth: @icp-sdk/auth@7.0.0 with II 2.0 + OpenID (Google, Apple, Microsoft); supersedes #20
+
+**Date:** 2026-05-09
+
+**Status:** Active. Supersedes #20.
+
+**Decision:** Authentication uses **`@icp-sdk/auth@7.0.0`** with Internet Identity 2.0 as the sole identity provider. End users see four sign-in options surfaced through the same `AuthClient` API: classic II (passkey/WebAuthn) and three OpenID providers — **Google, Apple, Microsoft** — bridged through II 2.0's OpenID flow. **Plug, NFID, Stoic, and other ICP wallets are out of scope** for this rebuild. Identity Kit (decision #20) is rejected.
+
+**Inputs:**
+
+- Decision #20 (2026-04-30) committed to Identity Kit conditional on a pre-implementation compatibility check with `@icp-sdk/core` (decision #10).
+- Compatibility check executed 2026-05-06: Identity Kit `@nfid/identitykit@1.0.18` declares peer dependencies on the deprecated `@dfinity/*` family (`@dfinity/auth-client`, `@dfinity/agent`, `@dfinity/identity`, `@dfinity/candid`, `@dfinity/principal`, `@dfinity/ledger-icp`, all `>=2.4.0`). Adopting it would install the legacy SDK alongside `@icp-sdk/core` — duplicate cryptography + agent code in the bundle, two parallel actor APIs in the codebase, and a direct conflict with decision #10's "no `@dfinity/agent`" stance.
+- `@icp-sdk/auth` source inspection (v7.0.0): `type OpenIdProvider = 'google' | 'apple' | 'microsoft'` — the three providers map exactly to the three OpenID slots the package supports.
+- The `internet-identity` skill at skills.internetcomputer.org explicitly recommends `@icp-sdk/auth >= 5.0.0` for II integration in modern ICP frontends.
+- Mr Nick's scope direction (2026-05-08): "I am interested only in implementing Internet Identity 2.0" + "Open ID and include google, apple and microsoft."
+
+**Options considered:**
+
+- A. Identity Kit (decision #20). **Rejected** — peer-dep on legacy `@dfinity/*` conflicts with decision #10; bundle bloat; dual actor APIs.
+- B. **`@icp-sdk/auth@7.0.0` with II 2.0 + OpenID (Google, Apple, Microsoft).** **Chosen.** Clean compat with decision #10 (peer-dep is `@icp-sdk/core@5.x`); minimal bundle footprint (`@icp-sdk/auth` + `idb` + `@icp-sdk/signer` only); matches the official skill recommendation; covers four sign-in paths through one library.
+- C. `@icp-sdk/auth` for II only, defer OpenID to a follow-up PR. **Rejected** — Mr Nick wants OpenID providers in PR #3; reduces UX regression vs old Nuance by giving non-crypto users (Google/Apple/Microsoft) a viable login path.
+- D. `@dfinity/oisy-wallet-signer` for ICRC-25 wallets (Plug/NFID/OISY) + `@icp-sdk/auth` for II. **Rejected** — Mr Nick excluded wallets from scope.
+
+**Rationale:**
+
+- Decision #10 stays intact: no legacy `@dfinity/*` packages.
+- Four sign-in paths (II + Google + Apple + Microsoft) map exactly to the Figma Login popup's four primary-button slots — no layout redesign needed on Page 8's `1:50034` popup.
+- `@icp-sdk/auth@7.0.0` is the version that ships II 2.0 OpenID support (`OpenIdProvider` type alias + `OPENID_PROVIDER_URLS` constant); 6.x predates it. The 6.1.0 → 7.0.0 bump is necessary for OpenID, not optional.
+- Bundle impact is minimal — `@icp-sdk/auth` itself is ~104kB unpacked; its only added dependencies are `idb` and `@icp-sdk/signer`, both small.
+
+**Trade-offs accepted:**
+
+- **Wallet support is a regression vs old Nuance.** Old nuance.xyz supports Internet Identity, Plug, and NFID. The rebuild ships II + OpenID only. Plug/NFID/Stoic users who want to keep their on-chain identity model can still log in via classic II (their II principal is the same). Users who authenticated through Plug/NFID directly will need to migrate or use a different login path. Acceptable given Mr Nick's explicit scope direction; re-evaluate if the SNS DAO requests wallet parity for production handoff.
+- **Microsoft tenant ID hardcoded to `common`** — accepts personal Microsoft accounts and any work/school accounts. Alternative was `consumers` (personal only). `common` is the right default for a public dapp.
+- **Major version bump 6.1.0 → 7.0.0** — incurs the 7.0 breaking changes cost up front. Necessary because OpenID support landed in 7.0.
+- One AuthClient instance per provider button (or reconstruction on click), because `openIdProvider` is set at AuthClient construction time, not at `signIn()` time. Implementation detail; encapsulated inside AuthContext.
+
+**How to apply:**
+
+- Imports: `@icp-sdk/auth/client` for `AuthClient`. Do not introduce `@nfid/identitykit` or any `@dfinity/*` package.
+- `AuthContext` exposes `login(provider?: 'google' | 'apple' | 'microsoft')` where `undefined` = classic II passkey. Internal implementation: construct a fresh `AuthClient` per `login()` call with the appropriate `openIdProvider` set, await `signIn()`, store the resulting `Identity` in context state.
+- Microsoft tenant ID: `'common'` (substituted into the URL `{tid}` placeholder).
+- Auth state lives in context state (decision #18 exception): `principal`, `identity`, `isAuthenticated`. Read everywhere via `useAuth()`.
+- When a future PR (PR #4 or later) introduces canister calls that require authentication, the `ActorsContext` per-method wrappers refactor to take `identity` from `AuthContext` and construct an authenticated `HttpAgent`. PR #3 leaves `ActorsContext` on the anonymous agent — no consumer yet.
+- If Plug/NFID parity is later requested, the path is `@dfinity/oisy-wallet-signer` (peer-dep on `@icp-sdk/core@5.x` — clean compat), not Identity Kit.
