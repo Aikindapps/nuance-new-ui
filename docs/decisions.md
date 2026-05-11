@@ -745,3 +745,45 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - Auth state lives in context state (decision #18 exception): `principal`, `identity`, `isAuthenticated`. Read everywhere via `useAuth()`.
 - When a future PR (PR #4 or later) introduces canister calls that require authentication, the `ActorsContext` per-method wrappers refactor to take `identity` from `AuthContext` and construct an authenticated `HttpAgent`. PR #3 leaves `ActorsContext` on the anonymous agent — no consumer yet.
 - If Plug/NFID parity is later requested, the path is `@dfinity/oisy-wallet-signer` (peer-dep on `@icp-sdk/core@5.x` — clean compat), not Identity Kit.
+
+---
+
+## #25 — Figma writes via the Plugin API use Manrope; GT Walsheim Trial is not loadable
+
+**Date:** 2026-05-11
+
+**Status:** Active. Companion to #15.
+
+**Decision:** Any text edit on the `UX-Overhaul-2` Figma file performed via the `use_figma` Plugin API path uses **Manrope** on the affected text nodes, not GT Walsheim Trial. The Figma file's intended design font (GT Walsheim Trial) is not loadable from the Plugin API runtime — `listAvailableFontsAsync()` returns zero matches against 7,739 available fonts. Manrope is already the project's documented permanent substitute (#15), available in seven weights including Medium.
+
+**Inputs:**
+
+- During PR #3 senior-review fix-up (2026-05-11), tried to update three button text nodes inside `1:50034` (NFID/Stoic/Bitfinity → Google/Apple/Microsoft per #24's auth provider scope).
+- `figma.loadFontAsync({ family: "GT Walsheim Trial", style: "Md" })` failed with: *"The font 'GT Walsheim Trial Md' could not be loaded… call figma.listAvailableFontsAsync() to see the list of available fonts."* The Plugin API runtime does not have GT Walsheim Trial installed. The font is present in the design because the original designer's machine has it; the runtime that executes `use_figma` does not share that font set.
+- Manrope's available styles (Regular, Medium, SemiBold, Bold, ExtraBold, Light, ExtraLight) cover every weight the Figma file uses on text.
+
+**Options considered:**
+
+- A. Abandon the Figma edit and add a `docs/page-8-audit.md` note. **Rejected** — leaves the Figma drift uncorrected. Every future Page 8 `get_design_context` call generates stale code that contradicts #24.
+- B. **Replace just the affected text nodes with Manrope.** **Chosen.** Edits succeed; introduces a visible per-edit font inconsistency until a wider Figma migration happens. Aligns the touched nodes incidentally with #15.
+- C. Wider Manrope migration across the entire popup (or the whole file). Rejected for the moment — bigger scope, deserves its own planning session and a follow-up decision entry. Captured as deferred work.
+- D. License GT Walsheim proper so the runtime can load it. Rejected — same cost/benefit logic as #15 (no proportional brand benefit at this stage; SNS DAO would also need the license).
+
+**Rationale:**
+
+- The Plugin API's font runtime is the binding constraint; we cannot load a font the runtime does not have. Fighting this would mean either avoiding Figma writes entirely or paying for GT Walsheim, neither of which is justified for the current scope.
+- The code already uses Manrope as the GT Walsheim substitute (#15). Per-node Manrope adoption in Figma at least does not introduce a *new* font into the design — it is the same substitute decided upon for the code.
+- The visible inconsistency is the honest cost of accepting reality over fighting it. It will compound across future edits and create the right pressure for a deliberate migration decision.
+
+**Trade-offs accepted:**
+
+- The three buttons inside `1:50034` (Google/Apple/Microsoft) now render in Manrope; the title, body, link, and the "Continue with internet identity" button still render in GT Walsheim Trial. Visible inconsistency inside one popup. Permanent until a wider Figma font migration.
+- Future Figma edits to other frames will create more Manrope/GT Walsheim drift unless an explicit migration pass happens.
+- If/when Aikin Dapps installs GT Walsheim Trial across the Figma plan or licenses GT Walsheim, revisit and revert by re-running edits with the proper family.
+
+**How to apply:**
+
+- Any `use_figma` text edit on this file: load the appropriate `Manrope / <weight>` and set both `fontName` and `characters`. Map GT Walsheim Trial styles to Manrope weights by the closest match (`Md` → `Medium`, `Bd` → `Bold`, `Rg` → `Regular`).
+- Do not attempt `loadFontAsync` on any GT Walsheim Trial style — it will throw and abort the script (atomic, no partial state).
+- If a single edit will introduce inconsistency in a previously-uniform frame, surface the trade-off to Mr Nick before writing. Same protocol as the "demand elegance" / "present options when there are trade-offs" guidance.
+- When the migration question comes up again, capture the broader plan in a new decision entry rather than amending this one.
