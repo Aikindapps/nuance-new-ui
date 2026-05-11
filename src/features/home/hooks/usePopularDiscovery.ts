@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useActors, type ActorsValue } from "../../../contexts/ActorsContext";
+import { useActors, type ActorsValue } from "../../../contexts/useActors";
 import type { UserListItem } from "../../../candid/User/User";
 import type { PostKeyProperties__1 } from "../../../candid/PostCore/PostCore";
 

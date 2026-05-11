@@ -67,7 +67,6 @@ export const ctaBannerCopy = {
 export const headerCopy = {
   homeAriaLabel: "Nuance home",
   navDiscover: "Discover",
-  navAbout: "About Nuance",
   searchAriaLabel: "Search",
   searchSubmitAriaLabel: "Submit search",
   searchInputAriaLabel: "Search Nuance",
@@ -75,4 +74,18 @@ export const headerCopy = {
   login: "Login",
   getStarted: "Get started",
   openMenuAriaLabel: "Open menu",
+  userMenuAriaLabel: "Account menu",
+  logout: "Logout",
+};
+
+export const loginModalCopy = {
+  heading: "Join or log in",
+  body: "Register or login with one of the options below to start writing or explore unlimited knowledge.",
+  iiLabel: "Continue with internet identity",
+  googleLabel: "Continue with Google",
+  appleLabel: "Continue with Apple",
+  microsoftLabel: "Continue with Microsoft",
+  helpLabel: "What is internet identity?",
+  helpUrl: "https://id.ai/about",
+  closeAriaLabel: "Close",
 };

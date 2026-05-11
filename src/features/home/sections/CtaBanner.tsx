@@ -1,8 +1,23 @@
-import { Link } from "react-router-dom";
 import Button from "@mui/material/Button";
+import { useAuth } from "../../../contexts/useAuth";
+import { useModal } from "../../../services/modal";
+import {
+  LoginModal,
+  LOGIN_MODAL_TITLE_ID,
+} from "../../../components/LoginModal/LoginModal";
 import { ctaBannerCopy } from "../../../constants/copy";
 
 export function CtaBanner() {
+  const { isAuthenticated } = useAuth();
+  const modal = useModal();
+
+  // The CTA targets logged-out users; hide once authed. PR #4 will split
+  // HomeLoggedOut from HomeLoggedIn cleanly and remove this internal check.
+  if (isAuthenticated) return null;
+
+  const openLogin = () =>
+    modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });
+
   return (
     <section className="bg-brand-gradient flex flex-col items-start gap-8 overflow-hidden rounded-[24px] p-8 text-white md:flex-row md:items-center md:justify-between md:p-12 lg:py-20 lg:pr-16 lg:pl-[66px] xl:pl-[120px]">
       <div className="max-w-[452px]">
@@ -14,8 +29,7 @@ export function CtaBanner() {
 
       <div className="flex w-full flex-col gap-5 md:w-[280px] md:shrink-0">
         <Button
-          component={Link}
-          to="/signup"
+          onClick={openLogin}
           variant="contained"
           fullWidth
           sx={{
@@ -29,8 +43,7 @@ export function CtaBanner() {
           {ctaBannerCopy.primary}
         </Button>
         <Button
-          component={Link}
-          to="/login"
+          onClick={openLogin}
           variant="outlined"
           fullWidth
           sx={{

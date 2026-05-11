@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@mui/material/styles";
 import "./index.css";
 import { ActorsProvider } from "./contexts/ActorsContext";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ModalProvider } from "./services/modal";
 import { muiTheme } from "./theme";
 import { HomeLoggedOut } from "./routes/HomeLoggedOut";
 
@@ -26,9 +28,13 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider theme={muiTheme}>
       <QueryClientProvider client={queryClient}>
-        <ActorsProvider>
-          <RouterProvider router={router} />
-        </ActorsProvider>
+        <AuthProvider>
+          <ActorsProvider>
+            <ModalProvider>
+              <RouterProvider router={router} />
+            </ModalProvider>
+          </ActorsProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   </StrictMode>,

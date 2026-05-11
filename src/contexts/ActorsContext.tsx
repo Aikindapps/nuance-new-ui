@@ -1,30 +1,19 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import {
   getPostBucketActor,
   getPostCoreActor,
   getUserActor,
 } from "../lib/actors";
-import type { GetPostsByFollowers } from "../candid/PostCore/PostCore";
-import type { PostBucketType__1 } from "../candid/PostBucket/PostBucket";
-import type { UserListItem } from "../candid/User/User";
+import { ActorsContext, type ActorsValue } from "./useActors";
 
 // Per-method backend call surface. Each consumer hook calls one of these
 // instead of importing actor factories directly. Decision #18: explicit
 // allowlist of backend calls; per-call swap/instrumentation seam; no leakage
 // of unauthenticated mutation methods that the frontend has no business
 // invoking. Adding a new backend call = adding it here.
-export type ActorsValue = {
-  getPopularThisWeek: (from: number, to: number) => Promise<GetPostsByFollowers>;
-  getLatestPosts: (from: number, to: number) => Promise<GetPostsByFollowers>;
-  getPostsByPostIds: (
-    bucketCanisterId: string,
-    postIds: string[],
-    includeDraft: boolean,
-  ) => Promise<Array<PostBucketType__1>>;
-  getUsersByHandles: (handles: string[]) => Promise<Array<UserListItem>>;
-};
-
-const ActorsContext = createContext<ActorsValue | null>(null);
+//
+// The ActorsContext constant + useActors() hook live in ./useActors.ts so
+// this file is a pure component file (Fast Refresh).
 
 export function ActorsProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ActorsValue>(
@@ -49,12 +38,4 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
     [],
   );
   return <ActorsContext.Provider value={value}>{children}</ActorsContext.Provider>;
-}
-
-export function useActors(): ActorsValue {
-  const v = useContext(ActorsContext);
-  if (!v) {
-    throw new Error("useActors() must be used inside <ActorsProvider>");
-  }
-  return v;
 }
