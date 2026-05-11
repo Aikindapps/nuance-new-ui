@@ -8,7 +8,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { AuthClient, type OpenIdProvider } from "@icp-sdk/auth/client";
+import {
+  AuthClient,
+  type AuthClientCreateOptions,
+  type OpenIdProvider,
+} from "@icp-sdk/auth/client";
 import type { Identity } from "@icp-sdk/core/agent";
 import type { Principal } from "@icp-sdk/core/principal";
 
@@ -22,6 +26,16 @@ import type { Principal } from "@icp-sdk/core/principal";
 // `openIdProvider` is bound at AuthClient construction time, not at signIn(),
 // so each login() call constructs a fresh AuthClient with the appropriate
 // provider. Sessions persist across instances via the shared IdbStorage default.
+
+// Disable the SDK's default idle handler. Its default would sign the user out
+// and reload the page after 10 min of inactivity (auth-client.js #idleManager
+// + idle-manager.ts default of 10 min) — catastrophic for a reading platform
+// where users routinely spend > 10 min on a single article. The 8-hour
+// delegation TTL gives a natural session ceiling; idle-driven re-auth UX can
+// be revisited once the toast service (decision #22) has a real consumer.
+const IDLE_OPTIONS: AuthClientCreateOptions["idleOptions"] = {
+  disableIdle: true,
+};
 
 type AuthStatus = "loading" | "unauthenticated" | "authenticated" | "error";
 
@@ -58,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const client = new AuthClient();
+        const client = new AuthClient({ idleOptions: IDLE_OPTIONS });
         if (cancelled) return;
         const restored = await client.getIdentity();
         if (cancelled) return;
@@ -85,9 +99,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     setStatus("loading");
     try {
-      const client = new AuthClient(
-        provider ? { openIdProvider: provider } : {},
-      );
+      const client = new AuthClient({
+        idleOptions: IDLE_OPTIONS,
+        ...(provider ? { openIdProvider: provider } : {}),
+      });
       const next = await client.signIn();
       if (!mountedRef.current) return;
       const nextPrincipal = next.getPrincipal();
@@ -105,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setError(null);
     try {
-      const client = new AuthClient();
+      const client = new AuthClient({ idleOptions: IDLE_OPTIONS });
       await client.signOut();
       if (!mountedRef.current) return;
       setIdentity(null);
