@@ -6,6 +6,10 @@ import { loginModalCopy } from "../../constants/copy";
 import { IconClose } from "../ui/icons/IconClose";
 import type { OpenIdProvider } from "@icp-sdk/auth/client";
 
+// DOM id used by the Modal service's aria-labelledby. Exported so the
+// open() callers can reference the same constant.
+export const LOGIN_MODAL_TITLE_ID = "login-modal-title";
+
 // First consumer of the Modal service (decision #22) and AuthContext.
 //
 // Pixel-mapped to Figma node 1:50034 ("Popup" frame inside Page 8). The
@@ -59,7 +63,12 @@ export function LoginModal() {
     <div className="w-[696px] max-w-[calc(100vw-32px)] rounded-[24px] bg-white px-6 py-8 md:px-12 md:py-10">
       {/* Header row: title + close (Figma layer "Header" inside NUR / Popup) */}
       <div className="flex items-center justify-between">
-        <h2 className="text-title-md font-bold text-ink">{loginModalCopy.heading}</h2>
+        <h2
+          id={LOGIN_MODAL_TITLE_ID}
+          className="text-title-md font-bold text-ink"
+        >
+          {loginModalCopy.heading}
+        </h2>
         <IconButton
           onClick={modal.close}
           aria-label={loginModalCopy.closeAriaLabel}

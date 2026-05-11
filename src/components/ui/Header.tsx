@@ -4,13 +4,14 @@ import { IconSearch } from "./icons/IconSearch";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "../../contexts/AuthContext";
 import { useModal } from "../../services/modal";
-import { LoginModal } from "../LoginModal/LoginModal";
+import { LoginModal, LOGIN_MODAL_TITLE_ID } from "../LoginModal/LoginModal";
 import { headerCopy } from "../../constants/copy";
 
 export function Header() {
   const { isAuthenticated } = useAuth();
   const modal = useModal();
-  const openLogin = () => modal.open(<LoginModal />);
+  const openLogin = () =>
+    modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });
 
   return (
     <header className="flex h-16 w-full items-center border-b border-white-20 px-4 md:h-20 md:px-8 lg:h-[88px] lg:px-12">

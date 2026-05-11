@@ -128,6 +128,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("unauthenticated");
     } catch (err) {
       if (!mountedRef.current) return;
+      // Clear identity/principal even on failure so downstream consumers
+      // (e.g. PR #4's authed ActorsContext) don't see a stale identity for
+      // a status="error" user. The local session is gone from our perspective
+      // regardless of whether signOut() persisted the deletion.
+      setIdentity(null);
+      setPrincipal(null);
       setError(err instanceof Error ? err.message : "Sign-out failed");
       setStatus("error");
       throw err;

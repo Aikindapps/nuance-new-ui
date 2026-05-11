@@ -1,1 +1,6 @@
-export { ModalProvider, useModal, type ModalContextValue } from "./ModalProvider";
+export {
+  ModalProvider,
+  useModal,
+  type ModalContextValue,
+  type ModalOpenOptions,
+} from "./ModalProvider";

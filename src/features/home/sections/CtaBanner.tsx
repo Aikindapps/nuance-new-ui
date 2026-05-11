@@ -1,7 +1,10 @@
 import Button from "@mui/material/Button";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useModal } from "../../../services/modal";
-import { LoginModal } from "../../../components/LoginModal/LoginModal";
+import {
+  LoginModal,
+  LOGIN_MODAL_TITLE_ID,
+} from "../../../components/LoginModal/LoginModal";
 import { ctaBannerCopy } from "../../../constants/copy";
 
 export function CtaBanner() {
@@ -12,7 +15,8 @@ export function CtaBanner() {
   // HomeLoggedOut from HomeLoggedIn cleanly and remove this internal check.
   if (isAuthenticated) return null;
 
-  const openLogin = () => modal.open(<LoginModal />);
+  const openLogin = () =>
+    modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });
 
   return (
     <section className="bg-brand-gradient flex flex-col items-start gap-8 overflow-hidden rounded-[24px] p-8 text-white md:flex-row md:items-center md:justify-between md:p-12 lg:py-20 lg:pr-16 lg:pl-[66px] xl:pl-[120px]">
