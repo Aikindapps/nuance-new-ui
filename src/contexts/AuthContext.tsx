@@ -43,6 +43,20 @@ const IDLE_OPTIONS: AuthClientCreateOptions["idleOptions"] = {
   disableIdle: true,
 };
 
+// Lazy singleton for the default (no-openIdProvider) AuthClient. Reused for
+// session restore, classic-II sign-in, and sign-out, which all share the same
+// IdbStorage. OpenID sign-in still constructs a fresh AuthClient per call
+// because `openIdProvider` is bound at construction time (decision #24, and
+// confirmed against @icp-sdk/auth@7.0.0's d.ts — no setter, signIn() does not
+// accept it). Reduces the common-path AuthClient count from 3 to 1.
+let defaultClient: AuthClient | null = null;
+function getDefaultClient(): AuthClient {
+  if (!defaultClient) {
+    defaultClient = new AuthClient({ idleOptions: IDLE_OPTIONS });
+  }
+  return defaultClient;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [identity, setIdentity] = useState<Identity | null>(null);
@@ -63,9 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const client = new AuthClient({ idleOptions: IDLE_OPTIONS });
-        if (cancelled) return;
-        const restored = await client.getIdentity();
+        const restored = await getDefaultClient().getIdentity();
         if (cancelled) return;
         const restoredPrincipal = restored.getPrincipal();
         if (restoredPrincipal.isAnonymous()) {
@@ -90,10 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     setStatus("loading");
     try {
-      const client = new AuthClient({
-        idleOptions: IDLE_OPTIONS,
-        ...(provider ? { openIdProvider: provider } : {}),
-      });
+      // OpenID logins construct a fresh AuthClient (openIdProvider is bound at
+      // construction time, see decision #24). Classic II reuses the default
+      // singleton — same IdbStorage, no benefit to a fresh instance.
+      const client = provider
+        ? new AuthClient({ idleOptions: IDLE_OPTIONS, openIdProvider: provider })
+        : getDefaultClient();
       const next = await client.signIn();
       if (!mountedRef.current) return;
       const nextPrincipal = next.getPrincipal();
@@ -111,8 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setError(null);
     try {
-      const client = new AuthClient({ idleOptions: IDLE_OPTIONS });
-      await client.signOut();
+      await getDefaultClient().signOut();
       if (!mountedRef.current) return;
       setIdentity(null);
       setPrincipal(null);
