@@ -787,3 +787,48 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - Do not attempt `loadFontAsync` on any GT Walsheim Trial style — it will throw and abort the script (atomic, no partial state).
 - If a single edit will introduce inconsistency in a previously-uniform frame, surface the trade-off to Mr Nick before writing. Same protocol as the "demand elegance" / "present options when there are trade-offs" guidance.
 - When the migration question comes up again, capture the broader plan in a new decision entry rather than amending this one.
+
+---
+
+## #26 — Auth-aware route branching + stub-routes for deferred features
+
+**Date:** 2026-05-11
+
+**Status:** Active
+
+**Decision:** The home route(s) — `/` and `/new` — branch on `useAuth().isAuthenticated` at the route level, rendering `HomeLoggedOut` for anonymous visitors and `HomeLoggedIn` for authenticated ones. Tabs inside `HomeLoggedIn` are real URLs (per decision #12), not React state. When the design includes a feature whose implementation is deferred (Your mix tab content depends on the recs algorithm; the article editor depends on Lexical from the decision #22 backlog), the route still exists and the affiliated UI surface stays visible — the route renders a minimal stub message instead of being hidden or disabled. This is the project-wide pattern for "design ships ahead of implementation."
+
+**Inputs:**
+
+- PR #3 merged 2026-05-11 with auth + LoginModal. PR #4 starts on the logged-in home (Figma `1:50044`).
+- Figma recon of `1:50044` revealed the screen has three sections that depend on personalization (Your mix tab content, Recommended writers row, Recommended publications row) and a Recommended article highlight, plus a prominent "Create a new article" write-CTA whose destination (Lexical article editor) is in the decision #22 backlog.
+- No canister-side recommendation API exists (project lesson 2026-05-11). Recs must be implemented client-side, with the algorithm choice itself worth its own decision entry. Bundling that algorithm work into PR #4 was rejected during scoping — it bloats the PR and conflates layout from recommendation strategy.
+- The earlier PR #3 review (2026-05-11) flagged a "broken `Link to="/about"`" as a Minor — a real route that points to a non-existent destination. The opposite failure mode (a feature in the Figma that the code refuses to acknowledge exists) is just as bad for users and worse for design-drift detection.
+
+**Options considered:**
+
+- A. Single `/` route, internally branches in JSX to render the right tree. **Rejected** — couples auth-state inspection deeply into the home component; harder to reason about which surface is rendering at any URL.
+- B. **Auth-aware route branching at the router level; deferred features get their own real routes that render stub content.** **Chosen.** `/` and `/new` switch at the route level. `/your-mix` and `/write` exist as real routes whose components render a "Coming soon" surface.
+- C. Hide deferred features entirely until they ship. **Rejected** — drifts the running code from the canonical Figma design; future sessions encountering `1:50044` see 3 tabs and have to rediscover that one is "hidden in code." Forces unnecessary diff churn when PR #5 lands.
+- D. Disabled-but-visible buttons/tabs without dedicated routes. **Rejected** — feels hostile (visibly invites a click that does nothing); also doesn't fix the SEO concern (no real URL for the deferred surface).
+
+**Rationale:**
+
+- Auth-state-aware route branching keeps `HomeLoggedOut` and `HomeLoggedIn` as independent React trees, each with its own data dependencies. The router file becomes the single place to read what URL serves which audience.
+- Stub-routes preserve the design fidelity at the URL level. Future sessions can navigate to `/your-mix` and see the design intent (the tab exists, the URL is stable, the route is named) without confusion about whether the feature is "missing" or "deferred." When PR #5 ships, the stub component is replaced and no consumer-facing URL changes.
+- Real URLs for deferred surfaces preserve the decision #12 SEO posture: every indexable piece of the product is URL-addressable. Even "Coming soon" pages are valid landing pages — they just communicate state instead of content.
+- The pattern is reusable. Future deferred features (the article editor, notification panel, settings screen) follow the same shape: real route, minimal stub component, replace when implementation lands.
+
+**Trade-offs accepted:**
+
+- Stub-routes mean users discover features that don't yet work. Acceptable because the stub messaging explicitly says "coming soon" — better than silent absence in the running code while the Figma shows the feature, which is the failure mode that bites future sessions hardest.
+- Two trees (HomeLoggedOut, HomeLoggedIn) share a non-trivial amount of structure (Header, Topics, infinite-scroll grid). Some duplication accepted; refactor toward shared composition only when the second/third instance proves the abstraction is right. Premature "Home base class" rejected.
+- The auth-aware router branch fires a re-render on login/logout — the route component swaps even though the URL is unchanged. Acceptable; React Router handles this cleanly.
+- Following tab is the default landing for an authed user (resolved 2026-05-11 in the PR #4 scope conversation). Cold-start users with 0 follows land on an empty tab. Mitigated by an explicit empty-state message ("You are not yet following any writers, publications or topics. When you do, they will show up here.") rather than a blank screen.
+
+**How to apply:**
+
+- The router file (`src/main.tsx` or wherever routes are declared) is the source of truth for which audience sees which surface at each URL. A new route serving both audiences gets a `<Home />`-style branch component; a route serving only one audience gets a guard that redirects the other audience to the closest meaningful URL (e.g., `/your-mix` is auth-gated → anon visitors redirect to `/`).
+- When a Figma frame contains a feature that depends on un-built infrastructure: add a real route, a minimal stub component (`<Stub message="..." />` or feature-specific), and put the actual implementation file path on the stub as a TODO so the next session knows where to land. Do not hide the feature from the UI.
+- When PR #N ships the deferred implementation: replace the stub component import in the route declaration, delete the stub file, run the build. No URL changes, no callers to update.
+- Companion to decision #12 (SEO + real URLs): stub-routes count as real URLs and get the same per-route `<title>` + `<meta description>` treatment. A "Coming soon" page still tells crawlers and users what the URL is about.
