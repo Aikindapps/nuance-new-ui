@@ -67,7 +67,6 @@ export const ctaBannerCopy = {
 export const headerCopy = {
   homeAriaLabel: "Nuance home",
   navDiscover: "Discover",
-  navAbout: "About Nuance",
   searchAriaLabel: "Search",
   searchSubmitAriaLabel: "Submit search",
   searchInputAriaLabel: "Search Nuance",
@@ -89,6 +88,4 @@ export const loginModalCopy = {
   helpLabel: "What is internet identity?",
   helpUrl: "https://id.ai/about",
   closeAriaLabel: "Close",
-  loadingLabel: "Signing in…",
-  errorFallback: "Sign-in failed. Please try again.",
 };

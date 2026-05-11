@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -15,6 +13,11 @@ import {
 } from "@icp-sdk/auth/client";
 import type { Identity } from "@icp-sdk/core/agent";
 import type { Principal } from "@icp-sdk/core/principal";
+import {
+  AuthContext,
+  type AuthContextValue,
+  type AuthStatus,
+} from "./useAuth";
 
 // Auth state lives in context state (not as a query) per decision #18 exception:
 // every screen needs the answer "is the user logged in?" at minimal latency.
@@ -26,6 +29,9 @@ import type { Principal } from "@icp-sdk/core/principal";
 // `openIdProvider` is bound at AuthClient construction time, not at signIn(),
 // so each login() call constructs a fresh AuthClient with the appropriate
 // provider. Sessions persist across instances via the shared IdbStorage default.
+//
+// The AuthContext constant + useAuth() hook live in ./useAuth.ts so this file
+// is a pure component file (Fast Refresh).
 
 // Disable the SDK's default idle handler. Its default would sign the user out
 // and reload the page after 10 min of inactivity (auth-client.js #idleManager
@@ -36,21 +42,6 @@ import type { Principal } from "@icp-sdk/core/principal";
 const IDLE_OPTIONS: AuthClientCreateOptions["idleOptions"] = {
   disableIdle: true,
 };
-
-type AuthStatus = "loading" | "unauthenticated" | "authenticated" | "error";
-
-export type AuthContextValue = {
-  status: AuthStatus;
-  identity: Identity | null;
-  principal: Principal | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  login: (provider?: OpenIdProvider) => Promise<void>;
-  logout: () => Promise<void>;
-};
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
@@ -155,12 +146,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextValue {
-  const v = useContext(AuthContext);
-  if (!v) {
-    throw new Error("useAuth() must be used inside <AuthProvider>");
-  }
-  return v;
 }

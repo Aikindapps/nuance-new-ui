@@ -741,7 +741,7 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 
 - Imports: `@icp-sdk/auth/client` for `AuthClient`. Do not introduce `@nfid/identitykit` or any `@dfinity/*` package.
 - `AuthContext` exposes `login(provider?: 'google' | 'apple' | 'microsoft')` where `undefined` = classic II passkey. Internal implementation: construct a fresh `AuthClient` per `login()` call with the appropriate `openIdProvider` set, await `signIn()`, store the resulting `Identity` in context state.
-- Microsoft tenant ID: `'common'` (substituted into the URL `{tid}` placeholder).
+- **Microsoft tenant resolution happens server-side at id.ai.** `@icp-sdk/auth` passes the `{tid}` placeholder in `OPENID_PROVIDER_URLS.microsoft` verbatim to id.ai as the `openid` search param; no client-side substitution. `AuthContext` stays config-free for this. (Confirmed working in runtime test 2026-05-11 per `tasks/todo.md`. Earlier wording of this bullet implied our code did the substitution — corrected during PR #3 senior-review fix-up.)
 - Auth state lives in context state (decision #18 exception): `principal`, `identity`, `isAuthenticated`. Read everywhere via `useAuth()`.
 - When a future PR (PR #4 or later) introduces canister calls that require authentication, the `ActorsContext` per-method wrappers refactor to take `identity` from `AuthContext` and construct an authenticated `HttpAgent`. PR #3 leaves `ActorsContext` on the anonymous agent — no consumer yet.
 - If Plug/NFID parity is later requested, the path is `@dfinity/oisy-wallet-signer` (peer-dep on `@icp-sdk/core@5.x` — clean compat), not Identity Kit.

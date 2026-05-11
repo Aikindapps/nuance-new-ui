@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useActors, type ActorsValue } from "../../../contexts/ActorsContext";
+import { useActors, type ActorsValue } from "../../../contexts/useActors";
 import type { Article } from "../types";
 
 type Variant = "popular" | "new";

@@ -1,6 +1,6 @@
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/useAuth";
 import { useModal } from "../../services/modal";
 import { loginModalCopy } from "../../constants/copy";
 import { IconClose } from "../ui/icons/IconClose";
@@ -132,12 +132,8 @@ export function LoginModal() {
       </div>
 
       {error && (
-        <p
-          role="alert"
-          className="mt-6 text-center text-body"
-          style={{ color: "#c62828" }}
-        >
-          {error || loginModalCopy.errorFallback}
+        <p role="alert" className="mt-6 text-center text-body text-error">
+          {error}
         </p>
       )}
     </div>

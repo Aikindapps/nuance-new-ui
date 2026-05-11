@@ -1,5 +1,5 @@
 import Button from "@mui/material/Button";
-import { useAuth } from "../../../contexts/AuthContext";
+import { useAuth } from "../../../contexts/useAuth";
 import { useModal } from "../../../services/modal";
 import {
   LoginModal,

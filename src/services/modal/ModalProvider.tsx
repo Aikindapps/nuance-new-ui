@@ -1,12 +1,15 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 import Dialog from "@mui/material/Dialog";
+import {
+  ModalContext,
+  type ModalContextValue,
+  type ModalOpenOptions,
+} from "./useModal";
 
 // Programmatic modal service — decision #22 first consumer.
 //
@@ -20,18 +23,9 @@ import Dialog from "@mui/material/Dialog";
 // `ariaLabelledBy` should point to the id of the heading inside the modal
 // content so screen readers announce a meaningful title when the modal
 // opens. Optional but strongly encouraged for every modal.
-
-export type ModalOpenOptions = {
-  ariaLabelledBy?: string;
-};
-
-export type ModalContextValue = {
-  open: (content: ReactNode, opts?: ModalOpenOptions) => void;
-  close: () => void;
-  isOpen: boolean;
-};
-
-const ModalContext = createContext<ModalContextValue | null>(null);
+//
+// The ModalContext constant + useModal() hook live in ./useModal.ts so this
+// file is a pure component file (Fast Refresh).
 
 type ActiveModal = { content: ReactNode; ariaLabelledBy?: string };
 
@@ -74,12 +68,4 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       </Dialog>
     </ModalContext.Provider>
   );
-}
-
-export function useModal(): ModalContextValue {
-  const v = useContext(ModalContext);
-  if (!v) {
-    throw new Error("useModal() must be used inside <ModalProvider>");
-  }
-  return v;
 }

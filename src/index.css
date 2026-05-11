@@ -54,6 +54,10 @@
   --color-white-20: rgba(255, 255, 255, 0.2);
   --color-white-10: rgba(255, 255, 255, 0.1);
 
+  /* Error — used inline in flow text. Matches MUI's red 800 ramp for
+     adequate contrast on white backgrounds (decision #21 centralization). */
+  --color-error: #c62828;
+
   /* Radii */
   --radius-card: 8px;
   --radius-pill: 9999px;

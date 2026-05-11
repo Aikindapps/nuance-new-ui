@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { LogoNuance } from "./icons/LogoNuance";
 import { IconSearch } from "./icons/IconSearch";
 import { UserMenu } from "./UserMenu";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/useAuth";
 import { useModal } from "../../services/modal";
 import { LoginModal, LOGIN_MODAL_TITLE_ID } from "../LoginModal/LoginModal";
 import { headerCopy } from "../../constants/copy";
@@ -23,9 +23,6 @@ export function Header() {
       <nav className="ml-6 hidden items-center gap-6 font-bold text-white md:flex lg:ml-10 lg:gap-10">
         <Link to="/" className="text-body hover:underline lg:text-lg">
           {headerCopy.navDiscover}
-        </Link>
-        <Link to="/about" className="text-body text-white-80 hover:underline lg:text-lg">
-          {headerCopy.navAbout}
         </Link>
       </nav>
 
