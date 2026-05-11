@@ -13,6 +13,7 @@
        - NUR / Article summary (node 1:51808)  — 2026-04-21
        - NUR / Header          (node 1:51866)  — 2026-04-21
        - NUR / Tag             (node 1:51836)  — 2026-04-21
+       - NUR / Popup + Buttons (node 1:50034)  — 2026-05-11 (LoginModal)
      ------------------------------------------------------------------ */
 
   /* Typography
@@ -31,6 +32,9 @@
   --text-title-sm: 24px;
   --text-title-sm--line-height: 36px;
   --text-title-sm--letter-spacing: -0.48px;
+  --text-title-md: 32px;
+  --text-title-md--line-height: 40px;
+  --text-title-md--letter-spacing: -0.64px;
   --text-title-lg: 36px;
   --text-title-lg--line-height: 44px;
   --text-title-lg--letter-spacing: -0.72px;
@@ -55,9 +59,12 @@
   --radius-pill: 9999px;
 
   /* Shadows — Figma "Purple glow light" used on author/publication cards.
-     Hover is a custom intensified variant used throughout the home page. */
+     Hover is a custom intensified variant used throughout the home page.
+     "Medium" is Figma's stronger glow used on NUR / Button primary
+     (LoginModal node 1:50034). */
   --shadow-purple-glow: 0px 3px 10px -2px rgba(84, 5, 212, 0.1);
   --shadow-purple-glow-hover: 0px 6px 18px -2px rgba(84, 5, 212, 0.2);
+  --shadow-purple-glow-medium: 0px 3px 10px -2px rgba(84, 5, 212, 0.4);
 }
 
 html,
@@ -84,5 +91,15 @@ body {
     -45.37deg,
     var(--color-brand-purple-light) 0.64%,
     var(--color-brand-purple) 59.55%
+  );
+}
+
+/* Same purple gradient, button-specific angle.
+   Source: NUR / Button primary inside Login popup, node 1:50039 (and siblings). */
+@utility bg-brand-gradient-button {
+  background-image: linear-gradient(
+    -31.886deg,
+    var(--color-brand-purple-light) 0.643%,
+    var(--color-brand-purple) 59.555%
   );
 }

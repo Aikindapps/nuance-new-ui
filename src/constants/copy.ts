@@ -80,13 +80,15 @@ export const headerCopy = {
 };
 
 export const loginModalCopy = {
-  heading: "Welcome to Nuance",
+  heading: "Join or log in",
   body: "Register or login with one of the options below to start writing or explore unlimited knowledge.",
-  iiLabel: "Continue with Internet Identity",
+  iiLabel: "Continue with internet identity",
   googleLabel: "Continue with Google",
   appleLabel: "Continue with Apple",
   microsoftLabel: "Continue with Microsoft",
-  cancelLabel: "Cancel",
+  helpLabel: "What is internet identity?",
+  helpUrl: "https://id.ai/about",
+  closeAriaLabel: "Close",
   loadingLabel: "Signing in…",
   errorFallback: "Sign-in failed. Please try again.",
 };
