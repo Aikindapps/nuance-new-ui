@@ -59,6 +59,11 @@
      adequate contrast on white backgrounds (decision #21 centralization). */
   --color-error: #c62828;
 
+  /* Notification badge dot — Figma 1:50117 (UserMenu unread indicator).
+     Brighter red than the error color so it reads as a status badge rather
+     than a problem state. */
+  --color-notification: #E20E0E;
+
   /* Radii */
   --radius-card: 8px;
   --radius-pill: 9999px;
