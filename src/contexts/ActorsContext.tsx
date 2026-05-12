@@ -53,6 +53,18 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await postCorePromise;
         return actor.getLatestPosts(from, to);
       },
+      getPostsByFollowers: async (handles, from, to) => {
+        const actor = await postCorePromise;
+        return actor.getPostsByFollowers(handles, from, to);
+      },
+      getMyFollowingTagsPostKeyProperties: async (from, to) => {
+        const actor = await postCorePromise;
+        return actor.getMyFollowingTagsPostKeyProperties(from, to);
+      },
+      getMyTags: async () => {
+        const actor = await postCorePromise;
+        return actor.getMyTags();
+      },
       getPostsByPostIds: async (bucketCanisterId, postIds, includeDraft) => {
         const actor = await getBucket(bucketCanisterId);
         return actor.getPostsByPostIds(postIds, includeDraft);

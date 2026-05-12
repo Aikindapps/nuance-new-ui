@@ -3,6 +3,8 @@ import { Tag } from "../components/ui/Tag";
 import { usePopularDiscovery } from "../features/home/hooks/usePopularDiscovery";
 import { WelcomeBanner } from "../features/home/sections/WelcomeBanner";
 import { WriteCtaBanner } from "../features/home/sections/WriteCtaBanner";
+import { HomeTabBar } from "../features/home/sections/HomeTabBar";
+import { FollowingTab } from "../features/home/sections/FollowingTab";
 import { heroCopy, homeLoggedInCopy } from "../constants/copy";
 
 export type HomeLoggedInTab = "following" | "new" | "your-mix";
@@ -64,19 +66,22 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
         <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-8 md:py-12 lg:px-14 lg:py-16">
           <WriteCtaBanner />
           <div className="mt-12 md:mt-14 lg:mt-16">
-            <Placeholder label="Phase 5 — HomeTabBar (3 tabs)" />
+            <HomeTabBar />
           </div>
           <div className="mt-10 md:mt-12">
-            <Placeholder
-              label={`Phase 5/6 — Tab content for "${tab}"`}
-              detail={
-                tab === "your-mix"
-                  ? homeLoggedInCopy.yourMixStubHeading
-                  : tab === "following"
-                    ? "Phase 5 — Following feed (first authed canister consumer)"
-                    : "Phase 6 — New tab (reuses HomeLoggedOut's New layout)"
-              }
-            />
+            {tab === "following" && <FollowingTab />}
+            {tab === "new" && (
+              <Placeholder
+                label="Phase 6 — New tab"
+                detail="Reuses HomeLoggedOut's New layout. Lands next."
+              />
+            )}
+            {tab === "your-mix" && (
+              <Placeholder
+                label={homeLoggedInCopy.yourMixStubHeading}
+                detail={homeLoggedInCopy.yourMixStubBody}
+              />
+            )}
           </div>
         </div>
       </main>
