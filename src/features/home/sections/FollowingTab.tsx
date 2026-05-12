@@ -1,129 +1,48 @@
 import Skeleton from "@mui/material/Skeleton";
-import { ArticleGrid } from "./ArticleGrid";
+import { ArticleFeed } from "./ArticleFeed";
 import { useFollowing } from "../hooks/useFollowing";
 import { useMyProfile } from "../hooks/useMyProfile";
 import { useMyTags } from "../hooks/useMyTags";
-import { useInView } from "../../../lib/useInView";
 import { homeLoggedInCopy, homeStatus } from "../../../constants/copy";
 
 // Phase 5 — Following tab content. First authed-canister consumer.
 //
 // Sources merged: writers/publications you follow + topics you follow.
 // useFollowing returns a single chronological feed across both sources.
-//
-// State coverage:
-//   - Profile or tags loading         → skeleton
-//   - 0 writers AND 0 topics followed → locked empty-state copy
-//   - Sources exist + feed loading    → skeleton
-//   - Sources exist + populated       → 2 hero + 3 + 3 featured grid +
-//                                       infinite scroll of 6-per-page rows
-//   - Errors at any layer             → ErrorState
-//
-// Cold-start UX: most authed users on the new frontend land in the
-// "0 writers AND 0 topics" branch (per decision #27, local dev principals
-// are fresh; in prod, new II accounts are similar). The empty-state copy
-// nudges them to discover writers/topics via the other tabs and the
-// Topics rail.
+// Pre-feed gating (profile + tags loaded; at least one source non-empty)
+// happens here; the actual feed render is delegated to ArticleFeed which
+// is shared with NewTab.
 
 export function FollowingTab() {
   const profile = useMyProfile();
   const tags = useMyTags();
   const query = useFollowing();
 
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = query;
-
-  const sentinelRef = useInView(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  });
-
   // Wait for profile + tags to settle before deciding which state to render —
   // useFollowing is disabled until both succeed.
-  if (profile.isLoading || tags.isLoading) return <LoadingSkeleton />;
-  if (profile.isError) return <ErrorState message={String(profile.error)} />;
-  if (tags.isError) return <ErrorState message={String(tags.error)} />;
+  if (profile.isLoading || tags.isLoading) return <GatingSkeleton />;
+  if (profile.isError) return <GatingError message={String(profile.error)} />;
+  if (tags.isError) return <GatingError message={String(tags.error)} />;
 
   const followers = profile.data?.followersArray ?? [];
   const tagList = tags.data ?? [];
   if (followers.length === 0 && tagList.length === 0) {
-    return <EmptyState message={homeLoggedInCopy.followingEmpty} />;
+    return <GatingEmpty message={homeLoggedInCopy.followingEmpty} />;
   }
-
-  if (isLoading) return <LoadingSkeleton />;
-  if (isError) return <ErrorState message={String(error)} />;
-
-  const firstPage = data?.pages[0];
-  if (!firstPage || firstPage.articles.length === 0) {
-    return <EmptyState message={homeLoggedInCopy.followingEmpty} />;
-  }
-
-  const heroArticles = firstPage.articles.slice(0, 2);
-  const firstRow = firstPage.articles.slice(2, 5);
-  const secondRow = firstPage.articles.slice(5, 8);
 
   return (
-    <>
-      <div className="flex flex-col gap-12 md:gap-14 lg:gap-16">
-        {heroArticles.length > 0 && (
-          <ArticleGrid
-            articles={heroArticles}
-            layout="hero"
-            ariaLabel="Latest from people you follow"
-          />
-        )}
-        {firstRow.length > 0 && (
-          <ArticleGrid
-            articles={firstRow}
-            layout="grid"
-            ariaLabel="More from people you follow"
-          />
-        )}
-        {secondRow.length > 0 && (
-          <ArticleGrid
-            articles={secondRow}
-            layout="grid"
-            ariaLabel="More from people you follow, continued"
-          />
-        )}
-      </div>
-
-      <div className="mt-12 flex flex-col gap-12 md:mt-14 md:gap-14 lg:mt-16 lg:gap-16">
-        {data.pages.slice(1).map((page, i) => (
-          <ArticleGrid
-            key={`page-${i + 1}`}
-            articles={page.articles}
-            layout="grid"
-            ariaLabel={`More from people you follow, page ${i + 2}`}
-          />
-        ))}
-      </div>
-
-      {hasNextPage && (
-        <div
-          ref={sentinelRef}
-          className="mt-12 flex items-center justify-center py-10 text-body text-ink-60"
-          aria-live="polite"
-        >
-          {isFetchingNextPage ? homeStatus.loadingMore : homeStatus.scrollForMore}
-        </div>
-      )}
-      {!hasNextPage && data.pages.length > 1 && (
-        <p className="mt-12 py-10 text-center text-body text-ink-60">
-          {homeStatus.allCaughtUp}
-        </p>
-      )}
-    </>
+    <ArticleFeed
+      query={query}
+      emptyMessage={homeLoggedInCopy.followingEmpty}
+      feedLabel="Articles from people and topics you follow"
+    />
   );
 }
 
-function LoadingSkeleton() {
+// Pre-feed states. Mirror the ArticleFeed visuals so the transition between
+// "waiting for profile" and "rendering feed" doesn't reflow weirdly.
+
+function GatingSkeleton() {
   return (
     <div
       className="flex flex-col gap-12 md:gap-14 lg:gap-16"
@@ -165,7 +84,7 @@ function SkeletonCard({ large = false }: { large?: boolean }) {
   );
 }
 
-function ErrorState({ message }: { message: string }) {
+function GatingError({ message }: { message: string }) {
   return (
     <div
       role="alert"
@@ -182,7 +101,7 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
-function EmptyState({ message }: { message: string }) {
+function GatingEmpty({ message }: { message: string }) {
   return (
     <div className="rounded-card border border-ink-border/20 bg-ink-60/5 p-12 text-center md:p-16">
       <p className="mx-auto max-w-2xl text-body text-ink-80 md:text-lg">

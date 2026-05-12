@@ -5,13 +5,15 @@ import { WelcomeBanner } from "../features/home/sections/WelcomeBanner";
 import { WriteCtaBanner } from "../features/home/sections/WriteCtaBanner";
 import { HomeTabBar } from "../features/home/sections/HomeTabBar";
 import { FollowingTab } from "../features/home/sections/FollowingTab";
+import { NewTab } from "../features/home/sections/NewTab";
+import { YourMixStub } from "../features/home/sections/YourMixStub";
 import { heroCopy, homeLoggedInCopy } from "../constants/copy";
 
 export type HomeLoggedInTab = "following" | "new" | "your-mix";
 
-// PR #4 Phase 1: shell composition with placeholders for sections that land
-// in later phases. Each <Placeholder /> marks where the real component will
-// be mounted. Replace as each phase ships.
+// Logged-in home shell. Header + WelcomeBanner + Topics on the brand gradient
+// band; WriteCtaBanner + HomeTabBar + tab content below. Tab selection is
+// URL-driven (decision #26) so `tab` comes from the Home route branch.
 
 export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
   const { data } = usePopularDiscovery();
@@ -70,18 +72,8 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
           </div>
           <div className="mt-10 md:mt-12">
             {tab === "following" && <FollowingTab />}
-            {tab === "new" && (
-              <Placeholder
-                label="Phase 6 — New tab"
-                detail="Reuses HomeLoggedOut's New layout. Lands next."
-              />
-            )}
-            {tab === "your-mix" && (
-              <Placeholder
-                label={homeLoggedInCopy.yourMixStubHeading}
-                detail={homeLoggedInCopy.yourMixStubBody}
-              />
-            )}
+            {tab === "new" && <NewTab />}
+            {tab === "your-mix" && <YourMixStub />}
           </div>
         </div>
       </main>
@@ -89,28 +81,3 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
   );
 }
 
-function Placeholder({
-  label,
-  detail,
-  onDark = false,
-}: {
-  label: string;
-  detail?: string;
-  onDark?: boolean;
-}) {
-  const borderClass = onDark
-    ? "border-white/40 bg-white/10"
-    : "border-brand-purple/30 bg-brand-purple/5";
-  const labelClass = onDark ? "text-white" : "text-ink";
-  const detailClass = onDark ? "text-white/80" : "text-ink-80";
-
-  return (
-    <div
-      className={`rounded-card border-2 border-dashed ${borderClass} px-6 py-8 text-center`}
-      data-pr4-placeholder={label}
-    >
-      <p className={`text-body font-medium ${labelClass}`}>{label}</p>
-      {detail && <p className={`mt-2 text-sm ${detailClass}`}>{detail}</p>}
-    </div>
-  );
-}
