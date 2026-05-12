@@ -1,12 +1,14 @@
 import { HttpAgent } from "@icp-sdk/core/agent";
+import type { Identity } from "@icp-sdk/core/agent";
 
 export const IC_HOST = "https://icp-api.io";
 
-let agentPromise: Promise<HttpAgent> | null = null;
-
-export function getAgent(): Promise<HttpAgent> {
-  if (!agentPromise) {
-    agentPromise = HttpAgent.create({ host: IC_HOST });
-  }
-  return agentPromise;
+// PR #4 Phase 4: pure factory. Caller (ActorsContext) owns the lifecycle and
+// caches by identity. Anonymous calls pass undefined; authed calls pass the
+// Identity returned by AuthContext.
+export function createAgent(identity?: Identity | null): Promise<HttpAgent> {
+  return HttpAgent.create({
+    host: IC_HOST,
+    ...(identity ? { identity } : {}),
+  });
 }

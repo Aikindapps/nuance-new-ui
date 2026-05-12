@@ -1,32 +1,22 @@
+import type { HttpAgent } from "@icp-sdk/core/agent";
 import { createActor as createPostCore } from "../candid/PostCore/PostCore";
 import { createActor as createPostBucket } from "../candid/PostBucket/PostBucket";
 import { createActor as createUser } from "../candid/User/User";
 import canisterIds from "../config/canister_ids.json";
-import { getAgent } from "./agent";
 
-let postCoreActor: ReturnType<typeof createPostCore> | null = null;
-let userActor: ReturnType<typeof createUser> | null = null;
-const bucketActors = new Map<string, ReturnType<typeof createPostBucket>>();
+// PR #4 Phase 4: pure factories. Caller (ActorsContext) owns caching and
+// invalidation per identity. The module-level singleton cache that existed
+// pre-Phase-4 was incompatible with auth-state changes — the anon actor
+// would have leaked into authed calls after login.
 
-export async function getPostCoreActor() {
-  if (!postCoreActor) {
-    postCoreActor = createPostCore(canisterIds.PostCore.ic, { agent: await getAgent() });
-  }
-  return postCoreActor;
+export function createPostCoreActor(agent: HttpAgent) {
+  return createPostCore(canisterIds.PostCore.ic, { agent });
 }
 
-export async function getUserActor() {
-  if (!userActor) {
-    userActor = createUser(canisterIds.User.ic, { agent: await getAgent() });
-  }
-  return userActor;
+export function createUserActor(agent: HttpAgent) {
+  return createUser(canisterIds.User.ic, { agent });
 }
 
-export async function getPostBucketActor(bucketCanisterId: string) {
-  let actor = bucketActors.get(bucketCanisterId);
-  if (!actor) {
-    actor = createPostBucket(bucketCanisterId, { agent: await getAgent() });
-    bucketActors.set(bucketCanisterId, actor);
-  }
-  return actor;
+export function createPostBucketActor(agent: HttpAgent, bucketCanisterId: string) {
+  return createPostBucket(bucketCanisterId, { agent });
 }
