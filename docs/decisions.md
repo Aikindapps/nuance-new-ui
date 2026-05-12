@@ -832,3 +832,48 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - When a Figma frame contains a feature that depends on un-built infrastructure: add a real route, a minimal stub component (`<Stub message="..." />` or feature-specific), and put the actual implementation file path on the stub as a TODO so the next session knows where to land. Do not hide the feature from the UI.
 - When PR #N ships the deferred implementation: replace the stub component import in the route declaration, delete the stub file, run the build. No URL changes, no callers to update.
 - Companion to decision #12 (SEO + real URLs): stub-routes count as real URLs and get the same per-route `<title>` + `<meta description>` treatment. A "Coming soon" page still tells crawlers and users what the URL is about.
+
+---
+
+## #27 — `derivationOrigin` wired to the production asset canister; prod handoff preserves existing user principals
+
+**Date:** 2026-05-12
+
+**Status:** Active
+
+**Decision:** All `AuthClient` constructions in this project pass `derivationOrigin = "https://exwqn-uaaaa-aaaaf-qaeaa-cai.ic0.app"` (the production Nuance asset canister URL) in production builds, and pass `undefined` in local dev. Production users who already have a nuance.xyz account therefore get the **same II-derived principal** under the new frontend as under the old one — their User canister profile, articles, follows, NUA balance, and on-chain history carry across the prod handoff with **zero migration**. Local-dev principals stay fresh-per-device (test identities).
+
+**Inputs:**
+
+- During PR #4 Phase 2 (2026-05-12), Mr Nick's WelcomeBanner showed "Welcome to Nuance!" with no name — the User canister returned `#err("User not found for PrincipalId ...")` for his authed principal. Investigation traced the cause to the principal-per-app derivation behavior of II 2.0: every distinct origin gets a distinct principal unless `derivationOrigin` is set.
+- The old `aikindapps/nuance-frontend` (`src/nuance_assets_v2_frontend/src/main.tsx`) sets `derivationOrigin` conditionally: a localhost-served origin for local development, a UAT canister URL for UAT, and `https://exwqn-uaaaa-aaaaf-qaeaa-cai.ic0.app` for production. Every existing nuance.xyz user has been authenticating against that production derivation origin for the lifetime of the platform.
+- The production asset canister exposes a `.well-known/ii-alternative-origins` file (mirror of `aikindapps/nuance-frontend/src/nuance_assets_v2_frontend/well-known/.well-known/ii-alternative-origins`) whitelisting `https://nuance.xyz`, `https://www.nuance.xyz`, the `.raw.ic0.app` mirror of the canister, and a handful of partner origins (distrikt.app, etc.). `http://localhost:5173` is intentionally NOT whitelisted — local dev would fail the alternative-origins check if it tried to use the production derivation origin.
+- Decision #5 (local-only deploy; production handoff is SNS-governed) means we cannot today modify the alternative-origins file on the production asset canister to add a non-production origin.
+
+**Options considered:**
+
+- A. Leave `derivationOrigin` unset (current PR #3 default). Every install gets a fresh principal. Prod handoff would orphan every existing user from their on-chain data. **Rejected.**
+- B. Wire `derivationOrigin = PROD_DERIVATION_ORIGIN` unconditionally. Prod works; local dev fails because localhost isn't in alternative-origins. **Rejected.**
+- C. **Wire `derivationOrigin = PROD_DERIVATION_ORIGIN` only in production builds; leave it undefined in local dev.** **Chosen.** Mirrors the old frontend's pattern (`isLocal`-conditional) using Vite's `import.meta.env.PROD` build-time flag.
+- D. Run a local II / local alternative-origins file (the full old-frontend setup). Rejected — significantly more local-dev infrastructure for a marginal gain (testing with "real" nuance.xyz identities locally). Test-identity-only local dev is sufficient and arguably safer.
+
+**Rationale:**
+
+- **Production user data preservation is non-negotiable.** Nuance has ~7K users with on-chain history (articles, follows, NUA balance, NFT articles). A handoff that orphans them from their data is unacceptable. C is the standard ICP pattern for this.
+- The build-time `import.meta.env.PROD` flag is the canonical Vite mechanism for production-only configuration. Tree-shakes cleanly; no runtime origin string-matching.
+- Local-dev principal isolation is a feature, not a bug. Developers don't accidentally pollute their real Nuance accounts with test articles, follow noise, or experiments. They authenticate as fresh identities on every machine. The "Welcome to Nuance!" copy (vs "Welcome back, {name}!") is the WelcomeBanner's honest signal that the current session is on a test identity.
+- The trade-off — local dev cannot reproduce prod user behaviour — is acceptable. Anything that requires real-prod-principal exercise (e.g., regression testing a follow-graph rendering against a real account) gets a manual prod-style test post-deploy, or a future preview-deploy scheme (likely covered by an extension of #5 when the DAO handoff is planned).
+
+**Trade-offs accepted:**
+
+- **Local dev users see "Welcome to Nuance!" not "Welcome back, {name}!".** Their User canister profile lookup returns `#err(User not found)`. Hooks treat this as a valid "unregistered" state — surfaces fall back to anonymous/no-profile rendering paths. Future PRs that add registration UI will surface the "complete your registration" CTA at this boundary.
+- **Authed canister calls in local dev are made by a principal that has no Nuance history.** Following queries return empty; tipping/clapping wouldn't work even if wired; any user-action mutations would be from-the-perspective-of a brand-new account. PR #4's Following tab will show an empty state in local dev for this reason.
+- **Adding a new prod-eligible origin (e.g., a preview deploy URL) requires an SNS proposal** to update the alternative-origins file on the production asset canister. Not a concern at PR #4 / local-only scope; surfaces when DAO handoff strategy is planned.
+- **A different prod-eligible origin (e.g., the UAT canister URL) would need its own conditional branch** if/when UAT becomes part of the workflow. Mirrors the old frontend's three-way `isLocal ? local : isUat ? uat : prod` pattern. Easy to add later; not needed today.
+
+**How to apply:**
+
+- `AuthClient` construction in `src/contexts/AuthContext.tsx` reads a module-level `DERIVATION_ORIGIN` constant: `import.meta.env.PROD ? "https://exwqn-uaaaa-aaaaf-qaeaa-cai.ic0.app" : undefined`. Every `new AuthClient({...})` call passes this — both the lazy singleton's construction and the per-OpenID fresh-construction path.
+- If we later add a UAT deploy or any other prod-eligible origin, extend the constant to a function that branches on `window.location.origin` (or a build-time env var) — mirroring the old frontend's three-way conditional. Add a new alternative-origins entry to the canonical production list via SNS proposal at the same time.
+- The WelcomeBanner UI (Phase 2) explicitly distinguishes "Welcome back, {name}!" (registered) from "Welcome to Nuance!" (unregistered) so the principal-mismatch state is visually obvious during local dev. This is intentional — it's the canary that confirms derivation is working as expected.
+- Any future canister method that mutates state on behalf of the user (publishing, following, tipping) must be aware that the local-dev caller is a fresh principal — local-dev testing of such flows is fundamentally limited. Plan for prod-style verification post-deploy.
