@@ -43,6 +43,24 @@ const IDLE_OPTIONS: AuthClientCreateOptions["idleOptions"] = {
   disableIdle: true,
 };
 
+// Decision #27 — principal preservation across the prod handoff.
+//
+// All existing nuance.xyz user principals are derived against the production
+// asset canister URL. The .well-known/ii-alternative-origins file there
+// whitelists nuance.xyz + www.nuance.xyz, so any frontend served from those
+// domains gets the SAME principal each existing user already has → their
+// User canister profile, articles, follows, and NUA balance carry over with
+// zero migration.
+//
+// Local dev (`localhost:5173`) is intentionally NOT in the whitelist — so
+// `import.meta.env.PROD` is false here, derivationOrigin stays undefined,
+// and the local principal is fresh-per-device (a test identity, not the
+// developer's real Nuance account).
+const PROD_DERIVATION_ORIGIN = "https://exwqn-uaaaa-aaaaf-qaeaa-cai.ic0.app";
+const DERIVATION_ORIGIN: string | undefined = import.meta.env.PROD
+  ? PROD_DERIVATION_ORIGIN
+  : undefined;
+
 // Lazy singleton for the default (no-openIdProvider) AuthClient. Reused for
 // session restore, classic-II sign-in, and sign-out, which all share the same
 // IdbStorage. OpenID sign-in still constructs a fresh AuthClient per call
@@ -52,9 +70,30 @@ const IDLE_OPTIONS: AuthClientCreateOptions["idleOptions"] = {
 let defaultClient: AuthClient | null = null;
 function getDefaultClient(): AuthClient {
   if (!defaultClient) {
-    defaultClient = new AuthClient({ idleOptions: IDLE_OPTIONS });
+    defaultClient = new AuthClient({
+      idleOptions: IDLE_OPTIONS,
+      derivationOrigin: DERIVATION_ORIGIN,
+    });
   }
   return defaultClient;
+}
+
+// localStorage key for the last-login timestamp. Persisted across reloads
+// within the 8-hour delegation lifetime, so the WelcomeBanner's "X ago" line
+// stays meaningful when the user comes back partway through a session.
+const LAST_LOGIN_STORAGE_KEY = "nuance:last-login-at";
+
+function readLastLoginAt(): number | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(LAST_LOGIN_STORAGE_KEY);
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function writeLastLoginAt(value: number): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LAST_LOGIN_STORAGE_KEY, String(value));
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -62,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastLoginAt, setLastLoginAt] = useState<number | null>(readLastLoginAt);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -106,13 +146,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // construction time, see decision #24). Classic II reuses the default
       // singleton — same IdbStorage, no benefit to a fresh instance.
       const client = provider
-        ? new AuthClient({ idleOptions: IDLE_OPTIONS, openIdProvider: provider })
+        ? new AuthClient({
+            idleOptions: IDLE_OPTIONS,
+            derivationOrigin: DERIVATION_ORIGIN,
+            openIdProvider: provider,
+          })
         : getDefaultClient();
       const next = await client.signIn();
       if (!mountedRef.current) return;
       const nextPrincipal = next.getPrincipal();
+      const now = Date.now();
       setIdentity(next);
       setPrincipal(nextPrincipal);
+      setLastLoginAt(now);
+      writeLastLoginAt(now);
       setStatus("authenticated");
     } catch (err) {
       if (!mountedRef.current) return;
@@ -152,10 +199,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: status === "authenticated",
       isLoading: status === "loading",
       error,
+      lastLoginAt,
       login,
       logout,
     }),
-    [status, identity, principal, error, login, logout],
+    [status, identity, principal, error, lastLoginAt, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

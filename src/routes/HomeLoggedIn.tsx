@@ -1,6 +1,7 @@
 import { Header } from "../components/ui/Header";
 import { Tag } from "../components/ui/Tag";
 import { usePopularDiscovery } from "../features/home/hooks/usePopularDiscovery";
+import { WelcomeBanner } from "../features/home/sections/WelcomeBanner";
 import { heroCopy, homeLoggedInCopy } from "../constants/copy";
 
 export type HomeLoggedInTab = "following" | "new" | "your-mix";
@@ -32,7 +33,7 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
             className="mx-auto max-w-[1440px] px-4 pt-8 pb-10 md:px-8 md:pt-10 md:pb-12 lg:px-14 lg:pt-14 lg:pb-16"
           >
             <div className="mb-6 flex justify-end lg:mb-10">
-              <Placeholder label="Phase 2 — WelcomeBanner" onDark />
+              <WelcomeBanner />
             </div>
 
             <h2

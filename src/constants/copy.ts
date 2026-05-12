@@ -85,6 +85,13 @@ export const homeLoggedInCopy = {
       "Your personalized feed on Nuance — articles from writers you follow, fresh stories, and recommendations from across the on-chain blogging platform.",
     h1: "Your Nuance feed",
   },
+  // WelcomeBanner copy. "Welcome back" for registered users (profile fetch
+  // returned a User record); "Welcome to Nuance" for unregistered principals
+  // — those exist in local dev (test identities) and in any prod scenario
+  // where a brand-new II principal is logging in for the first time.
+  welcomeBackPrefix: "Welcome back,",
+  welcomeBackSuffix: "!",
+  welcomeNew: "Welcome to Nuance!",
   // Phase 5 cold-start empty state for the Following tab.
   followingEmpty:
     "You are not yet following any writers, publications or topics. When you do, they will show up here.",

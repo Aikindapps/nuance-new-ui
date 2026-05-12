@@ -21,6 +21,10 @@ export type AuthContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  // Timestamp (ms since epoch) of the most recent completed signIn(),
+  // hydrated from localStorage on mount so it survives reloads within the
+  // delegation lifetime. Null when there's never been a login on this device.
+  lastLoginAt: number | null;
   login: (provider?: OpenIdProvider) => Promise<void>;
   logout: () => Promise<void>;
 };

@@ -34,6 +34,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getUserActor();
         return actor.getUsersByHandles(handles);
       },
+      getUserByPrincipalId: async (principalText) => {
+        const actor = await getUserActor();
+        return actor.getUserByPrincipalId(principalText);
+      },
     }),
     [],
   );
