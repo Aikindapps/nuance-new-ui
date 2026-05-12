@@ -1,5 +1,4 @@
 import Button from "@mui/material/Button";
-import { useAuth } from "../../../contexts/useAuth";
 import { useModal } from "../../../services/modal";
 import {
   LoginModal,
@@ -7,13 +6,12 @@ import {
 } from "../../../components/LoginModal/LoginModal";
 import { ctaBannerCopy } from "../../../constants/copy";
 
-export function CtaBanner() {
-  const { isAuthenticated } = useAuth();
-  const modal = useModal();
+// CtaBanner is logged-out-exclusive: HomeLoggedOut is its only mount point
+// (PR #4 routing split, decision #26). The previous self-hide-when-authed
+// guard was removed alongside the split.
 
-  // The CTA targets logged-out users; hide once authed. PR #4 will split
-  // HomeLoggedOut from HomeLoggedIn cleanly and remove this internal check.
-  if (isAuthenticated) return null;
+export function CtaBanner() {
+  const modal = useModal();
 
   const openLogin = () =>
     modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });

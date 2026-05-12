@@ -78,6 +78,33 @@ export const headerCopy = {
   logout: "Logout",
 };
 
+export const homeLoggedInCopy = {
+  metadata: {
+    title: "Nuance — Your feed",
+    description:
+      "Your personalized feed on Nuance — articles from writers you follow, fresh stories, and recommendations from across the on-chain blogging platform.",
+    h1: "Your Nuance feed",
+  },
+  // Phase 5 cold-start empty state for the Following tab.
+  followingEmpty:
+    "You are not yet following any writers, publications or topics. When you do, they will show up here.",
+  // Phase 6 stub copy for the Your mix tab — deferred to PR #5 alongside the recs algorithm.
+  yourMixStubHeading: "Personalized recommendations coming soon",
+  yourMixStubBody:
+    "For now, browse Following or New to discover writers and articles on Nuance.",
+};
+
+export const writeStubCopy = {
+  metadata: {
+    title: "Nuance — Article editor (coming soon)",
+    description:
+      "The Nuance article editor is on the roadmap. Check back soon or follow @nuance for updates.",
+  },
+  heading: "Article editor coming soon",
+  body: "The new Nuance writing experience is on the way. For now, keep reading — and we'll let you know when authoring is ready.",
+  backLabel: "Back to Nuance",
+};
+
 export const loginModalCopy = {
   heading: "Join or log in",
   body: "Register or login with one of the options below to start writing or explore unlimited knowledge.",
