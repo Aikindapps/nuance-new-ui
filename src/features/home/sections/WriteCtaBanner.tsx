@@ -16,7 +16,7 @@ export function WriteCtaBanner() {
     >
       <h2
         id="write-cta-heading"
-        className="text-[24px] font-bold leading-tight tracking-[-0.48px] text-brand-purple md:text-[32px] md:leading-[40px] md:tracking-[-0.64px]"
+        className="text-[24px] font-bold leading-tight tracking-[-0.48px] text-brand-purple md:whitespace-nowrap md:text-[32px] md:leading-[40px] md:tracking-[-0.64px]"
       >
         {writeCtaBannerCopy.heading}
       </h2>
@@ -24,7 +24,7 @@ export function WriteCtaBanner() {
       <Link
         to="/write"
         aria-label={writeCtaBannerCopy.primaryAriaLabel}
-        className="bg-brand-gradient-button inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[8px] px-6 py-[10px] text-[18px] font-medium leading-7 text-white shadow-purple-glow-medium transition-opacity hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple"
+        className="bg-brand-gradient-button inline-flex shrink-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-[8px] px-6 py-[10px] text-[18px] font-medium leading-7 text-white shadow-purple-glow-medium transition-opacity hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple"
       >
         {writeCtaBannerCopy.primary}
       </Link>

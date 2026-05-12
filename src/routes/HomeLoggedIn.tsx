@@ -1,4 +1,4 @@
-import { Header } from "../components/ui/Header";
+import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { Tag } from "../components/ui/Tag";
 import { usePopularDiscovery } from "../features/home/hooks/usePopularDiscovery";
 import { WelcomeBanner } from "../features/home/sections/WelcomeBanner";
@@ -27,23 +27,19 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
       <meta property="og:description" content={homeLoggedInCopy.metadata.description} />
       <meta property="og:type" content="website" />
 
-      <main className="min-h-screen">
+      <main className="min-h-screen bg-white">
         <h1 className="sr-only">{homeLoggedInCopy.metadata.h1}</h1>
 
-        <div className="bg-brand-gradient w-full text-white">
-          <Header />
+        <HeaderLoggedIn />
+        <WelcomeBanner />
 
+        <div className="mx-auto max-w-[1440px] px-4 pt-6 pb-10 md:px-8 md:pt-8 md:pb-12 lg:px-14 lg:pt-10 lg:pb-14">
           <section
             aria-labelledby="topics-heading"
-            className="mx-auto max-w-[1440px] px-4 pt-8 pb-10 md:px-8 md:pt-10 md:pb-12 lg:px-14 lg:pt-14 lg:pb-16"
           >
-            <div className="mb-6 flex justify-end lg:mb-10">
-              <WelcomeBanner />
-            </div>
-
             <h2
               id="topics-heading"
-              className="text-body font-bold text-white lg:text-lg"
+              className="font-bold text-ink-80 lg:text-[22px] lg:leading-8 lg:tracking-[-0.44px]"
             >
               {heroCopy.topicsHeading}
             </h2>
@@ -51,21 +47,25 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
             <ul className="scrollbar-hide mt-4 flex gap-3 overflow-x-auto lg:mt-6 lg:gap-4">
               {topics.map((topic) => (
                 <li key={topic} className="shrink-0">
-                  <Tag label={topic} href={`/topic/${encodeURIComponent(topic)}`} />
+                  <Tag
+                    label={topic}
+                    href={`/topic/${encodeURIComponent(topic)}`}
+                    variant="on-light"
+                  />
                 </li>
               ))}
             </ul>
 
             <a
               href="/topics"
-              className="mt-4 inline-block text-body font-medium text-white underline underline-offset-4 hover:no-underline lg:mt-6"
+              className="mt-4 inline-block text-body font-medium text-brand-purple underline underline-offset-4 hover:no-underline lg:mt-6"
             >
               {heroCopy.exploreAllLabel}
             </a>
           </section>
         </div>
 
-        <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-8 md:py-12 lg:px-14 lg:py-16">
+        <div className="mx-auto max-w-[1440px] px-4 pb-8 md:px-8 md:pb-12 lg:px-14 lg:pb-16">
           <WriteCtaBanner />
           <div className="mt-12 md:mt-14 lg:mt-16">
             <HomeTabBar />

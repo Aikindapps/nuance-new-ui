@@ -1,22 +1,41 @@
+import { useEffect, useState } from "react";
 import Skeleton from "@mui/material/Skeleton";
 import { useAuth } from "../../../contexts/useAuth";
 import { useMyProfile } from "../hooks/useMyProfile";
 import { formatRelativeTime } from "../../../lib/formatRelativeTime";
 import { homeLoggedInCopy } from "../../../constants/copy";
 
-// Figma 1:50060 — dark rounded box, top-right under header. Two lines:
-// "Welcome back, {displayName}!" + relative time since last login.
+// Figma 1:50060 — dark rounded popup, top-right under the header. Shows
+// only briefly after login: a "Welcome back, {name}!" confirmation that
+// dismisses itself after a few seconds. Implementation reads lastLoginAt
+// from AuthContext (set on signIn() success, persisted to localStorage so
+// a reload within the visibility window keeps the popup) and only renders
+// if we're within DISPLAY_MS of that timestamp.
 //
-// Registered users (User canister has a profile at their principal) see
-// "Welcome back, {name}!" Unregistered users (local dev test identities, or
-// any brand-new II principal in prod) see "Welcome to Nuance!" Decision #27
-// covers why local dev intentionally lands on the unregistered path.
+// Registered users see "Welcome back, {name}!"; unregistered principals
+// (local dev test identities, or any brand-new II principal in prod) see
+// "Welcome to Nuance!" — decision #27 covers why local dev intentionally
+// lands on the unregistered path.
+
+const DISPLAY_MS = 5000;
 
 export function WelcomeBanner() {
   const { lastLoginAt } = useAuth();
-  const profileQuery = useMyProfile();
+  const profile = useMyProfile();
+  const [visible, setVisible] = useState(false);
 
-  const name = profileQuery.data?.displayName?.trim() || profileQuery.data?.handle;
+  useEffect(() => {
+    if (!lastLoginAt) return;
+    const remaining = DISPLAY_MS - (Date.now() - lastLoginAt);
+    if (remaining <= 0) return;
+    setVisible(true);
+    const t = setTimeout(() => setVisible(false), remaining);
+    return () => clearTimeout(t);
+  }, [lastLoginAt]);
+
+  if (!visible) return null;
+
+  const name = profile.data?.displayName?.trim() || profile.data?.handle;
   const greeting = name
     ? `${homeLoggedInCopy.welcomeBackPrefix} ${name}${homeLoggedInCopy.welcomeBackSuffix}`
     : homeLoggedInCopy.welcomeNew;
@@ -24,11 +43,11 @@ export function WelcomeBanner() {
 
   return (
     <div
-      className="flex flex-col items-start justify-center gap-2 rounded-[6px] bg-ink px-4 py-3 text-white lg:w-[323px]"
+      className="fixed right-4 top-[80px] z-50 flex w-[calc(100vw-2rem)] max-w-[323px] flex-col items-start justify-center gap-2 rounded-[6px] bg-ink px-4 py-3 text-white shadow-lg md:right-8 md:top-[96px] lg:right-12 lg:top-[104px]"
       role="status"
       aria-live="polite"
     >
-      {profileQuery.isLoading ? (
+      {profile.isLoading ? (
         <Skeleton
           variant="text"
           sx={{

@@ -73,6 +73,9 @@ export const headerCopy = {
   searchPlaceholder: "Search",
   login: "Login",
   getStarted: "Get started",
+  // Logged-in-only header copy (Figma 1:50116).
+  startWriting: "Start writing",
+  notificationsAriaLabel: "Notifications",
   openMenuAriaLabel: "Open menu",
   userMenuAriaLabel: "Account menu",
   logout: "Logout",
