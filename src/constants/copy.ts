@@ -101,6 +101,12 @@ export const homeLoggedInCopy = {
     "For now, browse Following or New to discover writers and articles on Nuance.",
 };
 
+export const writeCtaBannerCopy = {
+  heading: "Feeling inspired? Start writing!",
+  primary: "Create a new article",
+  primaryAriaLabel: "Create a new article",
+};
+
 export const writeStubCopy = {
   metadata: {
     title: "Nuance — Article editor (coming soon)",

@@ -2,6 +2,7 @@ import { Header } from "../components/ui/Header";
 import { Tag } from "../components/ui/Tag";
 import { usePopularDiscovery } from "../features/home/hooks/usePopularDiscovery";
 import { WelcomeBanner } from "../features/home/sections/WelcomeBanner";
+import { WriteCtaBanner } from "../features/home/sections/WriteCtaBanner";
 import { heroCopy, homeLoggedInCopy } from "../constants/copy";
 
 export type HomeLoggedInTab = "following" | "new" | "your-mix";
@@ -61,7 +62,7 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
         </div>
 
         <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-8 md:py-12 lg:px-14 lg:py-16">
-          <Placeholder label="Phase 3 — WriteCtaBanner" />
+          <WriteCtaBanner />
           <div className="mt-12 md:mt-14 lg:mt-16">
             <Placeholder label="Phase 5 — HomeTabBar (3 tabs)" />
           </div>

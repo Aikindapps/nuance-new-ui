@@ -42,6 +42,7 @@
   /* Colors — Nuance palette */
   --color-brand-purple: #5405d4;           /* nur/purple/100 */
   --color-brand-purple-light: #935bfb;     /* gradient end-stop */
+  --color-brand-purple-5: rgba(84, 5, 212, 0.05); /* nur/purple/5% — tinted bg (WriteCtaBanner) */
   --color-ink: #202123;                    /* nur/black/100% (text) */
   --color-ink-80: rgba(32, 33, 35, 0.8);   /* nur/black/80% (text) */
   --color-ink-60: rgba(32, 33, 35, 0.6);   /* nur/black/60% (text) */
