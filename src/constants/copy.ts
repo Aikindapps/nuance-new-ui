@@ -101,10 +101,6 @@ export const homeLoggedInCopy = {
   // Phase 5 cold-start empty state for the Following tab.
   followingEmpty:
     "You are not yet following any writers, publications or topics. When you do, they will show up here.",
-  // Phase 6 stub copy for the Your mix tab — deferred to PR #5 alongside the recs algorithm.
-  yourMixStubHeading: "Personalized recommendations coming soon",
-  yourMixStubBody:
-    "For now, browse Following or New to discover writers and articles on Nuance.",
 };
 
 export const writeCtaBannerCopy = {

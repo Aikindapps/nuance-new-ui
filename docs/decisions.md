@@ -794,7 +794,7 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 
 **Date:** 2026-05-11
 
-**Status:** Active
+**Status:** Active. Partially superseded by #29 — the `/your-mix` stub-route is removed and "Following is the default authed landing" is reversed (`/` now serves Popular for both audiences). The auth-aware route-branching and stub-route *pattern* itself remains active.
 
 **Decision:** The home route(s) — `/` and `/new` — branch on `useAuth().isAuthenticated` at the route level, rendering `HomeLoggedOut` for anonymous visitors and `HomeLoggedIn` for authenticated ones. Tabs inside `HomeLoggedIn` are real URLs (per decision #12), not React state. When the design includes a feature whose implementation is deferred (Your mix tab content depends on the recs algorithm; the article editor depends on Lexical from the decision #22 backlog), the route still exists and the affiliated UI surface stays visible — the route renders a minimal stub message instead of being hidden or disabled. This is the project-wide pattern for "design ships ahead of implementation."
 
@@ -917,3 +917,45 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - `useFollowing` (`src/features/home/hooks/useFollowing.ts`): page 0's `queryFn` builds the merged list; `getNextPageParam` carries it forward in the `pageParam` and stops when the next slice would start at/past `merged.length`.
 - Any future feed that unions two or more independently-indexed canister sources should follow the same shape — fetch metadata once, merge globally, paginate client-side — rather than attempting a shared incremental cursor.
 - If feed depth becomes a real user complaint, revisit as option D (probe `totalCount`) or raise the cap — but measure the keyProps payload size against the 2MB limit first.
+
+---
+
+## #29 — "Your mix" tab replaced with "Popular"; recommendations deferred out of project scope
+
+**Date:** 2026-05-18
+
+**Status:** Active
+
+**Decision:** The logged-in home's three-tab bar becomes **Popular / Following / New** — the "Your mix" personalized-recommendations tab is dropped. The recommendation feature is deferred entirely out of this project's scope; it is not built in any form here. Route shape: `/` serves Popular for both anonymous and authenticated visitors (the shared default), `/following` is a new auth-gated route serving the Following feed (anon → redirect `/`), `/new` serves New for both. The `/your-mix` stub-route is removed. The logged-in Popular tab is a plain infinite `ArticleFeed` over `useArticles("popular")`, matching the shipped logged-in New tab (not the rich Hero/Featured layout of the logged-out home).
+
+**Inputs:**
+
+- PR #5 was scoped as "recommendation algorithm + Your mix tab content." Before implementation, the recommendation work was analysed at three tiers: (1) client-side only — follow-graph/topic-overlap heuristics composed from existing canister query methods; (2) a separate, Aikin-controlled side-car recommendation canister that precomputes rankings and ingests implicit read signals (does NOT require an SNS proposal to stand up — the SNS governs only the existing Nuance canisters); (3) modifying the existing SNS-governed Nuance canisters (requires an SNS proposal + community vote).
+- Mr Nick's call (2026-05-18): a recommendation feature should be "built properly" — i.e. Tier 2/3, server-side — and is therefore out of scope for a frontend-only project. Tier 1 client-side heuristics were rejected as throwaway work: their ceiling is low (explicit signals only — no read history; cold-start users, the majority, get filtered-popular indistinguishable from the logged-out home) and a Tier 2/3 engine would replace them wholesale.
+- With recommendations deferred, the "Your mix" tab has no content. Leaving it as a "coming soon" stub (the decision #26 pattern) was rejected for an indefinitely-deferred feature: a stub is appropriate when implementation is imminent, not when it is punted to a future project. Replacing the tab with Popular gives signed-in users a working, content-full default instead of a dead tab.
+- The recon of the stale `aikindapps-nuance-frontend` repo (Sept 2025) confirmed there is no original recommendation design to inherit: its `useRecommendedWriters`/`useRecommendedPublications` are `Math.random()` shuffles of hardcoded dummy arrays, and "Your mix" was a `// TODO` falling back to latest posts.
+
+**Options considered:**
+
+- A. Build Tier 1 client-side recommendations now (PR #5 as originally scoped). **Rejected** — throwaway; a proper Tier 2/3 engine replaces it entirely.
+- B. Build a Tier 2 side-car recommendation canister as part of this project. **Rejected for now** — reopens the locked "frontend only, no canisters" scope; revisit as a separate future project.
+- C. Keep the "Your mix" tab as a "coming soon" stub indefinitely. **Rejected** — a dead tab in the marquee position; stub-routes (decision #26) suit imminent features, not indefinitely-deferred ones.
+- D. **Replace "Your mix" with "Popular"; defer recommendations out of scope entirely.** **Chosen.** Signed-in users get Popular/Following/New — all three working feeds. The logged-in home loses its personalized surface until recommendations return as a separate project; accepted as an interim state.
+
+**Rationale:**
+
+- A proper recommendation system needs server-side precompute and implicit-signal capture (read history, dwell time) — none of which exists on the current canister surface and none of which a frontend-only project can add well. Half-building it client-side produces a weak feature that gets thrown away. Better to ship nothing than ship throwaway.
+- Popular is the natural replacement: `getPopularThisWeek` is an anonymous query (no auth needed), the feed already exists for the logged-out home, and `useArticles("popular")` + the shared `ArticleFeed` renderer make the logged-in Popular tab a three-line component.
+- `/` = Popular for both audiences makes the root URL serve identical content regardless of auth — consistent, SEO-clean, and it gives cold-start users (who follow nobody — the majority) a full feed as their default landing instead of an empty Following tab. This reverses decision #26's "Following is the default authed landing" trade-off, which only made sense when "Your mix" was the intended marquee tab.
+
+**Trade-offs accepted:**
+
+- The logged-in home has no personalized surface. A signed-in user gets Popular (identical to logged-out) + Following + New — the only thing the logged-in experience adds over the logged-out one is the Following tab. This diverges from Figma `1:50044`, which built "Your mix" as the marquee logged-in feature. Accepted as an interim state until recommendations return as a Tier 2/3 project.
+- `/following` is a new URL with no analogue in `1:50044` (Figma keeps Following at the home root). The Figma file is now ahead of the code in one place and behind it in another (no "Your mix").
+
+**How to apply:**
+
+- Logged-in tab bar (`HomeTabBar.tsx`): Popular → `/`, Following → `/following`, New → `/new`.
+- `Home.tsx` auth gate: `/following` is auth-gated — anon visitors redirect to `/`. `/` and `/new` serve `HomeLoggedOut` for anon (unchanged).
+- The logged-in Popular tab reuses `useArticles("popular")` + `ArticleFeed` — uniform with the New and Following tabs (all plain infinite feeds). The rich Hero/Featured/Writers/Publications layout stays exclusive to the logged-out home.
+- When recommendations return: they come back as their own tab/surface in a separate project, not by reviving `/your-mix`. Decision #26's stub-route pattern still stands for genuinely imminent features.

@@ -6,10 +6,10 @@ import { WriteCtaBanner } from "../features/home/sections/WriteCtaBanner";
 import { HomeTabBar } from "../features/home/sections/HomeTabBar";
 import { FollowingTab } from "../features/home/sections/FollowingTab";
 import { NewTab } from "../features/home/sections/NewTab";
-import { YourMixStub } from "../features/home/sections/YourMixStub";
+import { PopularTab } from "../features/home/sections/PopularTab";
 import { heroCopy, homeLoggedInCopy } from "../constants/copy";
 
-export type HomeLoggedInTab = "following" | "new" | "your-mix";
+export type HomeLoggedInTab = "popular" | "following" | "new";
 
 // Logged-in home shell. Header + WelcomeBanner + Topics on the brand gradient
 // band; WriteCtaBanner + HomeTabBar + tab content below. Tab selection is
@@ -71,9 +71,9 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
             <HomeTabBar />
           </div>
           <div className="mt-10 md:mt-12">
+            {tab === "popular" && <PopularTab />}
             {tab === "following" && <FollowingTab />}
             {tab === "new" && <NewTab />}
-            {tab === "your-mix" && <YourMixStub />}
           </div>
         </div>
       </main>
