@@ -85,7 +85,7 @@ export const homeLoggedInCopy = {
   metadata: {
     title: "Nuance — Your feed",
     description:
-      "Your personalized feed on Nuance — articles from writers you follow, fresh stories, and recommendations from across the on-chain blogging platform.",
+      "Your feed on Nuance — popular articles, the latest stories, and posts from the writers you follow on the on-chain blogging platform.",
     h1: "Your Nuance feed",
   },
   // WelcomeBanner copy. "Welcome back" for registered users (profile fetch
