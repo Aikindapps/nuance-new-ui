@@ -43,11 +43,77 @@ const IDLE_OPTIONS: AuthClientCreateOptions["idleOptions"] = {
   disableIdle: true,
 };
 
+// Decision #27 — principal preservation across the prod handoff.
+//
+// All existing nuance.xyz user principals are derived against the production
+// asset canister URL. The .well-known/ii-alternative-origins file there
+// whitelists nuance.xyz + www.nuance.xyz, so any frontend served from those
+// domains gets the SAME principal each existing user already has → their
+// User canister profile, articles, follows, and NUA balance carry over with
+// zero migration.
+//
+// Local dev (`localhost:5173`) is intentionally NOT in the whitelist — so
+// `import.meta.env.PROD` is false here, derivationOrigin stays undefined,
+// and the local principal is fresh-per-device (a test identity, not the
+// developer's real Nuance account).
+const PROD_DERIVATION_ORIGIN = "https://exwqn-uaaaa-aaaaf-qaeaa-cai.ic0.app";
+const DERIVATION_ORIGIN: string | undefined = import.meta.env.PROD
+  ? PROD_DERIVATION_ORIGIN
+  : undefined;
+
+// Lazy singleton for the default (no-openIdProvider) AuthClient. Reused for
+// session restore, classic-II sign-in, and sign-out, which all share the same
+// IdbStorage. OpenID sign-in still constructs a fresh AuthClient per call
+// because `openIdProvider` is bound at construction time (decision #24, and
+// confirmed against @icp-sdk/auth@7.0.0's d.ts — no setter, signIn() does not
+// accept it). Reduces the common-path AuthClient count from 3 to 1.
+let defaultClient: AuthClient | null = null;
+function getDefaultClient(): AuthClient {
+  if (!defaultClient) {
+    defaultClient = new AuthClient({
+      idleOptions: IDLE_OPTIONS,
+      derivationOrigin: DERIVATION_ORIGIN,
+    });
+  }
+  return defaultClient;
+}
+
+// localStorage keys for login timestamps. Persisted across reloads within the
+// 8-hour delegation lifetime so the WelcomeBanner survives a mid-session
+// reload.
+//   - LAST_LOGIN: the most recent (current-session) login. Drives the
+//     WelcomeBanner's brief post-login display window.
+//   - PREVIOUS_LOGIN: the login before that — what the banner actually shows
+//     ("Last login: X ago"). Captured from LAST_LOGIN's prior value at the
+//     moment a new sign-in completes.
+const LAST_LOGIN_STORAGE_KEY = "nuance:last-login-at";
+const PREVIOUS_LOGIN_STORAGE_KEY = "nuance:previous-login-at";
+
+function readTimestamp(key: string): number | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(key);
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function writeTimestamp(key: string, value: number | null): void {
+  if (typeof window === "undefined") return;
+  if (value === null) window.localStorage.removeItem(key);
+  else window.localStorage.setItem(key, String(value));
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastLoginAt, setLastLoginAt] = useState<number | null>(() =>
+    readTimestamp(LAST_LOGIN_STORAGE_KEY),
+  );
+  const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(() =>
+    readTimestamp(PREVIOUS_LOGIN_STORAGE_KEY),
+  );
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -63,9 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const client = new AuthClient({ idleOptions: IDLE_OPTIONS });
-        if (cancelled) return;
-        const restored = await client.getIdentity();
+        const restored = await getDefaultClient().getIdentity();
         if (cancelled) return;
         const restoredPrincipal = restored.getPrincipal();
         if (restoredPrincipal.isAnonymous()) {
@@ -90,15 +154,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     setStatus("loading");
     try {
-      const client = new AuthClient({
-        idleOptions: IDLE_OPTIONS,
-        ...(provider ? { openIdProvider: provider } : {}),
-      });
+      // OpenID logins construct a fresh AuthClient (openIdProvider is bound at
+      // construction time, see decision #24). Classic II reuses the default
+      // singleton — same IdbStorage, no benefit to a fresh instance.
+      const client = provider
+        ? new AuthClient({
+            idleOptions: IDLE_OPTIONS,
+            derivationOrigin: DERIVATION_ORIGIN,
+            openIdProvider: provider,
+          })
+        : getDefaultClient();
       const next = await client.signIn();
       if (!mountedRef.current) return;
       const nextPrincipal = next.getPrincipal();
+      // The login currently stored as "last" becomes the "previous" login;
+      // `now` becomes the new "last". The WelcomeBanner displays the previous
+      // one ("Last login: X ago") and gates its visibility on the new one.
+      const now = Date.now();
+      const prior = readTimestamp(LAST_LOGIN_STORAGE_KEY);
+      writeTimestamp(PREVIOUS_LOGIN_STORAGE_KEY, prior);
+      writeTimestamp(LAST_LOGIN_STORAGE_KEY, now);
       setIdentity(next);
       setPrincipal(nextPrincipal);
+      setPreviousLoginAt(prior);
+      setLastLoginAt(now);
       setStatus("authenticated");
     } catch (err) {
       if (!mountedRef.current) return;
@@ -111,8 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setError(null);
     try {
-      const client = new AuthClient({ idleOptions: IDLE_OPTIONS });
-      await client.signOut();
+      await getDefaultClient().signOut();
       if (!mountedRef.current) return;
       setIdentity(null);
       setPrincipal(null);
@@ -139,10 +217,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: status === "authenticated",
       isLoading: status === "loading",
       error,
+      lastLoginAt,
+      previousLoginAt,
       login,
       logout,
     }),
-    [status, identity, principal, error, login, logout],
+    [
+      status,
+      identity,
+      principal,
+      error,
+      lastLoginAt,
+      previousLoginAt,
+      login,
+      logout,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

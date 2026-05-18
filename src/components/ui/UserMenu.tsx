@@ -6,12 +6,14 @@ import { Avatar } from "./Avatar";
 import { useAuth } from "../../contexts/useAuth";
 import { headerCopy } from "../../constants/copy";
 
-// Header logged-in state — minimum viable per PR #3 scope.
+// Header logged-in state.
 //
-// Renders the avatar (fallback to initial-on-gradient since we don't fetch
-// the User canister profile until PR #4) and a dropdown containing Logout.
-// Notification dot, "Manage account", and other dropdown items land in PR #4
-// alongside the rest of the logged-in chrome.
+// Renders the avatar (fallback to initial-on-gradient — Phase 2's
+// useMyProfile is not consumed here yet; that's a future cleanup) and a
+// dropdown containing Logout. The notification dot moved to the bell
+// button in HeaderLoggedIn during Phase 8's Figma fidelity pass; it lives
+// on the bell, not the avatar (Figma 1:50117 sits over the bell, not
+// the profile avatar).
 
 export function UserMenu() {
   const { principal, logout } = useAuth();

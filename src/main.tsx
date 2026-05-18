@@ -8,11 +8,14 @@ import { ActorsProvider } from "./contexts/ActorsContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ModalProvider } from "./services/modal";
 import { muiTheme } from "./theme";
-import { HomeLoggedOut } from "./routes/HomeLoggedOut";
+import { Home } from "./routes/Home";
+import { WriteStub } from "./routes/WriteStub";
 
 const router = createBrowserRouter([
-  { path: "/", element: <HomeLoggedOut variant="popular" /> },
-  { path: "/new", element: <HomeLoggedOut variant="new" /> },
+  { path: "/", element: <Home tab="following" /> },
+  { path: "/new", element: <Home tab="new" /> },
+  { path: "/your-mix", element: <Home tab="your-mix" /> },
+  { path: "/write", element: <WriteStub /> },
 ]);
 
 const queryClient = new QueryClient({

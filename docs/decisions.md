@@ -787,3 +787,133 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - Do not attempt `loadFontAsync` on any GT Walsheim Trial style — it will throw and abort the script (atomic, no partial state).
 - If a single edit will introduce inconsistency in a previously-uniform frame, surface the trade-off to Mr Nick before writing. Same protocol as the "demand elegance" / "present options when there are trade-offs" guidance.
 - When the migration question comes up again, capture the broader plan in a new decision entry rather than amending this one.
+
+---
+
+## #26 — Auth-aware route branching + stub-routes for deferred features
+
+**Date:** 2026-05-11
+
+**Status:** Active
+
+**Decision:** The home route(s) — `/` and `/new` — branch on `useAuth().isAuthenticated` at the route level, rendering `HomeLoggedOut` for anonymous visitors and `HomeLoggedIn` for authenticated ones. Tabs inside `HomeLoggedIn` are real URLs (per decision #12), not React state. When the design includes a feature whose implementation is deferred (Your mix tab content depends on the recs algorithm; the article editor depends on Lexical from the decision #22 backlog), the route still exists and the affiliated UI surface stays visible — the route renders a minimal stub message instead of being hidden or disabled. This is the project-wide pattern for "design ships ahead of implementation."
+
+**Inputs:**
+
+- PR #3 merged 2026-05-11 with auth + LoginModal. PR #4 starts on the logged-in home (Figma `1:50044`).
+- Figma recon of `1:50044` revealed the screen has three sections that depend on personalization (Your mix tab content, Recommended writers row, Recommended publications row) and a Recommended article highlight, plus a prominent "Create a new article" write-CTA whose destination (Lexical article editor) is in the decision #22 backlog.
+- No canister-side recommendation API exists (project lesson 2026-05-11). Recs must be implemented client-side, with the algorithm choice itself worth its own decision entry. Bundling that algorithm work into PR #4 was rejected during scoping — it bloats the PR and conflates layout from recommendation strategy.
+- The earlier PR #3 review (2026-05-11) flagged a "broken `Link to="/about"`" as a Minor — a real route that points to a non-existent destination. The opposite failure mode (a feature in the Figma that the code refuses to acknowledge exists) is just as bad for users and worse for design-drift detection.
+
+**Options considered:**
+
+- A. Single `/` route, internally branches in JSX to render the right tree. **Rejected** — couples auth-state inspection deeply into the home component; harder to reason about which surface is rendering at any URL.
+- B. **Auth-aware route branching at the router level; deferred features get their own real routes that render stub content.** **Chosen.** `/` and `/new` switch at the route level. `/your-mix` and `/write` exist as real routes whose components render a "Coming soon" surface.
+- C. Hide deferred features entirely until they ship. **Rejected** — drifts the running code from the canonical Figma design; future sessions encountering `1:50044` see 3 tabs and have to rediscover that one is "hidden in code." Forces unnecessary diff churn when PR #5 lands.
+- D. Disabled-but-visible buttons/tabs without dedicated routes. **Rejected** — feels hostile (visibly invites a click that does nothing); also doesn't fix the SEO concern (no real URL for the deferred surface).
+
+**Rationale:**
+
+- Auth-state-aware route branching keeps `HomeLoggedOut` and `HomeLoggedIn` as independent React trees, each with its own data dependencies. The router file becomes the single place to read what URL serves which audience.
+- Stub-routes preserve the design fidelity at the URL level. Future sessions can navigate to `/your-mix` and see the design intent (the tab exists, the URL is stable, the route is named) without confusion about whether the feature is "missing" or "deferred." When PR #5 ships, the stub component is replaced and no consumer-facing URL changes.
+- Real URLs for deferred surfaces preserve the decision #12 SEO posture: every indexable piece of the product is URL-addressable. Even "Coming soon" pages are valid landing pages — they just communicate state instead of content.
+- The pattern is reusable. Future deferred features (the article editor, notification panel, settings screen) follow the same shape: real route, minimal stub component, replace when implementation lands.
+
+**Trade-offs accepted:**
+
+- Stub-routes mean users discover features that don't yet work. Acceptable because the stub messaging explicitly says "coming soon" — better than silent absence in the running code while the Figma shows the feature, which is the failure mode that bites future sessions hardest.
+- Two trees (HomeLoggedOut, HomeLoggedIn) share a non-trivial amount of structure (Header, Topics, infinite-scroll grid). Some duplication accepted; refactor toward shared composition only when the second/third instance proves the abstraction is right. Premature "Home base class" rejected.
+- The auth-aware router branch fires a re-render on login/logout — the route component swaps even though the URL is unchanged. Acceptable; React Router handles this cleanly.
+- Following tab is the default landing for an authed user (resolved 2026-05-11 in the PR #4 scope conversation). Cold-start users with 0 follows land on an empty tab. Mitigated by an explicit empty-state message ("You are not yet following any writers, publications or topics. When you do, they will show up here.") rather than a blank screen.
+
+**How to apply:**
+
+- The router file (`src/main.tsx` or wherever routes are declared) is the source of truth for which audience sees which surface at each URL. A new route serving both audiences gets a `<Home />`-style branch component; a route serving only one audience gets a guard that redirects the other audience to the closest meaningful URL (e.g., `/your-mix` is auth-gated → anon visitors redirect to `/`).
+- When a Figma frame contains a feature that depends on un-built infrastructure: add a real route, a minimal stub component (`<Stub message="..." />` or feature-specific), and put the actual implementation file path on the stub as a TODO so the next session knows where to land. Do not hide the feature from the UI.
+- When PR #N ships the deferred implementation: replace the stub component import in the route declaration, delete the stub file, run the build. No URL changes, no callers to update.
+- Companion to decision #12 (SEO + real URLs): stub-routes count as real URLs and get the same per-route `<title>` + `<meta description>` treatment. A "Coming soon" page still tells crawlers and users what the URL is about.
+
+---
+
+## #27 — `derivationOrigin` wired to the production asset canister; prod handoff preserves existing user principals
+
+**Date:** 2026-05-12
+
+**Status:** Active
+
+**Decision:** All `AuthClient` constructions in this project pass `derivationOrigin = "https://exwqn-uaaaa-aaaaf-qaeaa-cai.ic0.app"` (the production Nuance asset canister URL) in production builds, and pass `undefined` in local dev. Production users who already have a nuance.xyz account therefore get the **same II-derived principal** under the new frontend as under the old one — their User canister profile, articles, follows, NUA balance, and on-chain history carry across the prod handoff with **zero migration**. Local-dev principals stay fresh-per-device (test identities).
+
+**Inputs:**
+
+- During PR #4 Phase 2 (2026-05-12), Mr Nick's WelcomeBanner showed "Welcome to Nuance!" with no name — the User canister returned `#err("User not found for PrincipalId ...")` for his authed principal. Investigation traced the cause to the principal-per-app derivation behavior of II 2.0: every distinct origin gets a distinct principal unless `derivationOrigin` is set.
+- The old `aikindapps/nuance-frontend` (`src/nuance_assets_v2_frontend/src/main.tsx`) sets `derivationOrigin` conditionally: a localhost-served origin for local development, a UAT canister URL for UAT, and `https://exwqn-uaaaa-aaaaf-qaeaa-cai.ic0.app` for production. Every existing nuance.xyz user has been authenticating against that production derivation origin for the lifetime of the platform.
+- The production asset canister exposes a `.well-known/ii-alternative-origins` file (mirror of `aikindapps/nuance-frontend/src/nuance_assets_v2_frontend/well-known/.well-known/ii-alternative-origins`) whitelisting `https://nuance.xyz`, `https://www.nuance.xyz`, the `.raw.ic0.app` mirror of the canister, and a handful of partner origins (distrikt.app, etc.). `http://localhost:5173` is intentionally NOT whitelisted — local dev would fail the alternative-origins check if it tried to use the production derivation origin.
+- Decision #5 (local-only deploy; production handoff is SNS-governed) means we cannot today modify the alternative-origins file on the production asset canister to add a non-production origin.
+
+**Options considered:**
+
+- A. Leave `derivationOrigin` unset (current PR #3 default). Every install gets a fresh principal. Prod handoff would orphan every existing user from their on-chain data. **Rejected.**
+- B. Wire `derivationOrigin = PROD_DERIVATION_ORIGIN` unconditionally. Prod works; local dev fails because localhost isn't in alternative-origins. **Rejected.**
+- C. **Wire `derivationOrigin = PROD_DERIVATION_ORIGIN` only in production builds; leave it undefined in local dev.** **Chosen.** Mirrors the old frontend's pattern (`isLocal`-conditional) using Vite's `import.meta.env.PROD` build-time flag.
+- D. Run a local II / local alternative-origins file (the full old-frontend setup). Rejected — significantly more local-dev infrastructure for a marginal gain (testing with "real" nuance.xyz identities locally). Test-identity-only local dev is sufficient and arguably safer.
+
+**Rationale:**
+
+- **Production user data preservation is non-negotiable.** Nuance has ~7K users with on-chain history (articles, follows, NUA balance, NFT articles). A handoff that orphans them from their data is unacceptable. C is the standard ICP pattern for this.
+- The build-time `import.meta.env.PROD` flag is the canonical Vite mechanism for production-only configuration. Tree-shakes cleanly; no runtime origin string-matching.
+- Local-dev principal isolation is a feature, not a bug. Developers don't accidentally pollute their real Nuance accounts with test articles, follow noise, or experiments. They authenticate as fresh identities on every machine. The "Welcome to Nuance!" copy (vs "Welcome back, {name}!") is the WelcomeBanner's honest signal that the current session is on a test identity.
+- The trade-off — local dev cannot reproduce prod user behaviour — is acceptable. Anything that requires real-prod-principal exercise (e.g., regression testing a follow-graph rendering against a real account) gets a manual prod-style test post-deploy, or a future preview-deploy scheme (likely covered by an extension of #5 when the DAO handoff is planned).
+
+**Trade-offs accepted:**
+
+- **Local dev users see "Welcome to Nuance!" not "Welcome back, {name}!".** Their User canister profile lookup returns `#err(User not found)`. Hooks treat this as a valid "unregistered" state — surfaces fall back to anonymous/no-profile rendering paths. Future PRs that add registration UI will surface the "complete your registration" CTA at this boundary.
+- **Authed canister calls in local dev are made by a principal that has no Nuance history.** Following queries return empty; tipping/clapping wouldn't work even if wired; any user-action mutations would be from-the-perspective-of a brand-new account. PR #4's Following tab will show an empty state in local dev for this reason.
+- **Adding a new prod-eligible origin (e.g., a preview deploy URL) requires an SNS proposal** to update the alternative-origins file on the production asset canister. Not a concern at PR #4 / local-only scope; surfaces when DAO handoff strategy is planned.
+- **A different prod-eligible origin (e.g., the UAT canister URL) would need its own conditional branch** if/when UAT becomes part of the workflow. Mirrors the old frontend's three-way `isLocal ? local : isUat ? uat : prod` pattern. Easy to add later; not needed today.
+
+**How to apply:**
+
+- `AuthClient` construction in `src/contexts/AuthContext.tsx` reads a module-level `DERIVATION_ORIGIN` constant: `import.meta.env.PROD ? "https://exwqn-uaaaa-aaaaf-qaeaa-cai.ic0.app" : undefined`. Every `new AuthClient({...})` call passes this — both the lazy singleton's construction and the per-OpenID fresh-construction path.
+- If we later add a UAT deploy or any other prod-eligible origin, extend the constant to a function that branches on `window.location.origin` (or a build-time env var) — mirroring the old frontend's three-way conditional. Add a new alternative-origins entry to the canonical production list via SNS proposal at the same time.
+- The WelcomeBanner UI (Phase 2) explicitly distinguishes "Welcome back, {name}!" (registered) from "Welcome to Nuance!" (unregistered) so the principal-mismatch state is visually obvious during local dev. This is intentional — it's the canary that confirms derivation is working as expected.
+- Any future canister method that mutates state on behalf of the user (publishing, following, tipping) must be aware that the local-dev caller is a fresh principal — local-dev testing of such flows is fundamentally limited. Plan for prod-style verification post-deploy.
+
+---
+
+## #28 — Following feed: fetch-once + client-side pagination, with a per-source depth cap
+
+**Date:** 2026-05-18
+
+**Status:** Active
+
+**Decision:** The Following feed (`useFollowing`) does NOT paginate its two canister sources incrementally. It fetches the full keyProps list from each source once — `PostCore.getPostsByFollowers` (writers/publications you follow) and `PostCore.getMyFollowingTagsPostKeyProperties` (topics you follow) — capped at `FEED_DEPTH_PER_SOURCE = 120` per source, merges + dedupes by `postId` + sorts by `publishedDate` desc into a single global list, then paginates that list **client-side**. The merged list is built on page 0 and carried forward in the React Query `pageParam` so later pages slice it without re-fetching. Hydration (the expensive `getPostsByPostIds` bucket calls + `getUsersByHandles`) stays lazy — one page-sized slice at a time.
+
+**Inputs:**
+
+- PR #4's first implementation of `useFollowing` paginated both sources with a single shared cursor derived from the merged post count. The two PostCore methods have **independent index spaces** — `getPostsByFollowers` indexes the writer-union, `getMyFollowingTagsPostKeyProperties` the tag-union. Advancing one cursor (the merged count) past both meant each source's items between its per-source consumed count and the merged count were never requested. Confirmed in PR #4 review (2026-05-18): on any account with more than one page of followed content, a growing slice of the feed is silently dropped on scroll. Not caught earlier because every local-dev identity is cold-start (0 follows — decision #27), so `useFollowing` is `enabled: false` locally.
+- A naive two-cursor patch (one cursor per source, each advanced by that source's returned count) fixes the *skipping* but introduces **cross-page duplicates** — a post that is both by a followed writer AND in a followed topic lands in different page-windows of the two sources, and a per-page dedupe `Set` cannot catch it.
+- `PostKeyProperties` is lightweight metadata (postId, bucketCanisterId, claps, dates) — not article bodies. Fetching a few hundred of them in one query call is cheap. ICP query responses cap at ~2MB.
+
+**Options considered:**
+
+- A. Single shared cursor over the merged count (the shipped-then-reverted PR #4 approach). **Rejected** — skips articles.
+- B. Two independent cursors, one per source. **Rejected** — fixes skipping but causes cross-page duplicates; deduping across pages needs global state that doesn't fit `useInfiniteQuery`'s per-page model cleanly.
+- C. **Fetch the full keyProps list from each source once (capped), merge + dedupe + sort globally, paginate the result client-side.** **Chosen.** Correct by construction — one global sorted deduped list, sliced. No skips, no duplicates, globally-correct chronology. `ArticleFeed` and `FollowingTab` need no changes (each page is exactly one `count`-sized slice).
+- D. Option C uncapped — probe `totalCount` and fetch exactly what exists. **Rejected for now** — unbounded; a heavy follower could approach the response-size limit. The cap is a cheap, safe bound and PR #5 reworks the logged-in feed anyway.
+
+**Rationale:**
+
+- The merge-of-two-independently-indexed-sources problem only has a correct incremental-pagination solution with carry-over buffers across pages — significant complexity for an infinite query. Fetching once and paginating client-side dissolves the problem: the cheap part (keyProps metadata) is fetched eagerly, the expensive part (hydration) stays lazy.
+- `FEED_DEPTH_PER_SOURCE = 120` → merged feed up to ~240 articles deep (minus dedupe overlap). Comfortably under the 2MB query-response limit for `PostKeyProperties` payloads; deep enough that scroll-exhaustion is a non-issue for nearly all users.
+- Keeps `useFollowing` a `useInfiniteQuery` so the shared `ArticleFeed` renderer works unchanged.
+
+**Trade-offs accepted:**
+
+- A user following enough prolific writers to exceed ~120 posts from one source sees only the most-recent 120 from that source; older followed articles are not reachable by scroll. Acceptable for v1 — PR #5 reworks the logged-in feed (recommendations) and can revisit depth then.
+- The full keyProps fetch happens up front on first render of the Following tab (one query call per source). Slightly more eager than incremental pagination, but the payload is small and it is cached (`staleTime` 2 min).
+
+**How to apply:**
+
+- `useFollowing` (`src/features/home/hooks/useFollowing.ts`): page 0's `queryFn` builds the merged list; `getNextPageParam` carries it forward in the `pageParam` and stops when the next slice would start at/past `merged.length`.
+- Any future feed that unions two or more independently-indexed canister sources should follow the same shape — fetch metadata once, merge globally, paginate client-side — rather than attempting a shared incremental cursor.
+- If feed depth becomes a real user complaint, revisit as option D (probe `totalCount`) or raise the cap — but measure the keyProps payload size against the 2MB limit first.

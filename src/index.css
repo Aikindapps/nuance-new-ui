@@ -42,6 +42,8 @@
   /* Colors — Nuance palette */
   --color-brand-purple: #5405d4;           /* nur/purple/100 */
   --color-brand-purple-light: #935bfb;     /* gradient end-stop */
+  --color-brand-purple-5: rgba(84, 5, 212, 0.05); /* nur/purple/5% — tinted bg (WriteCtaBanner) */
+  --color-brand-purple-10: rgba(84, 5, 212, 0.1); /* nur/purple/10% — tag pill bg (logged-in Topics rail) */
   --color-ink: #202123;                    /* nur/black/100% (text) */
   --color-ink-80: rgba(32, 33, 35, 0.8);   /* nur/black/80% (text) */
   --color-ink-60: rgba(32, 33, 35, 0.6);   /* nur/black/60% (text) */
@@ -58,8 +60,17 @@
      adequate contrast on white backgrounds (decision #21 centralization). */
   --color-error: #c62828;
 
-  /* Radii */
+  /* Notification badge dot — Figma 1:50117 (UserMenu unread indicator).
+     Brighter red than the error color so it reads as a status badge rather
+     than a problem state. */
+  --color-notification: #E20E0E;
+
+  /* Radii. Names are deliberately non-colliding with Tailwind's default
+     rounded-{sm,md,lg,xl} scale so overriding those defaults is never
+     accidental — following the --radius-card precedent. */
+  --radius-popup: 6px;        /* WelcomeBanner popup (Figma 1:50060) */
   --radius-card: 8px;
+  --radius-banner: 16px;      /* WriteCtaBanner / large surfaces (Figma 1:50057) */
   --radius-pill: 9999px;
 
   /* Shadows — Figma "Purple glow light" used on author/publication cards.
