@@ -2,23 +2,33 @@
 // exports from here so non-engineers can edit headlines without touching
 // JSX, and so future i18n requires no refactor.
 
-type HomeVariant = "popular" | "new";
+// Metadata keys. The logged-out home serves "popular" and "new"; the
+// logged-in home also serves "following". A given URL reuses the same entry
+// regardless of auth state — anon and authed `/` both use `popular`, `/new`
+// both use `new` (decision #29).
+type HomeMetaKey = "popular" | "new" | "following";
 
 export const homeMetadata: Record<
-  HomeVariant,
+  HomeMetaKey,
   { title: string; description: string; h1: string }
 > = {
   popular: {
-    title: "Nuance — Popular articles on the blockchain",
+    title: "Nuance — Popular articles",
     description:
       "Discover popular articles from writers on Nuance, the on-chain blogging platform. Read the best stories on crypto, DAOs, Web3, and more.",
     h1: "Popular articles on Nuance",
   },
   new: {
-    title: "Nuance — New articles on the blockchain",
+    title: "Nuance — New articles",
     description:
       "The latest articles from writers on Nuance, the on-chain blogging platform. Fresh stories on crypto, DAOs, Web3, and more.",
     h1: "New articles on Nuance",
+  },
+  following: {
+    title: "Nuance — From the writers, publications and topics you follow",
+    description:
+      "Articles from the writers, publications and topics you follow on Nuance, the on-chain blogging platform.",
+    h1: "Articles from the writers, publications and topics you follow on Nuance",
   },
 };
 
@@ -82,12 +92,6 @@ export const headerCopy = {
 };
 
 export const homeLoggedInCopy = {
-  metadata: {
-    title: "Nuance — Your feed",
-    description:
-      "Your personalized feed on Nuance — articles from writers you follow, fresh stories, and recommendations from across the on-chain blogging platform.",
-    h1: "Your Nuance feed",
-  },
   // WelcomeBanner copy. "Welcome back" for registered users (profile fetch
   // returned a User record); "Welcome to Nuance" for unregistered principals
   // — those exist in local dev (test identities) and in any prod scenario
@@ -101,10 +105,6 @@ export const homeLoggedInCopy = {
   // Phase 5 cold-start empty state for the Following tab.
   followingEmpty:
     "You are not yet following any writers, publications or topics. When you do, they will show up here.",
-  // Phase 6 stub copy for the Your mix tab — deferred to PR #5 alongside the recs algorithm.
-  yourMixStubHeading: "Personalized recommendations coming soon",
-  yourMixStubBody:
-    "For now, browse Following or New to discover writers and articles on Nuance.",
 };
 
 export const writeCtaBannerCopy = {

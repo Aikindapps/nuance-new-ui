@@ -12,9 +12,9 @@ import { Home } from "./routes/Home";
 import { WriteStub } from "./routes/WriteStub";
 
 const router = createBrowserRouter([
-  { path: "/", element: <Home tab="following" /> },
+  { path: "/", element: <Home tab="popular" /> },
+  { path: "/following", element: <Home tab="following" /> },
   { path: "/new", element: <Home tab="new" /> },
-  { path: "/your-mix", element: <Home tab="your-mix" /> },
   { path: "/write", element: <WriteStub /> },
 ]);
 

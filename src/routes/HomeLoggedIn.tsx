@@ -5,11 +5,10 @@ import { WelcomeBanner } from "../features/home/sections/WelcomeBanner";
 import { WriteCtaBanner } from "../features/home/sections/WriteCtaBanner";
 import { HomeTabBar } from "../features/home/sections/HomeTabBar";
 import { FollowingTab } from "../features/home/sections/FollowingTab";
-import { NewTab } from "../features/home/sections/NewTab";
-import { YourMixStub } from "../features/home/sections/YourMixStub";
-import { heroCopy, homeLoggedInCopy } from "../constants/copy";
+import { ArticleTab } from "../features/home/sections/ArticleTab";
+import { heroCopy, homeMetadata } from "../constants/copy";
 
-export type HomeLoggedInTab = "following" | "new" | "your-mix";
+export type HomeLoggedInTab = "popular" | "following" | "new";
 
 // Logged-in home shell. Header + WelcomeBanner + Topics on the brand gradient
 // band; WriteCtaBanner + HomeTabBar + tab content below. Tab selection is
@@ -18,17 +17,20 @@ export type HomeLoggedInTab = "following" | "new" | "your-mix";
 export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
   const { data } = usePopularDiscovery();
   const topics = data?.topics.length ? data.topics : heroCopy.fallbackTopics;
+  // Per-tab metadata — the same entry a given URL serves when logged out
+  // (`/` → popular, `/new` → new), plus a dedicated `following` entry.
+  const meta = homeMetadata[tab];
 
   return (
     <>
-      <title>{homeLoggedInCopy.metadata.title}</title>
-      <meta name="description" content={homeLoggedInCopy.metadata.description} />
-      <meta property="og:title" content={homeLoggedInCopy.metadata.title} />
-      <meta property="og:description" content={homeLoggedInCopy.metadata.description} />
+      <title>{meta.title}</title>
+      <meta name="description" content={meta.description} />
+      <meta property="og:title" content={meta.title} />
+      <meta property="og:description" content={meta.description} />
       <meta property="og:type" content="website" />
 
       <main className="min-h-screen bg-white">
-        <h1 className="sr-only">{homeLoggedInCopy.metadata.h1}</h1>
+        <h1 className="sr-only">{meta.h1}</h1>
 
         <HeaderLoggedIn />
         <WelcomeBanner />
@@ -71,9 +73,9 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
             <HomeTabBar />
           </div>
           <div className="mt-10 md:mt-12">
+            {tab === "popular" && <ArticleTab variant="popular" />}
             {tab === "following" && <FollowingTab />}
-            {tab === "new" && <NewTab />}
-            {tab === "your-mix" && <YourMixStub />}
+            {tab === "new" && <ArticleTab variant="new" />}
           </div>
         </div>
       </main>

@@ -1,10 +1,12 @@
 import { Tab } from "../../../components/ui/Tab";
 
-// Figma 1:50064 — 3-tab bar for the logged-in home. Routes map per
-// decision #26: / = Following (default authed landing), /new = New (matches
-// HomeLoggedOut's /new for anon), /your-mix = personalized recs stub
-// (deferred to PR #5). NavLink active state drives the purple bold/underline
-// styling already baked into the Tab component (from PR #1).
+// 3-tab bar for the logged-in home. Routes per decision #29:
+// / = Popular (default authed landing, shared with the anon home),
+// /following = Following (auth-gated), /new = New (matches the anon /new).
+// Figma 1:50064 is the source tab bar; labels diverge from it — "Popular"
+// replaces "Your mix" per #29 (recommendations deferred out of scope).
+// NavLink active state drives the purple bold/underline styling baked into
+// the Tab component (from PR #1).
 
 export function HomeTabBar() {
   return (
@@ -12,10 +14,10 @@ export function HomeTabBar() {
       aria-label="Feed view"
       className="flex items-center border-b border-ink-border/20"
     >
-      <Tab to="/your-mix" end>
-        Your mix
-      </Tab>
       <Tab to="/" end>
+        Popular
+      </Tab>
+      <Tab to="/following" end>
         Following
       </Tab>
       <Tab to="/new" end>
