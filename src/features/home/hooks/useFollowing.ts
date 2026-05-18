@@ -10,12 +10,12 @@ import { FEATURED_PAGE_SIZE, INFINITE_PAGE_SIZE } from "./useArticles";
 // tagged with topics you follow. Sorted by publish date desc, deduped by
 // postId.
 //
-// Sources (called in parallel per page):
+// Sources:
 //   - PostCore.getPostsByFollowers(handles, from, to)
-//     handles = useMyProfile().followersArray (the User canister stores the
-//     list of principals the user follows under followersArray — misleading
-//     name; the Motoko code adds the followed author's principal to the
-//     caller's followersArray).
+//     handles = useMyProfile().followersArray. The User canister's buildUser
+//     converts the internally-stored principal IDs to handles before
+//     returning the record, so this field IS handles (verified against
+//     src/User/main.mo buildHandlesFromPrincipalIdsArray).
 //   - PostCore.getMyFollowingTagsPostKeyProperties(from, to)
 //     uses msg.caller (authed agent required, supplied by Phase 4
 //     ActorsContext).
@@ -24,50 +24,67 @@ import { FEATURED_PAGE_SIZE, INFINITE_PAGE_SIZE } from "./useArticles";
 // be empty — followersArray.length === 0 AND getMyTags().length === 0 — the
 // tab renders the locked empty-state copy instead of fetching.
 //
-// Pagination: each page calls both sources with the SAME (indexFrom,
-// indexTo) range. Merge → dedupe → sort gives variable per-page article
-// counts; pagination math uses the merged keyProps length so subsequent
-// pages step from the previous tip. Approximate (the two sources don't
-// share a global index) but functional — fine for a feed.
+// Pagination (decision #28): the two sources have independent index spaces,
+// so a shared cursor cannot page their union without skipping or duplicating
+// articles. Instead the FULL keyProps list is fetched from each source once
+// (capped — see FEED_DEPTH_PER_SOURCE), merged + deduped + sorted ONCE into a
+// single global list, and that list is then paginated CLIENT-SIDE. The merged
+// list rides along in the React Query pageParam so later pages slice it
+// without re-fetching. Hydration (the expensive bucket + user calls) stays
+// lazy — one count-sized slice per page.
+
+// Per-source fetch depth. The merged feed is therefore up to 2× this deep
+// (minus dedupe overlap). Bounds the keyProps response well under ICP's
+// ~2MB query-response limit; deep enough that scroll-exhaustion is a
+// non-issue for nearly all users. Decision #28.
+const FEED_DEPTH_PER_SOURCE = 120;
 
 type ArticlesPage = {
   articles: import("../types").Article[];
+  // Count of merged keyProps consumed by THIS page (drives the empty/error
+  // distinction in hydrateArticles' caller and pagination end-detection).
   keyPropsLength: number;
+  // The full sorted+deduped keyProps list, carried forward so pages > 0 can
+  // slice it without re-fetching. Identical object across every page.
+  merged: PostKeyProperties[];
+  // Offset into `merged` where the NEXT page begins. >= merged.length means
+  // the feed is exhausted.
+  nextOffset: number;
 };
 
-async function fetchFollowing(
+// pageParam shape. Page 0 has no merged list yet (merged: null) — its queryFn
+// fetches + builds it. Pages > 0 carry the list built by page 0.
+type PageParam = { offset: number; merged: PostKeyProperties[] | null };
+
+const INITIAL_PAGE_PARAM: PageParam = { offset: 0, merged: null };
+
+// Fetch the full keyProps list from both sources, merge → dedupe → sort.
+// Called once (page 0); the result is reused for every subsequent page.
+async function fetchMergedKeyProps(
   actors: ActorsValue,
   handles: string[],
   hasTags: boolean,
-  skip: number,
-  count: number,
-): Promise<ArticlesPage> {
-  const indexFrom = skip;
-  const indexTo = skip + count;
+): Promise<PostKeyProperties[]> {
   // PostCore looks up via lowercaseHandleReverseHashMap — must lowercase
   // (project lesson 2026-04-22, same gotcha as User.getUsersByHandles).
   const lowered = handles.map((h) => h.toLowerCase());
 
   const [byWritersResp, byTagsResp] = await Promise.all([
     handles.length > 0
-      ? actors.getPostsByFollowers(lowered, indexFrom, indexTo)
+      ? actors.getPostsByFollowers(lowered, 0, FEED_DEPTH_PER_SOURCE)
       : Promise.resolve({ totalCount: "0", posts: [] }),
     hasTags
-      ? actors.getMyFollowingTagsPostKeyProperties(indexFrom, indexTo)
+      ? actors.getMyFollowingTagsPostKeyProperties(0, FEED_DEPTH_PER_SOURCE)
       : Promise.resolve({ totalCount: "0", posts: [] }),
   ]);
 
-  // Merge, dedupe by postId, sort by publishedDate desc (ms-since-epoch as
-  // text — parseInt; project lesson 2026-04-22 confirms ms not ns).
+  // Merge, dedupe by postId (globally — a post can be both by a followed
+  // writer and tagged with a followed topic), sort by publishedDate desc
+  // (ms-since-epoch as text — parseInt; project lesson 2026-04-22 confirms
+  // ms not ns).
   const seen = new Set<string>();
   const merged: PostKeyProperties[] = [];
-  for (const kp of byWritersResp.posts) {
-    if (!seen.has(kp.postId)) {
-      seen.add(kp.postId);
-      merged.push(kp);
-    }
-  }
-  for (const kp of byTagsResp.posts) {
+  for (const kp of [...byWritersResp.posts, ...byTagsResp.posts]) {
     if (!seen.has(kp.postId)) {
       seen.add(kp.postId);
       merged.push(kp);
@@ -78,11 +95,30 @@ async function fetchFollowing(
     const bMs = Number.parseInt(b.publishedDate, 10) || 0;
     return bMs - aMs;
   });
+  return merged;
+}
 
-  if (merged.length === 0) return { articles: [], keyPropsLength: 0 };
+async function fetchFollowingPage(
+  actors: ActorsValue,
+  handles: string[],
+  hasTags: boolean,
+  pageParam: PageParam,
+): Promise<ArticlesPage> {
+  // Page 0 builds the merged list; later pages reuse the one passed forward.
+  const merged =
+    pageParam.merged ?? (await fetchMergedKeyProps(actors, handles, hasTags));
 
-  const articles = await hydrateArticles(actors, merged);
-  return { articles, keyPropsLength: merged.length };
+  const count =
+    pageParam.offset === 0 ? FEATURED_PAGE_SIZE : INFINITE_PAGE_SIZE;
+  const slice = merged.slice(pageParam.offset, pageParam.offset + count);
+  const articles = slice.length > 0 ? await hydrateArticles(actors, slice) : [];
+
+  return {
+    articles,
+    keyPropsLength: slice.length,
+    merged,
+    nextOffset: pageParam.offset + count,
+  };
 }
 
 export function useFollowing() {
@@ -105,28 +141,16 @@ export function useFollowing() {
     ],
     // Don't fire if BOTH sources would be empty — FollowingTab renders the
     // empty-state copy in that case, no network needed.
-    enabled:
-      profile.isSuccess && tags.isSuccess && (hasFollows || hasTags),
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) => {
-      const count = pageParam === 0 ? FEATURED_PAGE_SIZE : INFINITE_PAGE_SIZE;
-      return fetchFollowing(
-        actors,
-        followHandles,
-        hasTags,
-        pageParam as number,
-        count,
-      );
-    },
-    // Subsequent pages step from the merged length of all prior pages.
-    // The two sources are paginated with the SAME (from, to) range so
-    // their underlying indices stay aligned with the union page.
-    getNextPageParam: (lastPage, allPages) => {
-      const expectedCount =
-        allPages.length === 1 ? FEATURED_PAGE_SIZE : INFINITE_PAGE_SIZE;
-      // Both sources returned fewer than expected → reached the end of both.
-      if (lastPage.keyPropsLength < expectedCount) return undefined;
-      return allPages.reduce((sum, p) => sum + p.keyPropsLength, 0);
+    enabled: profile.isSuccess && tags.isSuccess && (hasFollows || hasTags),
+    initialPageParam: INITIAL_PAGE_PARAM,
+    queryFn: ({ pageParam }) =>
+      fetchFollowingPage(actors, followHandles, hasTags, pageParam),
+    // The merged list is global and fixed once page 0 builds it — pagination
+    // is a pure client-side slice. Stop when the next slice would start at or
+    // past the end of the merged list.
+    getNextPageParam: (lastPage): PageParam | undefined => {
+      if (lastPage.nextOffset >= lastPage.merged.length) return undefined;
+      return { offset: lastPage.nextOffset, merged: lastPage.merged };
     },
     staleTime: 1000 * 60 * 2,
   });

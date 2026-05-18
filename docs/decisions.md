@@ -877,3 +877,43 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - If we later add a UAT deploy or any other prod-eligible origin, extend the constant to a function that branches on `window.location.origin` (or a build-time env var) — mirroring the old frontend's three-way conditional. Add a new alternative-origins entry to the canonical production list via SNS proposal at the same time.
 - The WelcomeBanner UI (Phase 2) explicitly distinguishes "Welcome back, {name}!" (registered) from "Welcome to Nuance!" (unregistered) so the principal-mismatch state is visually obvious during local dev. This is intentional — it's the canary that confirms derivation is working as expected.
 - Any future canister method that mutates state on behalf of the user (publishing, following, tipping) must be aware that the local-dev caller is a fresh principal — local-dev testing of such flows is fundamentally limited. Plan for prod-style verification post-deploy.
+
+---
+
+## #28 — Following feed: fetch-once + client-side pagination, with a per-source depth cap
+
+**Date:** 2026-05-18
+
+**Status:** Active
+
+**Decision:** The Following feed (`useFollowing`) does NOT paginate its two canister sources incrementally. It fetches the full keyProps list from each source once — `PostCore.getPostsByFollowers` (writers/publications you follow) and `PostCore.getMyFollowingTagsPostKeyProperties` (topics you follow) — capped at `FEED_DEPTH_PER_SOURCE = 120` per source, merges + dedupes by `postId` + sorts by `publishedDate` desc into a single global list, then paginates that list **client-side**. The merged list is built on page 0 and carried forward in the React Query `pageParam` so later pages slice it without re-fetching. Hydration (the expensive `getPostsByPostIds` bucket calls + `getUsersByHandles`) stays lazy — one page-sized slice at a time.
+
+**Inputs:**
+
+- PR #4's first implementation of `useFollowing` paginated both sources with a single shared cursor derived from the merged post count. The two PostCore methods have **independent index spaces** — `getPostsByFollowers` indexes the writer-union, `getMyFollowingTagsPostKeyProperties` the tag-union. Advancing one cursor (the merged count) past both meant each source's items between its per-source consumed count and the merged count were never requested. Confirmed in PR #4 review (2026-05-18): on any account with more than one page of followed content, a growing slice of the feed is silently dropped on scroll. Not caught earlier because every local-dev identity is cold-start (0 follows — decision #27), so `useFollowing` is `enabled: false` locally.
+- A naive two-cursor patch (one cursor per source, each advanced by that source's returned count) fixes the *skipping* but introduces **cross-page duplicates** — a post that is both by a followed writer AND in a followed topic lands in different page-windows of the two sources, and a per-page dedupe `Set` cannot catch it.
+- `PostKeyProperties` is lightweight metadata (postId, bucketCanisterId, claps, dates) — not article bodies. Fetching a few hundred of them in one query call is cheap. ICP query responses cap at ~2MB.
+
+**Options considered:**
+
+- A. Single shared cursor over the merged count (the shipped-then-reverted PR #4 approach). **Rejected** — skips articles.
+- B. Two independent cursors, one per source. **Rejected** — fixes skipping but causes cross-page duplicates; deduping across pages needs global state that doesn't fit `useInfiniteQuery`'s per-page model cleanly.
+- C. **Fetch the full keyProps list from each source once (capped), merge + dedupe + sort globally, paginate the result client-side.** **Chosen.** Correct by construction — one global sorted deduped list, sliced. No skips, no duplicates, globally-correct chronology. `ArticleFeed` and `FollowingTab` need no changes (each page is exactly one `count`-sized slice).
+- D. Option C uncapped — probe `totalCount` and fetch exactly what exists. **Rejected for now** — unbounded; a heavy follower could approach the response-size limit. The cap is a cheap, safe bound and PR #5 reworks the logged-in feed anyway.
+
+**Rationale:**
+
+- The merge-of-two-independently-indexed-sources problem only has a correct incremental-pagination solution with carry-over buffers across pages — significant complexity for an infinite query. Fetching once and paginating client-side dissolves the problem: the cheap part (keyProps metadata) is fetched eagerly, the expensive part (hydration) stays lazy.
+- `FEED_DEPTH_PER_SOURCE = 120` → merged feed up to ~240 articles deep (minus dedupe overlap). Comfortably under the 2MB query-response limit for `PostKeyProperties` payloads; deep enough that scroll-exhaustion is a non-issue for nearly all users.
+- Keeps `useFollowing` a `useInfiniteQuery` so the shared `ArticleFeed` renderer works unchanged.
+
+**Trade-offs accepted:**
+
+- A user following enough prolific writers to exceed ~120 posts from one source sees only the most-recent 120 from that source; older followed articles are not reachable by scroll. Acceptable for v1 — PR #5 reworks the logged-in feed (recommendations) and can revisit depth then.
+- The full keyProps fetch happens up front on first render of the Following tab (one query call per source). Slightly more eager than incremental pagination, but the payload is small and it is cached (`staleTime` 2 min).
+
+**How to apply:**
+
+- `useFollowing` (`src/features/home/hooks/useFollowing.ts`): page 0's `queryFn` builds the merged list; `getNextPageParam` carries it forward in the `pageParam` and stops when the next slice would start at/past `merged.length`.
+- Any future feed that unions two or more independently-indexed canister sources should follow the same shape — fetch metadata once, merge globally, paginate client-side — rather than attempting a shared incremental cursor.
+- If feed depth becomes a real user complaint, revisit as option D (probe `totalCount`) or raise the cap — but measure the keyProps payload size against the 2MB limit first.
