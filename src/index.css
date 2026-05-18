@@ -65,8 +65,12 @@
      than a problem state. */
   --color-notification: #E20E0E;
 
-  /* Radii */
+  /* Radii. Names are deliberately non-colliding with Tailwind's default
+     rounded-{sm,md,lg,xl} scale so overriding those defaults is never
+     accidental — following the --radius-card precedent. */
+  --radius-popup: 6px;        /* WelcomeBanner popup (Figma 1:50060) */
   --radius-card: 8px;
+  --radius-banner: 16px;      /* WriteCtaBanner / large surfaces (Figma 1:50057) */
   --radius-pill: 9999px;
 
   /* Shadows — Figma "Purple glow light" used on author/publication cards.

@@ -95,6 +95,9 @@ export const homeLoggedInCopy = {
   welcomeBackPrefix: "Welcome back,",
   welcomeBackSuffix: "!",
   welcomeNew: "Welcome to Nuance!",
+  // WelcomeBanner second line — relative time of the PREVIOUS login (the one
+  // before the current session). Omitted entirely on a first-ever login.
+  lastLoginLabel: "Last login",
   // Phase 5 cold-start empty state for the Following tab.
   followingEmpty:
     "You are not yet following any writers, publications or topics. When you do, they will show up here.",

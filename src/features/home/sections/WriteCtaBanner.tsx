@@ -11,12 +11,12 @@ import { writeCtaBannerCopy } from "../../../constants/copy";
 export function WriteCtaBanner() {
   return (
     <section
-      className="flex flex-col items-start gap-6 rounded-[16px] border-2 border-brand-purple bg-brand-purple-5 p-8 md:flex-row md:items-center md:justify-between md:px-12 md:py-8"
+      className="flex flex-col items-start gap-6 rounded-banner border-2 border-brand-purple bg-brand-purple-5 p-8 md:flex-row md:items-center md:justify-between md:px-12 md:py-8"
       aria-labelledby="write-cta-heading"
     >
       <h2
         id="write-cta-heading"
-        className="text-[24px] font-bold leading-tight tracking-[-0.48px] text-brand-purple md:whitespace-nowrap md:text-[32px] md:leading-[40px] md:tracking-[-0.64px]"
+        className="text-title-sm font-bold text-brand-purple md:whitespace-nowrap md:text-title-md"
       >
         {writeCtaBannerCopy.heading}
       </h2>
@@ -24,7 +24,7 @@ export function WriteCtaBanner() {
       <Link
         to="/write"
         aria-label={writeCtaBannerCopy.primaryAriaLabel}
-        className="bg-brand-gradient-button inline-flex shrink-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-[8px] px-6 py-[10px] text-[18px] font-medium leading-7 text-white shadow-purple-glow-medium transition-opacity hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple"
+        className="bg-brand-gradient-button inline-flex shrink-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-card px-6 py-2.5 text-body font-medium text-white shadow-purple-glow-medium transition-opacity hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple"
       >
         {writeCtaBannerCopy.primary}
       </Link>

@@ -132,13 +132,17 @@ export function useFollowing() {
   const hasTags = followedTags.length > 0;
   const profileHandle = profile.data?.handle ?? null;
 
+  // Content signatures, not just counts — unfollowing X and following Y keeps
+  // the count constant but must still invalidate the cached feed. Spread
+  // before sorting so React Query's cached arrays aren't mutated in place.
+  const followSig = [...followHandles].sort().join(",");
+  const tagSig = followedTags
+    .map((t) => t.tagId)
+    .sort()
+    .join(",");
+
   return useInfiniteQuery({
-    queryKey: [
-      "following",
-      profileHandle,
-      followHandles.length,
-      followedTags.length,
-    ],
+    queryKey: ["following", profileHandle, followSig, tagSig],
     // Don't fire if BOTH sources would be empty — FollowingTab renders the
     // empty-state copy in that case, no network needed.
     enabled: profile.isSuccess && tags.isSuccess && (hasFollows || hasTags),

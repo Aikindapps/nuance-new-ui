@@ -78,22 +78,29 @@ function getDefaultClient(): AuthClient {
   return defaultClient;
 }
 
-// localStorage key for the last-login timestamp. Persisted across reloads
-// within the 8-hour delegation lifetime, so the WelcomeBanner's "X ago" line
-// stays meaningful when the user comes back partway through a session.
+// localStorage keys for login timestamps. Persisted across reloads within the
+// 8-hour delegation lifetime so the WelcomeBanner survives a mid-session
+// reload.
+//   - LAST_LOGIN: the most recent (current-session) login. Drives the
+//     WelcomeBanner's brief post-login display window.
+//   - PREVIOUS_LOGIN: the login before that — what the banner actually shows
+//     ("Last login: X ago"). Captured from LAST_LOGIN's prior value at the
+//     moment a new sign-in completes.
 const LAST_LOGIN_STORAGE_KEY = "nuance:last-login-at";
+const PREVIOUS_LOGIN_STORAGE_KEY = "nuance:previous-login-at";
 
-function readLastLoginAt(): number | null {
+function readTimestamp(key: string): number | null {
   if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(LAST_LOGIN_STORAGE_KEY);
+  const raw = window.localStorage.getItem(key);
   if (!raw) return null;
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function writeLastLoginAt(value: number): void {
+function writeTimestamp(key: string, value: number | null): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(LAST_LOGIN_STORAGE_KEY, String(value));
+  if (value === null) window.localStorage.removeItem(key);
+  else window.localStorage.setItem(key, String(value));
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -101,7 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [principal, setPrincipal] = useState<Principal | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [lastLoginAt, setLastLoginAt] = useState<number | null>(readLastLoginAt);
+  const [lastLoginAt, setLastLoginAt] = useState<number | null>(() =>
+    readTimestamp(LAST_LOGIN_STORAGE_KEY),
+  );
+  const [previousLoginAt, setPreviousLoginAt] = useState<number | null>(() =>
+    readTimestamp(PREVIOUS_LOGIN_STORAGE_KEY),
+  );
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -155,11 +167,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const next = await client.signIn();
       if (!mountedRef.current) return;
       const nextPrincipal = next.getPrincipal();
+      // The login currently stored as "last" becomes the "previous" login;
+      // `now` becomes the new "last". The WelcomeBanner displays the previous
+      // one ("Last login: X ago") and gates its visibility on the new one.
       const now = Date.now();
+      const prior = readTimestamp(LAST_LOGIN_STORAGE_KEY);
+      writeTimestamp(PREVIOUS_LOGIN_STORAGE_KEY, prior);
+      writeTimestamp(LAST_LOGIN_STORAGE_KEY, now);
       setIdentity(next);
       setPrincipal(nextPrincipal);
+      setPreviousLoginAt(prior);
       setLastLoginAt(now);
-      writeLastLoginAt(now);
       setStatus("authenticated");
     } catch (err) {
       if (!mountedRef.current) return;
@@ -200,10 +218,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading: status === "loading",
       error,
       lastLoginAt,
+      previousLoginAt,
       login,
       logout,
     }),
-    [status, identity, principal, error, lastLoginAt, login, logout],
+    [
+      status,
+      identity,
+      principal,
+      error,
+      lastLoginAt,
+      previousLoginAt,
+      login,
+      logout,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
