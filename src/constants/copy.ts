@@ -13,22 +13,22 @@ export const homeMetadata: Record<
   { title: string; description: string; h1: string }
 > = {
   popular: {
-    title: "Nuance — Popular articles on the blockchain",
+    title: "Nuance — Popular articles",
     description:
       "Discover popular articles from writers on Nuance, the on-chain blogging platform. Read the best stories on crypto, DAOs, Web3, and more.",
     h1: "Popular articles on Nuance",
   },
   new: {
-    title: "Nuance — New articles on the blockchain",
+    title: "Nuance — New articles",
     description:
       "The latest articles from writers on Nuance, the on-chain blogging platform. Fresh stories on crypto, DAOs, Web3, and more.",
     h1: "New articles on Nuance",
   },
   following: {
-    title: "Nuance — From the writers you follow",
+    title: "Nuance — From the writers, publications and topics you follow",
     description:
-      "Articles from the writers, publications, and topics you follow on Nuance, the on-chain blogging platform.",
-    h1: "Articles from writers you follow on Nuance",
+      "Articles from the writers, publications and topics you follow on Nuance, the on-chain blogging platform.",
+    h1: "Articles from the writers, publications and topics you follow on Nuance",
   },
 };
 
