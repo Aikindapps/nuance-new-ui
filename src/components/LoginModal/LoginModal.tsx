@@ -1,9 +1,8 @@
 import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
 import { useAuth } from "../../contexts/useAuth";
 import { useModal } from "../../services/modal";
 import { loginModalCopy } from "../../constants/copy";
-import { IconClose } from "../ui/icons/IconClose";
+import { Popup } from "../ui/Popup";
 import type { OpenIdProvider } from "@icp-sdk/auth/client";
 
 // DOM id used by the Modal service's aria-labelledby. Exported so the
@@ -13,10 +12,9 @@ export const LOGIN_MODAL_TITLE_ID = "login-modal-title";
 // First consumer of the Modal service (decision #22) and AuthContext.
 //
 // Pixel-mapped to Figma node 1:50034 ("Popup" frame inside Page 8). The
-// popup's NUR/Popup chrome, NUR/Button primary gradient, and NUR/Button/Link
-// styling were harvested via get_design_context on 1:50034 on 2026-05-11.
-// New tokens added to @theme: --text-title-md, --shadow-purple-glow-medium,
-// bg-brand-gradient-button utility.
+// popup's white card + header chrome now come from the shared <Popup>
+// shell (PR #6 Phase 1); LoginModal supplies the body — a vertical stack
+// of four sign-in buttons + a help link, which has no footer button row.
 //
 // Sign-in slots map to decision #24's four providers: classic II + Google
 // + Apple + Microsoft via II 2.0's OpenID bridge.
@@ -60,30 +58,12 @@ export function LoginModal() {
   };
 
   return (
-    <div className="w-[696px] max-w-[calc(100vw-32px)] rounded-[24px] bg-white px-6 py-8 md:px-12 md:py-10">
-      {/* Header row: title + close (Figma layer "Header" inside NUR / Popup) */}
-      <div className="flex items-center justify-between">
-        <h2
-          id={LOGIN_MODAL_TITLE_ID}
-          className="text-title-md font-bold text-ink"
-        >
-          {loginModalCopy.heading}
-        </h2>
-        <IconButton
-          onClick={modal.close}
-          aria-label={loginModalCopy.closeAriaLabel}
-          sx={{
-            width: 48,
-            height: 48,
-            borderRadius: "var(--radius-card)",
-            color: "var(--color-brand-purple)",
-            "&:hover": { backgroundColor: "rgba(84, 5, 212, 0.08)" },
-          }}
-        >
-          <IconClose className="size-6" />
-        </IconButton>
-      </div>
-
+    <Popup
+      titleId={LOGIN_MODAL_TITLE_ID}
+      title={loginModalCopy.heading}
+      onClose={modal.close}
+      closeAriaLabel={loginModalCopy.closeAriaLabel}
+    >
       {/* Body — 28px below header per Figma (y=116 in popup, content top y=88) */}
       <p className="mt-7 text-body text-ink">{loginModalCopy.body}</p>
 
@@ -136,6 +116,6 @@ export function LoginModal() {
           {error}
         </p>
       )}
-    </div>
+    </Popup>
   );
 }
