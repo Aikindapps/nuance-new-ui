@@ -135,3 +135,26 @@ export const loginModalCopy = {
   helpUrl: "https://id.ai/about",
   closeAriaLabel: "Close",
 };
+
+// PR #6 onboarding flow (decision #30). RegisterModal — Figma node 1:1366.
+// The avatar selector block is omitted (avatar upload deferred).
+export const registerModalCopy = {
+  heading: "Nice to meet you!",
+  body: "Inspire a world’s generation. Start writing!",
+  handleLabel: "Your @handle",
+  handleLabelNote: "(cannot be changed)",
+  handlePlaceholder: "@handle",
+  displayNameLabel: "Your display name",
+  displayNameLabelNote: "(can be changed)",
+  displayNamePlaceholder: "Display name",
+  termsPrefix: "Accept the ",
+  termsLinkText: "terms and conditions",
+  // Placeholder — Nuance has no dedicated terms & conditions page yet
+  // (PR #6 plan, 2026-05-19). Swap in the real URL when one exists.
+  termsUrl: "#",
+  cancelLabel: "Cancel",
+  submitLabel: "Create account",
+  submittingLabel: "Creating account…",
+  closeAriaLabel: "Close",
+  errorFallback: "Registration failed. Please try again.",
+};
