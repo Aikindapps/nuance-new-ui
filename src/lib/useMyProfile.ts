@@ -25,16 +25,17 @@ export function useMyProfile() {
     queryFn: async () => {
       if (!principalText) return null;
       const result = await getUserByPrincipalId(principalText);
-      // "Not registered" comes back as { err }. For WelcomeBanner that's a
-      // valid empty state (the user has authed but never completed their
-      // Nuance profile) — return null and let the consumer fall back to a
-      // generic greeting. Other err values (network, canister error) bubble
-      // as a thrown error so React Query enters its `isError` state.
+      // This is a query against our own, always-valid, authed principal.
+      // A network or replica failure rejects the call before a Result is
+      // ever produced (React Query then enters `isError`) — so an `err`
+      // variant here can only mean one thing: this principal has no Nuance
+      // profile yet. Treat every `err` as the unregistered empty state
+      // rather than string-matching the canister's "User not found" wording,
+      // which is not a stable contract. Consumers rely on this: WelcomeBanner
+      // falls back to a generic greeting, and OnboardingGate opens the
+      // RegisterModal (PR #6 review m1).
       if ("err" in result) {
-        if (result.err.toLowerCase().includes("not found") || result.err.toLowerCase().includes("does not exist")) {
-          return null;
-        }
-        throw new Error(result.err);
+        return null;
       }
       return result.ok;
     },

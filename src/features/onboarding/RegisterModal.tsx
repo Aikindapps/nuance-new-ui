@@ -18,6 +18,7 @@ import { useRegister } from "./useRegister";
 // `onCancel` logs the user out (decision #30: no authed-unregistered limbo).
 
 export const REGISTER_MODAL_TITLE_ID = "register-modal-title";
+const REGISTER_ERROR_ID = "register-modal-error";
 
 type RegisterModalProps = {
   // Called after registerUser succeeds — orchestrator opens TopicsModal.
@@ -34,6 +35,13 @@ type FieldProps = {
   value: string;
   onChange: (value: string) => void;
   autoFocus?: boolean;
+  // Static, non-editable adornment shown inside the input box (the "@" on
+  // the handle field — PR #6 review m4). The user's text is left untouched.
+  prefix?: string;
+  // Wired to the form-level error <p> so SR users learn which field a
+  // registration error concerns (PR #6 review m2).
+  describedBy?: string;
+  invalid?: boolean;
 };
 
 function Field({
@@ -44,6 +52,9 @@ function Field({
   value,
   onChange,
   autoFocus,
+  prefix,
+  describedBy,
+  invalid,
 }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -51,15 +62,31 @@ function Field({
         {label} <span className="font-medium">{note}</span>{" "}
         <span className="font-medium text-brand-purple">*</span>
       </label>
-      <input
-        id={id}
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoFocus={autoFocus}
-        className="h-12 w-full rounded-popup border border-ink-border-10 bg-ink-border-5 px-4 text-body text-ink outline-none placeholder:italic placeholder:text-ink-60 focus:border-brand-purple"
-      />
+      <div
+        className={
+          "flex h-12 items-center gap-1 rounded-popup border bg-ink-border-5 px-4 " +
+          (invalid
+            ? "border-error"
+            : "border-ink-border-10 focus-within:border-brand-purple")
+        }
+      >
+        {prefix && (
+          <span className="text-body text-ink-60" aria-hidden="true">
+            {prefix}
+          </span>
+        )}
+        <input
+          id={id}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          aria-describedby={describedBy}
+          aria-invalid={invalid || undefined}
+          className="h-full w-full bg-transparent text-body text-ink outline-none placeholder:italic placeholder:text-ink-60"
+        />
+      </div>
     </div>
   );
 }
@@ -71,17 +98,21 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
   const register = useRegister();
 
   // Handles are case-insensitive (lowercase reverse index) and stored
-  // without the @ — normalize on input. Uniqueness/charset is the
-  // canister's call; it returns an err variant we surface inline.
-  const onHandleChange = (value: string) =>
-    setHandle(value.replace(/^@+/, "").toLowerCase());
+  // without the @. The field shows a static "@" adornment and leaves the
+  // user's keystrokes untouched — normalization happens once, on submit
+  // (PR #6 review m4). Uniqueness/charset is the canister's call; it returns
+  // an err variant we surface inline.
+  const normalizedHandle = handle.trim().replace(/^@+/, "").toLowerCase();
 
   const isValid =
-    handle.trim() !== "" && displayName.trim() !== "" && termsAccepted;
+    normalizedHandle !== "" && displayName.trim() !== "" && termsAccepted;
 
   const submit = () => {
     if (!isValid || register.isPending) return;
-    register.mutate({ handle, displayName }, { onSuccess: onRegistered });
+    register.mutate(
+      { handle: normalizedHandle, displayName },
+      { onSuccess: onRegistered },
+    );
   };
 
   return (
@@ -118,7 +149,10 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
           note={registerModalCopy.handleLabelNote}
           placeholder={registerModalCopy.handlePlaceholder}
           value={handle}
-          onChange={onHandleChange}
+          onChange={setHandle}
+          prefix="@"
+          describedBy={register.isError ? REGISTER_ERROR_ID : undefined}
+          invalid={register.isError}
           autoFocus
         />
         <Field
@@ -157,7 +191,11 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
       </div>
 
       {register.isError && (
-        <p role="alert" className="mt-4 text-body text-error">
+        <p
+          id={REGISTER_ERROR_ID}
+          role="alert"
+          className="mt-4 text-body text-error"
+        >
           {register.error?.message || registerModalCopy.errorFallback}
         </p>
       )}

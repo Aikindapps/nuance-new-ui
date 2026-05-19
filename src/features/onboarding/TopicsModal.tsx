@@ -90,7 +90,11 @@ export function TopicsModal({ onComplete }: TopicsModalProps) {
           <p className="text-body text-ink-60">{topicsModalCopy.empty}</p>
         )}
         {tags.isSuccess && tags.data.length > 0 && (
-          <div className="flex flex-wrap gap-4">
+          <div
+            role="group"
+            aria-label={topicsModalCopy.pickerAriaLabel}
+            className="flex flex-wrap gap-4"
+          >
             {tags.data.map((tag) => (
               <SelectableTag
                 key={tag.id}

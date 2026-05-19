@@ -143,7 +143,8 @@ export const registerModalCopy = {
   body: "Inspire a world’s generation. Start writing!",
   handleLabel: "Your @handle",
   handleLabelNote: "(cannot be changed)",
-  handlePlaceholder: "@handle",
+  // No leading "@" — the input renders a static "@" adornment (review m4).
+  handlePlaceholder: "handle",
   displayNameLabel: "Your display name",
   displayNameLabelNote: "(can be changed)",
   displayNamePlaceholder: "Display name",
@@ -172,4 +173,6 @@ export const topicsModalCopy = {
   loadError: "Couldn’t load topics — you can skip this for now.",
   empty: "No topics available yet.",
   followError: "Couldn’t save your topics. Try again, or skip for now.",
+  // Accessible label for the topic-picker button group (review m3).
+  pickerAriaLabel: "Topics",
 };
