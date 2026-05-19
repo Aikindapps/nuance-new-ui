@@ -959,3 +959,41 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - `Home.tsx` auth gate: `/following` is auth-gated — anon visitors redirect to `/`. `/` and `/new` serve `HomeLoggedOut` for anon (unchanged).
 - The logged-in Popular tab reuses `useArticles("popular")` + `ArticleFeed` — uniform with the New and Following tabs (all plain infinite feeds). The rich Hero/Featured/Writers/Publications layout stays exclusive to the logged-out home.
 - When recommendations return: they come back as their own tab/surface in a separate project, not by reviving `/your-mix`. Decision #26's stub-route pattern still stands for genuinely imminent features.
+
+## #30 — Create Account onboarding flow: two modals, avatar deferred, cancel = logout, first mainnet mutations
+
+**Date:** 2026-05-19
+
+**Status:** Active
+
+**Decision:** PR #6 builds the "Create Account" screen (Figma Page 2, `0:1`) as a post-authentication **onboarding flow**, not a standalone page. The genuinely new work is two Modal-service popups — `RegisterModal` ("Nice to meet you!", Figma `1:1366`) and `TopicsModal` ("What Interests You?", Figma `1:1519`) — plus an `OnboardingGate` that sequences them. The gate fires when a user authenticates with a principal that has no `User`-canister profile (the decision #27 dead-end). Three sub-decisions are locked: (a) **avatar upload is deferred** — `RegisterModal` omits the avatar selector block and calls `registerUser` with an empty avatar string; (b) **Cancel / close on `RegisterModal` logs the user out** — no authenticated-but-unregistered limbo state; `TopicsModal` "Maybe later" / close just skips topics (registration has already succeeded); (c) this is the **first PR that writes to the live mainnet canisters** — `registerUser` and `followTags` are mutations.
+
+**Inputs:**
+
+- Page 2 metadata recon (2026-05-19): the page is a seven-frame *flow*. Five frames are already built or external — logged-out home (PR #1), the join/login popup `1:50034` shipped as `LoginModal` (PR #3), the "Extern site" frame (the II/OpenID redirect, handled entirely by `@icp-sdk/auth`), and the logged-in home (PR #4/#5). Only the register and topics popups are new.
+- `User.registerUser(handle, displayName, avatar)` takes a `text` avatar (a URL). Setting it requires uploading an image to the `Storage` canister first — the decision #22 "image processing" service, not yet built. `User.updateAvatar(text)` exists separately, and `avatar` is empty for many existing users (the `Avatar` component already falls back to a branded gradient) — so avatar is genuinely optional on the data model.
+- The project has no local backend (frontend-only, live mainnet canisters). Every prior PR used anonymous-safe query methods. Registration is a mutation; there is nowhere to send it except the production `User` canister.
+
+**Options considered:**
+
+- Avatar: **A.** build the Storage image-upload service inside PR #6 — pixel-complete register popup but a materially larger PR bundling a reusable subsystem. **B. Defer avatar, ship the flow — chosen** (Mr Nick, 2026-05-19): smaller, focused PR; avatar upload becomes its own follow-up when the Storage upload service is built.
+- Cancel behaviour: **A. Cancel = log out — chosen** (Mr Nick): a user is either fully registered or fully logged out. **B.** stay logged in with a "complete your profile" re-entry point — rejected: adds an authed-unregistered limbo state to support everywhere. **C.** drop the Cancel button entirely — rejected: deviates from Figma, which shows a Cancel button.
+- Surface: modal vs route — **modal, chosen.** Both popups are authed-only and non-indexable; they are Modal-service consumers like `LoginModal`. No new URL routes, no `<meta>` work. Does not conflict with the SEO/real-URL constraint (decision #12), which governs *content*.
+
+**Rationale:**
+
+- Most of Page 2 already exists; treating it as a flow rather than a screen keeps PR #6 scoped to the two real gaps.
+- Avatar upload is a reusable subsystem (the decision #22 image-processing service). Bundling it with the onboarding flow would couple two unrelated concerns and inflate the PR; the data model treats avatar as optional, so the flow is fully functional without it.
+- The authed-but-unregistered state (decision #27) is a genuine dead-end — `WelcomeBanner` already special-cases it with "Welcome to Nuance!". Making Cancel log out removes the limbo rather than building UI to live with it.
+
+**Trade-offs accepted:**
+
+- The shipped `RegisterModal` will not match Figma `1:1366` — the avatar selector block is absent until the follow-up avatar PR.
+- Local-dev testing of registration creates real user records on the production Nuance `User` canister; there is no staging backend. Mitigated by using obvious throwaway test handles. This is the structural cost of the frontend-only / live-mainnet architecture and applies to every mutation from here on.
+
+**How to apply:**
+
+- New feature folder `src/features/onboarding/` — `RegisterModal`, `TopicsModal`, `OnboardingGate`.
+- `ActorsContext` gains per-method wrappers (decision #18 allowlist) for `registerUser`, `getAllTags`, `followTags` — the first mutation wrappers; they run on the PR #4 authed agent.
+- `RegisterModal` calls `registerUser(handle, displayName, "")`. Cancel / close → `useAuth().logout()`.
+- A shared `Popup` shell (`src/components/ui/Popup.tsx`) is extracted from `LoginModal`'s hand-rolled chrome and all three modals use it.

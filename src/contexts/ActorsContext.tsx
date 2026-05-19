@@ -77,6 +77,21 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await userPromise;
         return actor.getUserByPrincipalId(principalText);
       },
+      // Mutations (PR #6, decision #30). The userPromise/postCorePromise
+      // actors are bound to the authed agent whenever identity is non-anon,
+      // so registerUser/followTags write as the registering principal.
+      registerUser: async (handle, displayName, avatar) => {
+        const actor = await userPromise;
+        return actor.registerUser(handle, displayName, avatar);
+      },
+      getAllTags: async () => {
+        const actor = await postCorePromise;
+        return actor.getAllTags();
+      },
+      followTags: async (tagIds) => {
+        const actor = await postCorePromise;
+        return actor.followTags(tagIds);
+      },
     };
   }, [identity]);
 
