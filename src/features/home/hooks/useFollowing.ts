@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { PostKeyProperties } from "../../../candid/PostCore/PostCore";
 import { useActors, type ActorsValue } from "../../../contexts/useActors";
-import { useMyProfile } from "./useMyProfile";
+import { useMyProfile } from "../../../lib/useMyProfile";
 import { useMyTags } from "./useMyTags";
 import { hydrateArticles } from "../lib/hydrateArticles";
 import { FEATURED_PAGE_SIZE, INFINITE_PAGE_SIZE } from "./useArticles";

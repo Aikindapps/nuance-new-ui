@@ -135,3 +135,44 @@ export const loginModalCopy = {
   helpUrl: "https://id.ai/about",
   closeAriaLabel: "Close",
 };
+
+// PR #6 onboarding flow (decision #30). RegisterModal — Figma node 1:1366.
+// The avatar selector block is omitted (avatar upload deferred).
+export const registerModalCopy = {
+  heading: "Nice to meet you!",
+  body: "Inspire a world’s generation. Start writing!",
+  handleLabel: "Your @handle",
+  handleLabelNote: "(cannot be changed)",
+  // No leading "@" — the input renders a static "@" adornment (review m4).
+  handlePlaceholder: "handle",
+  displayNameLabel: "Your display name",
+  displayNameLabelNote: "(can be changed)",
+  displayNamePlaceholder: "Display name",
+  termsPrefix: "Accept the ",
+  termsLinkText: "terms and conditions",
+  // Placeholder — Nuance has no dedicated terms & conditions page yet
+  // (PR #6 plan, 2026-05-19). Swap in the real URL when one exists.
+  termsUrl: "#",
+  cancelLabel: "Cancel",
+  submitLabel: "Create account",
+  submittingLabel: "Creating account…",
+  closeAriaLabel: "Close",
+  errorFallback: "Registration failed. Please try again.",
+};
+
+// TopicsModal — Figma node 1:1519 ("What Interests You?"). Step two of the
+// onboarding flow; topics are skippable ("Maybe later").
+export const topicsModalCopy = {
+  heading: "What Interests You?",
+  body: "Choose your favorite topics to get started.",
+  skipLabel: "Maybe later",
+  submitLabel: "Done",
+  submittingLabel: "Saving…",
+  closeAriaLabel: "Close",
+  loading: "Loading topics…",
+  loadError: "Couldn’t load topics — you can skip this for now.",
+  empty: "No topics available yet.",
+  followError: "Couldn’t save your topics. Try again, or skip for now.",
+  // Accessible label for the topic-picker button group (review m3).
+  pickerAriaLabel: "Topics",
+};

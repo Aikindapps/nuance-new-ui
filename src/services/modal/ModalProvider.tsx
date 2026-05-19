@@ -27,13 +27,21 @@ import {
 // The ModalContext constant + useModal() hook live in ./useModal.ts so this
 // file is a pure component file (Fast Refresh).
 
-type ActiveModal = { content: ReactNode; ariaLabelledBy?: string };
+type ActiveModal = {
+  content: ReactNode;
+  ariaLabelledBy?: string;
+  dismissable: boolean;
+};
 
 export function ModalProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState<ActiveModal | null>(null);
 
   const open = useCallback((content: ReactNode, opts?: ModalOpenOptions) => {
-    setActive({ content, ariaLabelledBy: opts?.ariaLabelledBy });
+    setActive({
+      content,
+      ariaLabelledBy: opts?.ariaLabelledBy,
+      dismissable: opts?.dismissable !== false,
+    });
   }, []);
 
   const close = useCallback(() => {
@@ -50,7 +58,10 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       {children}
       <Dialog
         open={active !== null}
-        onClose={close}
+        // A non-dismissable modal passes no onClose, so MUI ignores both
+        // backdrop clicks and Escape — it can only be closed from a control
+        // inside its content.
+        onClose={active?.dismissable === false ? undefined : close}
         aria-labelledby={active?.ariaLabelledBy}
         slotProps={{
           paper: {

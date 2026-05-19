@@ -24,6 +24,8 @@
     Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* Type scale (Figma: GT Walsheim / size / weight) */
+  --text-label: 16px;          /* form input labels (Figma 16/Bold — RegisterModal) */
+  --text-label--line-height: 24px;
   --text-body: 18px;
   --text-body--line-height: 28px;
   --text-lg: 22px;
@@ -47,7 +49,10 @@
   --color-ink: #202123;                    /* nur/black/100% (text) */
   --color-ink-80: rgba(32, 33, 35, 0.8);   /* nur/black/80% (text) */
   --color-ink-60: rgba(32, 33, 35, 0.6);   /* nur/black/60% (text) */
+  --color-ink-40: rgba(32, 33, 35, 0.4);   /* nur/black/40% (checkbox border — RegisterModal) */
   --color-ink-border: #373a49;             /* nur/black/100% (cards/borders — distinct from text) */
+  --color-ink-border-5: rgba(55, 58, 73, 0.05);  /* nur/black/5% — input fill (RegisterModal, node 1:1381) */
+  --color-ink-border-10: rgba(55, 58, 73, 0.1);  /* nur/black/10% — input border (RegisterModal) */
   --color-surface: #ffffff;
 
   /* On-purple (used for Header + Topics rail chrome) */
@@ -68,9 +73,10 @@
   /* Radii. Names are deliberately non-colliding with Tailwind's default
      rounded-{sm,md,lg,xl} scale so overriding those defaults is never
      accidental — following the --radius-card precedent. */
-  --radius-popup: 6px;        /* WelcomeBanner popup (Figma 1:50060) */
+  --radius-popup: 6px;        /* small surfaces — WelcomeBanner popup, form inputs */
   --radius-card: 8px;
   --radius-banner: 16px;      /* WriteCtaBanner / large surfaces (Figma 1:50057) */
+  --radius-modal: 24px;       /* modal popup card — Popup shell (LoginModal/Register/Topics) */
   --radius-pill: 9999px;
 
   /* Shadows — Figma "Purple glow light" used on author/publication cards.

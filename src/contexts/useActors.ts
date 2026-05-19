@@ -2,9 +2,15 @@ import { createContext, useContext } from "react";
 import type {
   GetPostsByFollowers,
   PostTagModel__1,
+  Result_1 as FollowTagsResult,
+  TagModel,
 } from "../candid/PostCore/PostCore";
 import type { PostBucketType__1 } from "../candid/PostBucket/PostBucket";
-import type { Result as UserResult, UserListItem } from "../candid/User/User";
+import type {
+  RegisterUserReturn,
+  Result as UserResult,
+  UserListItem,
+} from "../candid/User/User";
 
 // ActorsContext + hook + types live in this file so ActorsContext.tsx is a
 // pure component file. Satisfies `react-refresh/only-export-components`.
@@ -43,6 +49,22 @@ export type ActorsValue = {
   // hook layer can decide whether "not registered" is an error or an empty
   // state. PR #4 Phase 2: first consumer is WelcomeBanner.
   getUserByPrincipalId: (principalText: string) => Promise<UserResult>;
+  // --- Mutations (PR #6, decision #30) — the first write calls in the
+  // project. They run on the authed agent (PR #4 Phase 4) so msg.caller is
+  // the registering principal. ---
+  // Registers the authed principal as a Nuance user. avatar is passed empty
+  // ("") — avatar upload is deferred (decision #30). The raw variant is
+  // returned so the modal layer can surface a duplicate/reserved-handle err
+  // inline rather than throwing.
+  registerUser: (
+    handle: string,
+    displayName: string,
+    avatar: string,
+  ) => Promise<RegisterUserReturn>;
+  // Every tag on the platform — drives the TopicsModal tag list.
+  getAllTags: () => Promise<Array<TagModel>>;
+  // Follows the given tag IDs for the authed caller (TopicsModal "Done").
+  followTags: (tagIds: string[]) => Promise<FollowTagsResult>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);

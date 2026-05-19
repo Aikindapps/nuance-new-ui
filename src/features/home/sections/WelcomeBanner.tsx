@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Skeleton from "@mui/material/Skeleton";
 import { useAuth } from "../../../contexts/useAuth";
-import { useMyProfile } from "../hooks/useMyProfile";
+import { useMyProfile } from "../../../lib/useMyProfile";
 import { formatRelativeTime } from "../../../lib/formatRelativeTime";
 import { homeLoggedInCopy } from "../../../constants/copy";
 
@@ -41,6 +41,11 @@ export function WelcomeBanner() {
   }, [lastLoginAt]);
 
   if (!visible) return null;
+
+  // An authed principal with no Nuance profile is mid-onboarding — the
+  // OnboardingGate's RegisterModal is that user's welcome. Suppress this
+  // popup so they don't get two greetings at once (PR #6 review m5).
+  if (profile.isSuccess && profile.data === null) return null;
 
   const name = profile.data?.displayName?.trim() || profile.data?.handle;
   const greeting = name
