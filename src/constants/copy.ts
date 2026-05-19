@@ -158,3 +158,18 @@ export const registerModalCopy = {
   closeAriaLabel: "Close",
   errorFallback: "Registration failed. Please try again.",
 };
+
+// TopicsModal — Figma node 1:1519 ("What Interests You?"). Step two of the
+// onboarding flow; topics are skippable ("Maybe later").
+export const topicsModalCopy = {
+  heading: "What Interests You?",
+  body: "Choose your favorite topics to get started.",
+  skipLabel: "Maybe later",
+  submitLabel: "Done",
+  submittingLabel: "Saving…",
+  closeAriaLabel: "Close",
+  loading: "Loading topics…",
+  loadError: "Couldn’t load topics — you can skip this for now.",
+  empty: "No topics available yet.",
+  followError: "Couldn’t save your topics. Try again, or skip for now.",
+};
