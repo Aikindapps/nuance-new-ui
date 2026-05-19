@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../../contexts/useAuth";
-import { useActors } from "../../../contexts/useActors";
-import type { User } from "../../../candid/User/User";
+import { useAuth } from "../contexts/useAuth";
+import { useActors } from "../contexts/useActors";
+import type { User } from "../candid/User/User";
 
 // Fetches the authed user's User-canister profile by principal.
 //

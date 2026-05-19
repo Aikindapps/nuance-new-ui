@@ -5,6 +5,12 @@ import { createContext, useContext, type ReactNode } from "react";
 
 export type ModalOpenOptions = {
   ariaLabelledBy?: string;
+  // When false, the modal cannot be dismissed by Escape or backdrop click —
+  // the only way out is a control inside the modal content. Defaults to
+  // true. The onboarding modals (decision #30) set this false so every exit
+  // path runs the right handler (Cancel = logout, etc.) rather than a bare
+  // close that would leave an authed-but-unregistered user in limbo.
+  dismissable?: boolean;
 };
 
 export type ModalContextValue = {

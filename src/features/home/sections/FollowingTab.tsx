@@ -1,7 +1,7 @@
 import Skeleton from "@mui/material/Skeleton";
 import { ArticleFeed } from "./ArticleFeed";
 import { useFollowing } from "../hooks/useFollowing";
-import { useMyProfile } from "../hooks/useMyProfile";
+import { useMyProfile } from "../../../lib/useMyProfile";
 import { useMyTags } from "../hooks/useMyTags";
 import { homeLoggedInCopy, homeStatus } from "../../../constants/copy";
 

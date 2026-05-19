@@ -7,6 +7,7 @@ import "./index.css";
 import { ActorsProvider } from "./contexts/ActorsContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ModalProvider } from "./services/modal";
+import { OnboardingGate } from "./features/onboarding/OnboardingGate";
 import { muiTheme } from "./theme";
 import { Home } from "./routes/Home";
 import { WriteStub } from "./routes/WriteStub";
@@ -34,6 +35,10 @@ createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <ActorsProvider>
             <ModalProvider>
+              {/* Controller for the Create Account onboarding flow — opens
+                  the register/topics modals when an authed user has no
+                  profile. Renders nothing. */}
+              <OnboardingGate />
               <RouterProvider router={router} />
             </ModalProvider>
           </ActorsProvider>

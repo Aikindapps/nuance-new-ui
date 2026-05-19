@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Skeleton from "@mui/material/Skeleton";
 import { useAuth } from "../../../contexts/useAuth";
-import { useMyProfile } from "../hooks/useMyProfile";
+import { useMyProfile } from "../../../lib/useMyProfile";
 import { formatRelativeTime } from "../../../lib/formatRelativeTime";
 import { homeLoggedInCopy } from "../../../constants/copy";
 
