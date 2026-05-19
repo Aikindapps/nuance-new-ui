@@ -46,7 +46,7 @@ export const secondaryButtonSx: SxProps<Theme> = {
   fontWeight: 500,
   fontSize: "var(--text-body)",
   "&:hover": {
-    backgroundColor: "rgba(84, 5, 212, 0.04)",
+    backgroundColor: "var(--color-brand-purple-5)",
     border: "1px solid var(--color-brand-purple)",
   },
 };

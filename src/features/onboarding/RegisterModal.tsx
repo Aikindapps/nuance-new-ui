@@ -47,7 +47,7 @@ function Field({
 }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[16px] font-bold leading-6 text-ink">
+      <label htmlFor={id} className="text-label font-bold text-ink">
         {label} <span className="font-medium">{note}</span>{" "}
         <span className="font-medium text-brand-purple">*</span>
       </label>
@@ -58,7 +58,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="h-12 w-full rounded-[6px] border border-ink-border-10 bg-ink-border-5 px-4 text-body text-ink outline-none placeholder:italic placeholder:text-ink-60 focus:border-brand-purple"
+        className="h-12 w-full rounded-popup border border-ink-border-10 bg-ink-border-5 px-4 text-body text-ink outline-none placeholder:italic placeholder:text-ink-60 focus:border-brand-purple"
       />
     </div>
   );
@@ -136,7 +136,7 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
             onChange={(e) => setTermsAccepted(e.target.checked)}
             sx={{
               p: 0,
-              color: "rgba(32, 33, 35, 0.4)",
+              color: "var(--color-ink-40)",
               "&.Mui-checked": { color: "var(--color-brand-purple)" },
               "& .MuiSvgIcon-root": { fontSize: 20 },
             }}

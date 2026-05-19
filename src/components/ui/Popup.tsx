@@ -36,7 +36,7 @@ export function Popup({
   footer,
 }: PopupProps) {
   return (
-    <div className="w-[696px] max-w-[calc(100vw-32px)] rounded-[24px] bg-white px-6 py-8 md:px-12 md:py-10">
+    <div className="w-[696px] max-w-[calc(100vw-32px)] rounded-modal bg-white px-6 py-8 md:px-12 md:py-10">
       {/* Header row: title + close (Figma layer "Header" inside NUR / Popup) */}
       <div className="flex items-center justify-between">
         <h2 id={titleId} className="text-title-md font-bold text-ink">
