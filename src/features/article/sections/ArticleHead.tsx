@@ -112,10 +112,16 @@ export function ArticleHead({ post, author, publication, meta }: Props) {
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
 
-      {/* JSON-LD Article schema */}
+      {/* JSON-LD Article schema. Escape `<` to `<` so user-controlled
+          string fields (article title, description) can't break out of the
+          <script> tag — `</script>` inside raw-text-tokenized script content
+          would otherwise terminate the JSON-LD block and let following HTML
+          execute. Standard JSON-LD-in-HTML defense; see PR #7 review B1. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
     </>
   );
