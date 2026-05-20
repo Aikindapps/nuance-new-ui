@@ -17,6 +17,10 @@ import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingS
 // article section adds ~30 kB that has no business in the home bundle.
 // Suspense shows the same loading shell the route itself uses for its
 // data-fetch pending state, so chunk-load and data-fetch look identical.
+// The eslint-disable below is intentional: this entry file has no exports
+// for Fast Refresh to bind to anyway; lazy() lives here because that's
+// where the router is constructed.
+// eslint-disable-next-line react-refresh/only-export-components
 const ReadArticle = lazy(() => import("./routes/ReadArticle"));
 
 const router = createBrowserRouter([
