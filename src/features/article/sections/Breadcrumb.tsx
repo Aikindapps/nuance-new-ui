@@ -14,7 +14,7 @@ export function Breadcrumb({ crumbs }: { crumbs: Crumb[] }) {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="flex items-center gap-3 px-14 py-3"
+      className="flex items-center gap-3 px-6 py-3 lg:px-14"
     >
       <button
         type="button"

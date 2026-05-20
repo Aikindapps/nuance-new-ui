@@ -56,8 +56,11 @@ export function RelatedArticlesFoldout({
   const scrollDown = () =>
     listRef.current?.scrollBy({ top: 320, behavior: "smooth" });
 
+  // Foldout is a desktop reading-companion pattern (mobile Figma omits it,
+  // and at <1024px the inline "Recommended other reads" rail covers the same
+  // need). Hidden entirely below the desktop breakpoint.
   return (
-    <>
+    <div className="hidden lg:contents">
       {/* Collapsed — right-edge tab at vertical-centre */}
       {!open && (
         <button
@@ -118,6 +121,6 @@ export function RelatedArticlesFoldout({
           </FloatingButton>
         )}
       </aside>
-    </>
+    </div>
   );
 }

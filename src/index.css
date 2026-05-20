@@ -27,13 +27,18 @@
      Medium/Substack long-form convention. Used only by .article-prose. */
   --font-serif: "Crimson Text", Georgia, "Times New Roman", serif;
 
-  /* Fluid scaling (decision #33). --fpx is one Figma "design pixel": 1px on
-     mobile/tablet (so the breakpoint layouts render unchanged), and
-     min(1px, viewport/1920) at >=1024px so the desktop design scales
-     proportionally — pixel-exact at a 1920 viewport, smaller below. Every
-     dimension below is expressed as N * --fpx, and so is Tailwind's spacing
-     unit, so the whole UI scales as one piece. The >=1024px override lives
-     in the :root rule after this block. */
+  /* Fluid scaling (decision #33). --fpx is one Figma "design pixel" — every
+     dimension below is expressed as N * --fpx (so is Tailwind's spacing
+     unit), so the whole UI scales as one piece against the Figma it was
+     designed at. Two media-queried anchors live in the :root rules after
+     this block:
+       - >=1024px: min(1px, viewport/1920) — pixel-exact at the 1920 desktop
+         Figma, proportional below.
+       - <=1023px: clamp(0.80px, viewport/393, 1.50px) — pixel-exact at the
+         393 mobile Figma (iPhone 14 Plus width), capped at 1.50× so tablet
+         portrait doesn't balloon to 2.6×.
+     The default below (1px) is only the fallback if neither media query
+     applies — both queries together cover the full viewport range. */
   --fpx: 1px;
   --spacing: calc(4 * var(--fpx));
 
@@ -112,12 +117,20 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Fluid scaling (decision #33). At >=1024px one design pixel = the
-   viewport's share of 1920, capped at 1px (so >=1920 is exact). Below
-   1024px --fpx stays 1px and the breakpoint layouts render unchanged. */
+/* Fluid scaling (decision #33). Two media-queried --fpx anchors cover the
+   full viewport range:
+   - >=1024px: scale to the 1920 desktop Figma, capped at 1px (>=1920 exact).
+   - <=1023px: scale to the 393 mobile Figma, clamped to 0.80px–1.50px so
+     very narrow phones don't shrink absurdly and tablet portrait doesn't
+     balloon. Pixel-exact at 393px. */
 @media (min-width: 1024px) {
   :root {
     --fpx: min(1px, calc(100vw / 1920));
+  }
+}
+@media (max-width: 1023px) {
+  :root {
+    --fpx: clamp(0.80px, calc(100vw / 393), 1.50px);
   }
 }
 
@@ -299,4 +312,61 @@ body {
 .article-prose pre code {
   background: none;
   padding: 0;
+}
+
+/* Mobile prose — Figma 1:5386/1:5387 (mobile article body).
+   Body drops to 18/28 Crimson; headings step down proportionally. The
+   selectors are element-only because the canister body is sanitized HTML
+   with no classes. */
+@media (max-width: 1023px) {
+  .article-prose {
+    font-size: calc(18 * var(--fpx));
+    line-height: calc(28 * var(--fpx));
+  }
+  .article-prose p,
+  .article-prose ul,
+  .article-prose ol,
+  .article-prose pre {
+    margin-top: calc(20 * var(--fpx));
+  }
+  .article-prose h1,
+  .article-prose h2,
+  .article-prose h3,
+  .article-prose h4 {
+    margin-top: calc(32 * var(--fpx));
+  }
+  .article-prose h1 {
+    font-size: calc(24 * var(--fpx));
+    line-height: calc(36 * var(--fpx));
+  }
+  .article-prose h2 {
+    font-size: calc(22 * var(--fpx));
+    line-height: calc(32 * var(--fpx));
+  }
+  .article-prose h3 {
+    font-size: calc(20 * var(--fpx));
+    line-height: calc(28 * var(--fpx));
+  }
+  .article-prose h4 {
+    font-size: calc(18 * var(--fpx));
+    line-height: calc(24 * var(--fpx));
+  }
+  .article-prose blockquote {
+    margin-top: calc(32 * var(--fpx));
+    padding-left: calc(20 * var(--fpx));
+    font-size: calc(20 * var(--fpx));
+    line-height: calc(28 * var(--fpx));
+  }
+  .article-prose img,
+  .article-prose figure,
+  .article-prose hr {
+    margin-top: calc(32 * var(--fpx));
+  }
+  .article-prose hr {
+    margin-bottom: calc(32 * var(--fpx));
+  }
+  .article-prose figcaption {
+    font-size: calc(14 * var(--fpx));
+    line-height: calc(20 * var(--fpx));
+  }
 }

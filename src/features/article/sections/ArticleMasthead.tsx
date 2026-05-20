@@ -48,14 +48,16 @@ export function ArticleMasthead({ post, author, publication, meta }: Props) {
 
       <div className="mt-8 flex flex-col gap-8 px-6 lg:mt-[calc(50*var(--fpx))] lg:px-24">
         <div className="flex flex-col gap-6 lg:gap-10">
-          {/* Account row — avatar + "In {publication} by @{author} ✓" */}
-          <div className="flex items-center gap-4 lg:gap-6">
+          {/* Account row — avatar + "In {publication} by @{author} ✓".
+              Mobile uses Figma 1:5433 sizes (40px avatar, 14px byline); desktop
+              uses Figma 1:5295 (72px avatar, 18px byline). */}
+          <div className="flex items-center gap-3 lg:gap-6">
             <Avatar
               src={author?.avatar || ""}
               label={authorName}
-              sizeClass="size-14 lg:size-[calc(72*var(--fpx))]"
+              sizeClass="size-10 lg:size-[calc(72*var(--fpx))]"
             />
-            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-body">
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[length:calc(14*var(--fpx))] leading-[calc(24*var(--fpx))] lg:text-body">
               {pubHandle && (
                 <>
                   <span className="text-ink-60">In</span>
@@ -75,18 +77,18 @@ export function ArticleMasthead({ post, author, publication, meta }: Props) {
                 {authorAt}
               </Link>
               {author?.isVerified && (
-                <IconVerified className="size-6 text-brand-purple" />
+                <IconVerified className="size-4 text-brand-purple lg:size-6" />
               )}
             </p>
           </div>
 
           {/* Meta row — claps · NFT · published · modified · read time · ⋯ */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-body text-ink-60 lg:gap-x-10">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[length:calc(14*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink-60 lg:gap-x-10 lg:text-body">
             <span className="flex items-center gap-1">
-              <IconClaps className="size-6" />
+              <IconClaps className="size-4 lg:size-6" />
               {claps}
             </span>
-            {post.nftCanisterId && <IconNft className="size-6" />}
+            {post.nftCanisterId && <IconNft className="size-4 lg:size-6" />}
             {published && <time>{published}</time>}
             {showModified && <span>Modified: {modified}</span>}
             {readTime && <span>{readTime}</span>}
@@ -95,7 +97,7 @@ export function ArticleMasthead({ post, author, publication, meta }: Props) {
               aria-label="More options"
               className="flex size-8 items-center justify-center rounded-[calc(4*var(--fpx))] text-brand-purple transition-colors hover:bg-brand-purple-5"
             >
-              <IconOptions className="size-6" />
+              <IconOptions className="size-4 lg:size-6" />
             </button>
           </div>
         </div>
