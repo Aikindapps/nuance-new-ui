@@ -16,6 +16,7 @@ import { AuthorBlock } from "../features/article/sections/AuthorBlock";
 import { ActionBar } from "../features/article/sections/ActionBar";
 import { ArticleRail } from "../features/article/sections/ArticleRail";
 import { RelatedArticlesFoldout } from "../features/article/sections/RelatedArticlesFoldout";
+import { ArticleHead } from "../features/article/sections/ArticleHead";
 import { useMoreArticles } from "../features/article/hooks/useMoreArticles";
 import { useRecommendedArticles } from "../features/article/hooks/useRecommendedArticles";
 
@@ -146,7 +147,12 @@ export function ReadArticle() {
 
   return (
     <ArticleShell>
-      <title>{`${post.title || "Article"} — Nuance`}</title>
+      <ArticleHead
+        post={post}
+        author={author}
+        publication={publication}
+        meta={meta.data ?? null}
+      />
       {/* Figma 1:6091: Page content sits 80px below the 88px header. */}
       <main className={`${CONTAINER} pt-12 lg:pt-20`}>
         <Breadcrumb crumbs={crumbs} />
