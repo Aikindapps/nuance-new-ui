@@ -54,7 +54,7 @@ export function WelcomeBanner() {
 
   return (
     <div
-      className="fixed right-4 top-[80px] z-50 flex w-[calc(100vw-2rem)] max-w-[323px] flex-col items-start justify-center gap-2 rounded-popup bg-ink px-4 py-3 text-white shadow-lg md:right-8 md:top-[96px] lg:right-12 lg:top-[104px]"
+      className="fixed right-4 top-[calc(80*var(--fpx))] z-50 flex w-[calc(100vw-2rem)] max-w-[calc(323*var(--fpx))] flex-col items-start justify-center gap-2 rounded-popup bg-ink px-4 py-3 text-white shadow-lg md:right-8 md:top-[calc(96*var(--fpx))] lg:right-12 lg:top-[calc(104*var(--fpx))]"
       role="status"
       aria-live="polite"
     >

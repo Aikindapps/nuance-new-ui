@@ -18,17 +18,17 @@ import { headerCopy } from "../../constants/copy";
 
 export function HeaderLoggedIn() {
   return (
-    <header className="flex h-16 w-full items-center border-b border-ink-border/20 bg-white px-4 md:h-20 md:px-8 lg:h-[88px] lg:px-12">
+    <header className="flex h-16 w-full items-center border-b border-ink-border/20 bg-white px-4 md:h-20 md:px-8 lg:h-[calc(88*var(--fpx))] lg:px-12">
       <Link
         to="/"
         aria-label={headerCopy.homeAriaLabel}
         className="shrink-0 text-brand-purple"
       >
-        <LogoNuance className="h-9 w-auto lg:h-[51px]" />
+        <LogoNuance className="h-9 w-auto lg:h-[calc(51*var(--fpx))]" />
       </Link>
 
       <div className="flex flex-1 justify-center px-4">
-        <SearchBar className="hidden w-full max-w-[740px] md:flex" />
+        <SearchBar className="hidden w-full max-w-[calc(740*var(--fpx))] md:flex" />
         <button
           type="button"
           aria-label={headerCopy.searchAriaLabel}
@@ -54,7 +54,7 @@ export function HeaderLoggedIn() {
           <IconBell className="size-5 lg:size-6" />
           <span
             aria-hidden
-            className="absolute right-2 top-2 size-2 rounded-full bg-notification lg:right-[10px] lg:top-[10px]"
+            className="absolute right-2 top-2 size-2 rounded-full bg-notification lg:right-[calc(10*var(--fpx))] lg:top-[calc(10*var(--fpx))]"
           />
         </button>
 

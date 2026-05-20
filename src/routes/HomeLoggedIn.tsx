@@ -35,13 +35,13 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
         <HeaderLoggedIn />
         <WelcomeBanner />
 
-        <div className="mx-auto max-w-[1440px] px-4 pt-6 pb-10 md:px-8 md:pt-8 md:pb-12 lg:px-14 lg:pt-10 lg:pb-14">
+        <div className="mx-auto max-w-[calc(1440*var(--fpx))] px-4 pt-6 pb-10 md:px-8 md:pt-8 md:pb-12 lg:px-14 lg:pt-10 lg:pb-14">
           <section
             aria-labelledby="topics-heading"
           >
             <h2
               id="topics-heading"
-              className="font-bold text-ink-80 lg:text-[22px] lg:leading-8 lg:tracking-[-0.44px]"
+              className="font-bold text-ink-80 lg:text-[length:calc(22*var(--fpx))] lg:leading-8 lg:tracking-[calc(-0.44*var(--fpx))]"
             >
               {heroCopy.topicsHeading}
             </h2>
@@ -67,7 +67,7 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
           </section>
         </div>
 
-        <div className="mx-auto max-w-[1440px] px-4 pb-8 md:px-8 md:pb-12 lg:px-14 lg:pb-16">
+        <div className="mx-auto max-w-[calc(1440*var(--fpx))] px-4 pb-8 md:px-8 md:pb-12 lg:px-14 lg:pb-16">
           <WriteCtaBanner />
           <div className="mt-12 md:mt-14 lg:mt-16">
             <HomeTabBar />

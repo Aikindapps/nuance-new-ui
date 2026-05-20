@@ -16,7 +16,7 @@ export function Hero() {
 
       <section
         aria-labelledby="topics-heading"
-        className="mx-auto max-w-[1440px] px-4 pt-8 pb-10 md:px-8 md:pt-10 md:pb-12 lg:px-14 lg:pt-14 lg:pb-16"
+        className="mx-auto max-w-[calc(1440*var(--fpx))] px-4 pt-8 pb-10 md:px-8 md:pt-10 md:pb-12 lg:px-14 lg:pt-14 lg:pb-16"
       >
         <h2
           id="topics-heading"

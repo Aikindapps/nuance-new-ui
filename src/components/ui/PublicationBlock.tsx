@@ -14,11 +14,11 @@ export function PublicationBlock({ publication }: { publication: UserListItem })
         <h3 className="truncate text-title-sm font-medium text-ink">
           {publication.displayName || publication.handle}
         </h3>
-        <p className="text-[16px] font-medium leading-6 text-ink-80">
+        <p className="text-[length:calc(16*var(--fpx))] font-medium leading-6 text-ink-80">
           {followersLabel} followers
         </p>
         {publication.bio && (
-          <p className="line-clamp-3 text-[16px] leading-normal text-ink-80">
+          <p className="line-clamp-3 text-[length:calc(16*var(--fpx))] leading-normal text-ink-80">
             {publication.bio}
           </p>
         )}
@@ -26,8 +26,8 @@ export function PublicationBlock({ publication }: { publication: UserListItem })
       <Avatar
         src={publication.avatar}
         label={publication.displayName || publication.handle}
-        sizeClass="size-20 md:size-[100px] lg:size-[120px]"
-        textClass="text-[32px] md:text-[40px] lg:text-[48px]"
+        sizeClass="size-20 md:size-[calc(100*var(--fpx))] lg:size-[calc(120*var(--fpx))]"
+        textClass="text-[length:calc(32*var(--fpx))] md:text-[length:calc(40*var(--fpx))] lg:text-[length:calc(48*var(--fpx))]"
         rounded="card"
       />
     </a>

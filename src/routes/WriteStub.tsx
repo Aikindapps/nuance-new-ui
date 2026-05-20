@@ -29,7 +29,7 @@ export function WriteStub() {
           </div>
         )}
 
-        <div className="mx-auto max-w-[800px] px-4 py-20 text-center md:py-28 lg:py-32">
+        <div className="mx-auto max-w-[calc(800*var(--fpx))] px-4 py-20 text-center md:py-28 lg:py-32">
           <h1 className="text-h2 font-bold text-ink">{writeStubCopy.heading}</h1>
           <p className="mt-4 text-body text-ink-80">{writeStubCopy.body}</p>
           <Link

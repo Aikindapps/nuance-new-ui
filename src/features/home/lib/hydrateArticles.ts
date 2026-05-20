@@ -95,6 +95,10 @@ export async function hydrateArticles(
 
       return {
         id: post.postId,
+        bucketCanisterId: post.bucketCanisterId,
+        // Vendor buildPostUrl keys the first URL segment off the post's own
+        // `handle` (publication handle for pub posts), lowercased.
+        routeHandle: (post.handle || authorHandle).toLowerCase(),
         title: post.title || "Untitled",
         excerpt: post.subtitle || "",
         imageSrc: post.headerImage || "",
