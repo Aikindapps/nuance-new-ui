@@ -76,10 +76,13 @@ export function RelatedArticlesFoldout({
         </button>
       )}
 
-      {/* Expanded — floating light-purple panel */}
+      {/* Expanded — floating light-purple panel. `inert` when closed so
+          descendant links don't sit in the keyboard tab order while the
+          panel is translated off-screen (PR #7 review m2). */}
       <aside
         aria-label="Related articles"
         aria-hidden={!open}
+        inert={!open}
         className={`fixed right-4 bottom-4 top-[calc(112*var(--fpx))] z-30 w-[calc(340*var(--fpx))] max-w-[calc(100vw-2rem)] transition-transform duration-300 md:top-[calc(128*var(--fpx))] lg:top-[calc(168*var(--fpx))] ${
           open
             ? "translate-x-0"

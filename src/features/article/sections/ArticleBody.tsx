@@ -10,15 +10,21 @@ import DOMPurify from "dompurify";
 // while keeping the safe content. Element styling lives in `.article-prose`
 // (src/index.css) since the canister HTML carries no classes.
 
-// New-tab links must not leak window.opener. Registered once at module load.
-DOMPurify.addHook("afterSanitizeAttributes", (node) => {
-  if (node.tagName === "A" && node.getAttribute("target")) {
-    node.setAttribute("rel", "noopener noreferrer");
-  }
-});
+// Harden external links: any anchor with `target` gets `rel="noopener
+// noreferrer"` so it can't leak window.opener. Done as a post-sanitize
+// DOM walk rather than DOMPurify.addHook (which is module-global and
+// would affect every future sanitize caller). PR #7 review m6.
+function hardenLinks(html: string): string {
+  if (!html) return html;
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.querySelectorAll("a[target]").forEach((a) => {
+    a.setAttribute("rel", "noopener noreferrer");
+  });
+  return doc.body.innerHTML;
+}
 
 export function ArticleBody({ html }: { html: string }) {
-  const clean = useMemo(() => DOMPurify.sanitize(html), [html]);
+  const clean = useMemo(() => hardenLinks(DOMPurify.sanitize(html)), [html]);
 
   if (!clean.trim()) {
     return (
@@ -26,7 +32,7 @@ export function ArticleBody({ html }: { html: string }) {
     );
   }
 
-  // `clean` is DOMPurify-sanitized above — safe to inject as HTML.
+  // `clean` is DOMPurify-sanitized + link-hardened above — safe to inject.
   return (
     <div className="article-prose" dangerouslySetInnerHTML={{ __html: clean }} />
   );

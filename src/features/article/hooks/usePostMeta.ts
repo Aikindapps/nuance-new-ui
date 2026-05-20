@@ -14,6 +14,8 @@ export function usePostMeta(postId: string) {
 
   return useQuery<PostKeyProperties | null>({
     queryKey: ["post-meta", postId],
+    // Don't fire with an empty postId (malformed URL). PR #7 review M1.
+    enabled: postId !== "",
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const result = await getPostKeyProperties(postId);

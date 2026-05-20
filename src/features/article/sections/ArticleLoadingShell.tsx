@@ -24,18 +24,32 @@ export function ArticleLoadingShell() {
           <Header />
         </div>
       )}
+      {/* Skeleton heights expressed as design pixels so the loading shape
+          tracks the eventual content size at every --fpx (PR #7 review m3).
+          Numeric `height` props produce literal px; `sx={{height: ...}}`
+          accepts a CSS calc string. */}
       <main className={`${CONTAINER} px-6 py-12`}>
-        <Skeleton variant="text" width={240} height={28} />
-        <Skeleton variant="text" width="90%" height={56} className="mt-6" />
-        <Skeleton variant="text" width="70%" height={56} />
+        <Skeleton variant="text" width={240} sx={{ height: "calc(28 * var(--fpx))" }} />
+        <Skeleton
+          variant="text"
+          width="90%"
+          sx={{ height: "calc(56 * var(--fpx))" }}
+          className="mt-6"
+        />
+        <Skeleton variant="text" width="70%" sx={{ height: "calc(56 * var(--fpx))" }} />
         <Skeleton
           variant="rectangular"
-          height={474}
+          sx={{ height: "calc(474 * var(--fpx))" }}
           className="mt-8 rounded-card"
         />
-        <Skeleton variant="text" width="100%" height={24} className="mt-8" />
-        <Skeleton variant="text" width="100%" height={24} />
-        <Skeleton variant="text" width="85%" height={24} />
+        <Skeleton
+          variant="text"
+          width="100%"
+          sx={{ height: "calc(24 * var(--fpx))" }}
+          className="mt-8"
+        />
+        <Skeleton variant="text" width="100%" sx={{ height: "calc(24 * var(--fpx))" }} />
+        <Skeleton variant="text" width="85%" sx={{ height: "calc(24 * var(--fpx))" }} />
       </main>
     </div>
   );

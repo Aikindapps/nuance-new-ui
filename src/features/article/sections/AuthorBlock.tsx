@@ -80,10 +80,14 @@ export function AuthorBlock({ author, followingCount }: Props) {
           )}
         </div>
 
-        {/* Inert shell — follow is wired in the Page 4 enrichment PR. */}
+        {/* Inert shell — follow is wired in the Page 4 enrichment PR.
+            `aria-disabled` + `title` so the deferred state is honestly
+            communicated to AT and hover (PR #7 review M6). */}
         <button
           type="button"
           aria-label={`Follow @${author.handle}`}
+          aria-disabled
+          title="Coming soon"
           className="bg-brand-gradient-button shrink-0 rounded-card px-6 py-2.5 text-body font-medium text-white shadow-[var(--shadow-purple-glow-medium)] transition-opacity hover:opacity-90"
         >
           Follow

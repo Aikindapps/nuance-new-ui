@@ -39,6 +39,10 @@ export function useArticle(bucketCanisterId: string, postId: string) {
 
   return useQuery<ArticleData | null>({
     queryKey: ["article", bucketCanisterId, postId],
+    // Don't fire with empty args — the route component renders a not-found
+    // state for malformed URLs but the hook calls run before that render.
+    // PR #7 review M1.
+    enabled: postId !== "" && bucketCanisterId !== "",
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const result = await getPost(bucketCanisterId, postId);

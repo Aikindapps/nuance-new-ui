@@ -19,16 +19,25 @@ type Props = {
   isLoading: boolean;
 };
 
-// Card pitch: 296px card + 32px gap.
-const SCROLL_STEP = 328 * 2;
+// Card pitch in design pixels: 296px card + 32px gap = 328px. Two cards per
+// click. The actual on-screen step scales with --fpx so the chevron always
+// advances exactly two visible cards regardless of viewport. PR #7 review m1.
+const SCROLL_STEP_DESIGN_PX = 328 * 2;
 
 export function ArticleRail({ heading, articles, isLoading }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   if (!isLoading && (!articles || articles.length === 0)) return null;
 
-  const scrollRight = () =>
-    scrollRef.current?.scrollBy({ left: SCROLL_STEP, behavior: "smooth" });
+  const scrollRight = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const fpx =
+      parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--fpx"),
+      ) || 1;
+    el.scrollBy({ left: SCROLL_STEP_DESIGN_PX * fpx, behavior: "smooth" });
+  };
 
   return (
     <section className="bg-ink-border-5 py-12 lg:py-[calc(72*var(--fpx))]">
@@ -69,9 +78,17 @@ function RailSkeleton() {
         variant="rectangular"
         sx={{ width: "100%", aspectRatio: "416 / 242", borderRadius: "var(--radius-card)" }}
       />
-      <Skeleton variant="text" sx={{ height: 16, width: "60%", mt: 2 }} />
-      <Skeleton variant="text" sx={{ height: 24, width: "100%", mt: 1 }} />
-      <Skeleton variant="text" sx={{ height: 24, width: "80%" }} />
+      {/* Heights in design pixels so the skeleton matches the eventual
+          content size at every --fpx scale (PR #7 review m3). */}
+      <Skeleton
+        variant="text"
+        sx={{ height: "calc(16 * var(--fpx))", width: "60%", mt: 2 }}
+      />
+      <Skeleton
+        variant="text"
+        sx={{ height: "calc(24 * var(--fpx))", width: "100%", mt: 1 }}
+      />
+      <Skeleton variant="text" sx={{ height: "calc(24 * var(--fpx))", width: "80%" }} />
     </div>
   );
 }

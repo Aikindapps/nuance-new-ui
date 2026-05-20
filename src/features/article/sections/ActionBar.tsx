@@ -22,17 +22,30 @@ import { formatCount } from "../../../lib/formatCount";
 // Mobile (Figma 1:5455): Applause + Comment + Link + Share — icon-only,
 // drops the view count. Native share-arrow per Figma's NUR / Icon / Share.
 
+type CopyState = "idle" | "copied" | "failed";
+
+// `aria-disabled` + `title` on inert shells so AT users hear them as not-yet
+// active and sighted users get a hover tooltip — clicking does nothing, but
+// the button's state is now honestly communicated. PR #7 review M6.
+const INERT_ARIA = {
+  "aria-disabled": true as const,
+  title: "Coming soon",
+};
+
 export function ActionBar({ claps, views }: { claps: number; views: number }) {
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<CopyState>("idle");
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      setCopyState("copied");
     } catch {
-      // Clipboard unavailable (insecure context / permission denied) — no-op.
+      // Clipboard unavailable (insecure context / permission denied) —
+      // surface as inline button state so the click isn't a black hole.
+      // PR #7 review m4.
+      setCopyState("failed");
     }
+    window.setTimeout(() => setCopyState("idle"), 2000);
   };
 
   return (
@@ -41,24 +54,36 @@ export function ActionBar({ claps, views }: { claps: number; views: number }) {
       <DesktopBar
         claps={claps}
         views={views}
-        copied={copied}
+        copyState={copyState}
         copyLink={copyLink}
       />
       {/* Mobile bar — icon-only, drops Views slot */}
-      <MobileBar copied={copied} copyLink={copyLink} />
+      <MobileBar copyState={copyState} copyLink={copyLink} />
     </>
   );
+}
+
+function copyLabel(state: CopyState): string {
+  if (state === "copied") return "Copied!";
+  if (state === "failed") return "Copy failed";
+  return "Copy link";
+}
+
+function copyAriaLabel(state: CopyState): string {
+  if (state === "copied") return "Link copied";
+  if (state === "failed") return "Copy failed";
+  return "Copy link";
 }
 
 function DesktopBar({
   claps,
   views,
-  copied,
+  copyState,
   copyLink,
 }: {
   claps: number;
   views: number;
-  copied: boolean;
+  copyState: CopyState;
   copyLink: () => void;
 }) {
   const item =
@@ -70,6 +95,7 @@ function DesktopBar({
         {/* Applause — inert shell (wired in Page 4) */}
         <button
           type="button"
+          {...INERT_ARIA}
           className="flex h-12 items-center gap-2 rounded-card bg-white pl-4 pr-5 text-body font-medium text-brand-purple"
         >
           <IconClaps className="size-6" />
@@ -79,6 +105,7 @@ function DesktopBar({
         {/* Comment — inert shell; count omitted (comments deferred to Page 4) */}
         <button
           type="button"
+          {...INERT_ARIA}
           className={`${item} transition-colors hover:bg-white-10`}
         >
           <IconComment className="size-6" />
@@ -98,7 +125,7 @@ function DesktopBar({
           className={`${item} transition-colors hover:bg-white-10`}
         >
           <IconLink className="size-6" />
-          {copied ? "Copied!" : "Copy link"}
+          {copyLabel(copyState)}
         </button>
       </div>
     </div>
@@ -106,10 +133,10 @@ function DesktopBar({
 }
 
 function MobileBar({
-  copied,
+  copyState,
   copyLink,
 }: {
-  copied: boolean;
+  copyState: CopyState;
   copyLink: () => void;
 }) {
   const iconButton =
@@ -122,13 +149,19 @@ function MobileBar({
         <button
           type="button"
           aria-label="Applause"
+          {...INERT_ARIA}
           className="flex size-12 items-center justify-center rounded-card bg-white text-brand-purple"
         >
           <IconClaps className="size-6" />
         </button>
 
         {/* Comment — inert shell */}
-        <button type="button" aria-label="Comment" className={iconButton}>
+        <button
+          type="button"
+          aria-label="Comment"
+          {...INERT_ARIA}
+          className={iconButton}
+        >
           <IconComment className="size-6" />
         </button>
 
@@ -136,14 +169,19 @@ function MobileBar({
         <button
           type="button"
           onClick={copyLink}
-          aria-label={copied ? "Link copied" : "Copy link"}
+          aria-label={copyAriaLabel(copyState)}
           className={iconButton}
         >
           <IconLink className="size-6" />
         </button>
 
         {/* Share — inert shell (Page 4 wires native share sheet) */}
-        <button type="button" aria-label="Share" className={iconButton}>
+        <button
+          type="button"
+          aria-label="Share"
+          {...INERT_ARIA}
+          className={iconButton}
+        >
           <IconShare className="size-6" />
         </button>
       </div>
