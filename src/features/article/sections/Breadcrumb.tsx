@@ -25,7 +25,7 @@ export function Breadcrumb({ crumbs }: { crumbs: Crumb[] }) {
         <IconBack className="size-[calc(18*var(--fpx))]" />
       </button>
 
-      <p className="min-w-0 truncate text-lg text-brand-purple">
+      <p className="min-w-0 truncate text-body text-brand-purple">
         {crumbs.map((crumb, i) => (
           <span key={`${crumb.label}-${i}`}>
             {i > 0 && <span className="text-brand-purple"> / </span>}

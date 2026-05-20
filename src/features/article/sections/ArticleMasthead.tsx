@@ -42,7 +42,7 @@ export function ArticleMasthead({ post, author, publication, meta }: Props) {
 
   return (
     <header>
-      <h1 className="px-6 text-title-md font-bold text-ink md:text-title-lg lg:px-14 lg:text-title-xl">
+      <h1 className="px-6 text-title-md font-extrabold text-ink md:text-title-lg lg:px-14 lg:text-title-xl">
         {post.title || "Untitled"}
       </h1>
 
@@ -103,7 +103,7 @@ export function ArticleMasthead({ post, author, publication, meta }: Props) {
         </div>
 
         {post.subtitle && (
-          <p className="text-lg text-ink-80">{post.subtitle}</p>
+          <p className="text-lg font-medium text-ink-80">{post.subtitle}</p>
         )}
       </div>
 

@@ -40,7 +40,7 @@ export function RelatedArticleItem({ article }: { article: Article }) {
               <span>by</span>
             </>
           )}
-          <span className="underline">{article.author.handle}</span>
+          <span className="underline">@{article.author.handle}</span>
           {article.author.isVerified && <IconVerified className="size-4" />}
         </p>
       </div>
