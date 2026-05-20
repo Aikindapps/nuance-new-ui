@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
-import Skeleton from "@mui/material/Skeleton";
 import { Header } from "../components/ui/Header";
 import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { useAuth } from "../contexts/useAuth";
@@ -17,6 +16,7 @@ import { ActionBar } from "../features/article/sections/ActionBar";
 import { ArticleRail } from "../features/article/sections/ArticleRail";
 import { RelatedArticlesFoldout } from "../features/article/sections/RelatedArticlesFoldout";
 import { ArticleHead } from "../features/article/sections/ArticleHead";
+import { ArticleLoadingShell } from "../features/article/sections/ArticleLoadingShell";
 import { useMoreArticles } from "../features/article/hooks/useMoreArticles";
 import { useRecommendedArticles } from "../features/article/hooks/useRecommendedArticles";
 
@@ -91,23 +91,7 @@ export function ReadArticle() {
   }
 
   if (article.isPending) {
-    return (
-      <ArticleShell>
-        <main className={`${CONTAINER} px-6 py-12`}>
-          <Skeleton variant="text" width={240} height={28} />
-          <Skeleton variant="text" width="90%" height={56} className="mt-6" />
-          <Skeleton variant="text" width="70%" height={56} />
-          <Skeleton
-            variant="rectangular"
-            height={474}
-            className="mt-8 rounded-card"
-          />
-          <Skeleton variant="text" width="100%" height={24} className="mt-8" />
-          <Skeleton variant="text" width="100%" height={24} />
-          <Skeleton variant="text" width="85%" height={24} />
-        </main>
-      </ArticleShell>
-    );
+    return <ArticleLoadingShell />;
   }
 
   if (article.isError) {
@@ -212,3 +196,5 @@ export function ReadArticle() {
     </ArticleShell>
   );
 }
+
+export default ReadArticle;
