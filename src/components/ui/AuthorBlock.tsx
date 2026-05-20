@@ -9,13 +9,13 @@ export function AuthorBlock({ author }: { author: UserListItem }) {
   return (
     <a
       href={`/${author.handle}`}
-      className="flex h-full w-[220px] shrink-0 flex-col items-center gap-4 rounded-card border border-ink-border/20 bg-white p-6 shadow-purple-glow transition-shadow hover:shadow-purple-glow-hover md:w-[240px] md:p-7 lg:w-[248px] lg:p-8"
+      className="flex h-full w-[calc(220*var(--fpx))] shrink-0 flex-col items-center gap-4 rounded-card border border-ink-border/20 bg-white p-6 shadow-purple-glow transition-shadow hover:shadow-purple-glow-hover md:w-[calc(240*var(--fpx))] md:p-7 lg:w-[calc(248*var(--fpx))] lg:p-8"
     >
       <Avatar
         src={author.avatar}
         label={author.displayName || author.handle}
-        sizeClass="size-[96px] lg:size-[120px]"
-        textClass="text-[40px] lg:text-[48px]"
+        sizeClass="size-[calc(96*var(--fpx))] lg:size-[calc(120*var(--fpx))]"
+        textClass="text-[length:calc(40*var(--fpx))] lg:text-[length:calc(48*var(--fpx))]"
       />
 
       <div className="flex w-full items-center justify-center gap-2">
@@ -27,12 +27,12 @@ export function AuthorBlock({ author }: { author: UserListItem }) {
         )}
       </div>
 
-      <p className="w-full text-center text-[16px] font-medium leading-6 text-ink-80">
+      <p className="w-full text-center text-[length:calc(16*var(--fpx))] font-medium leading-6 text-ink-80">
         {followersLabel} followers
       </p>
 
       {author.bio && (
-        <p className="line-clamp-3 w-full text-center text-[16px] leading-normal text-ink-80">
+        <p className="line-clamp-3 w-full text-center text-[length:calc(16*var(--fpx))] leading-normal text-ink-80">
           {author.bio}
         </p>
       )}

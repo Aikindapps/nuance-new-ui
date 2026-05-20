@@ -22,24 +22,41 @@
      tonal match to GT Walsheim among free Google Fonts). See decisions.md. */
   --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Article body type. Figma renders the article body in "Crimson Text"
+     (Figma 1:5300/1:5306) — a serif, distinct from the Manrope UI font, the
+     Medium/Substack long-form convention. Used only by .article-prose. */
+  --font-serif: "Crimson Text", Georgia, "Times New Roman", serif;
 
-  /* Type scale (Figma: GT Walsheim / size / weight) */
-  --text-label: 16px;          /* form input labels (Figma 16/Bold — RegisterModal) */
-  --text-label--line-height: 24px;
-  --text-body: 18px;
-  --text-body--line-height: 28px;
-  --text-lg: 22px;
-  --text-lg--line-height: 32px;
-  --text-lg--letter-spacing: -0.44px;
-  --text-title-sm: 24px;
-  --text-title-sm--line-height: 36px;
-  --text-title-sm--letter-spacing: -0.48px;
-  --text-title-md: 32px;
-  --text-title-md--line-height: 40px;
-  --text-title-md--letter-spacing: -0.64px;
-  --text-title-lg: 36px;
-  --text-title-lg--line-height: 44px;
-  --text-title-lg--letter-spacing: -0.72px;
+  /* Fluid scaling (decision #33). --fpx is one Figma "design pixel": 1px on
+     mobile/tablet (so the breakpoint layouts render unchanged), and
+     min(1px, viewport/1920) at >=1024px so the desktop design scales
+     proportionally — pixel-exact at a 1920 viewport, smaller below. Every
+     dimension below is expressed as N * --fpx, and so is Tailwind's spacing
+     unit, so the whole UI scales as one piece. The >=1024px override lives
+     in the :root rule after this block. */
+  --fpx: 1px;
+  --spacing: calc(4 * var(--fpx));
+
+  /* Type scale (Figma: GT Walsheim / size / weight) — in design pixels. */
+  --text-label: calc(16 * var(--fpx));          /* form input labels (Figma 16/Bold) */
+  --text-label--line-height: calc(24 * var(--fpx));
+  --text-body: calc(18 * var(--fpx));
+  --text-body--line-height: calc(28 * var(--fpx));
+  --text-lg: calc(22 * var(--fpx));
+  --text-lg--line-height: calc(32 * var(--fpx));
+  --text-lg--letter-spacing: calc(-0.44 * var(--fpx));
+  --text-title-sm: calc(24 * var(--fpx));
+  --text-title-sm--line-height: calc(36 * var(--fpx));
+  --text-title-sm--letter-spacing: calc(-0.48 * var(--fpx));
+  --text-title-md: calc(32 * var(--fpx));
+  --text-title-md--line-height: calc(40 * var(--fpx));
+  --text-title-md--letter-spacing: calc(-0.64 * var(--fpx));
+  --text-title-lg: calc(36 * var(--fpx));
+  --text-title-lg--line-height: calc(44 * var(--fpx));
+  --text-title-lg--letter-spacing: calc(-0.72 * var(--fpx));
+  --text-title-xl: calc(60 * var(--fpx));       /* article H1 — Figma 1:5294 (60/72/-1.2) */
+  --text-title-xl--line-height: calc(72 * var(--fpx));
+  --text-title-xl--letter-spacing: calc(-1.2 * var(--fpx));
 
   /* Colors — Nuance palette */
   --color-brand-purple: #5405d4;           /* nur/purple/100 */
@@ -73,10 +90,10 @@
   /* Radii. Names are deliberately non-colliding with Tailwind's default
      rounded-{sm,md,lg,xl} scale so overriding those defaults is never
      accidental — following the --radius-card precedent. */
-  --radius-popup: 6px;        /* small surfaces — WelcomeBanner popup, form inputs */
-  --radius-card: 8px;
-  --radius-banner: 16px;      /* WriteCtaBanner / large surfaces (Figma 1:50057) */
-  --radius-modal: 24px;       /* modal popup card — Popup shell (LoginModal/Register/Topics) */
+  --radius-popup: calc(6 * var(--fpx));   /* small surfaces — WelcomeBanner popup, form inputs */
+  --radius-card: calc(8 * var(--fpx));
+  --radius-banner: calc(16 * var(--fpx)); /* WriteCtaBanner / large surfaces (Figma 1:50057) */
+  --radius-modal: calc(24 * var(--fpx));  /* modal popup card — Popup shell (LoginModal/Register/Topics) */
   --radius-pill: 9999px;
 
   /* Shadows — Figma "Purple glow light" used on author/publication cards.
@@ -93,6 +110,15 @@ body {
   background: var(--color-surface);
   color: var(--color-ink);
   font-family: var(--font-sans);
+}
+
+/* Fluid scaling (decision #33). At >=1024px one design pixel = the
+   viewport's share of 1920, capped at 1px (so >=1920 is exact). Below
+   1024px --fpx stays 1px and the breakpoint layouts render unchanged. */
+@media (min-width: 1024px) {
+  :root {
+    --fpx: min(1px, calc(100vw / 1920));
+  }
 }
 
 /* Utility: hide scrollbar while keeping scroll functional.
@@ -123,4 +149,154 @@ body {
     var(--color-brand-purple-light) 0.643%,
     var(--color-brand-purple) 59.555%
   );
+}
+
+/* Article body — sanitized HTML from the canister, rendered inside
+   .article-prose (PR #7 Phase 4). The canister stores the body as an HTML
+   string with no classes, so every style here is an element selector.
+   Type matches Figma 1:5299: Crimson Text serif body, bold-sans headings,
+   gradient-bar blockquote. */
+.article-prose {
+  color: var(--color-ink);
+  font-family: var(--font-serif);
+  font-size: calc(22 * var(--fpx));
+  line-height: calc(32 * var(--fpx));
+  overflow-wrap: break-word;
+}
+.article-prose > :first-child {
+  margin-top: 0;
+}
+.article-prose p {
+  margin-top: calc(28 * var(--fpx));
+}
+.article-prose h1,
+.article-prose h2,
+.article-prose h3,
+.article-prose h4 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: var(--color-ink);
+  letter-spacing: calc(-0.48 * var(--fpx));
+  margin-top: calc(40 * var(--fpx));
+  margin-bottom: calc(8 * var(--fpx));
+}
+.article-prose h1 {
+  font-size: calc(32 * var(--fpx));
+  line-height: calc(40 * var(--fpx));
+}
+.article-prose h2 {
+  font-size: calc(28 * var(--fpx));
+  line-height: calc(36 * var(--fpx));
+}
+.article-prose h3 {
+  font-size: calc(24 * var(--fpx));
+  line-height: calc(36 * var(--fpx));
+}
+.article-prose h4 {
+  font-size: calc(20 * var(--fpx));
+  line-height: calc(28 * var(--fpx));
+}
+.article-prose a {
+  color: var(--color-brand-purple);
+  text-decoration: underline;
+  text-underline-offset: calc(2 * var(--fpx));
+}
+.article-prose a:hover {
+  text-decoration: none;
+}
+.article-prose strong {
+  font-weight: 700;
+}
+.article-prose em {
+  font-style: italic;
+}
+.article-prose blockquote {
+  position: relative;
+  margin-top: calc(40 * var(--fpx));
+  padding-left: calc(36 * var(--fpx));
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: calc(24 * var(--fpx));
+  line-height: calc(36 * var(--fpx));
+  letter-spacing: calc(-0.48 * var(--fpx));
+  color: var(--color-brand-purple);
+}
+.article-prose blockquote::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(4 * var(--fpx));
+  bottom: calc(4 * var(--fpx));
+  width: calc(4 * var(--fpx));
+  border-radius: calc(2 * var(--fpx));
+  background-image: linear-gradient(
+    180deg,
+    var(--color-brand-purple-light),
+    var(--color-brand-purple)
+  );
+}
+.article-prose blockquote p {
+  margin-top: 0;
+  font: inherit;
+  color: inherit;
+}
+.article-prose ul,
+.article-prose ol {
+  margin-top: calc(28 * var(--fpx));
+  padding-left: calc(28 * var(--fpx));
+}
+.article-prose ul {
+  list-style: disc;
+}
+.article-prose ol {
+  list-style: decimal;
+}
+.article-prose li {
+  margin-top: calc(8 * var(--fpx));
+}
+.article-prose img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-card);
+  margin-top: calc(40 * var(--fpx));
+}
+.article-prose figure {
+  margin-top: calc(40 * var(--fpx));
+}
+.article-prose figure img {
+  margin-top: 0;
+}
+.article-prose figcaption {
+  margin-top: calc(12 * var(--fpx));
+  font-size: calc(16 * var(--fpx));
+  line-height: calc(24 * var(--fpx));
+  color: var(--color-ink-60);
+  text-align: center;
+}
+.article-prose hr {
+  border: 0;
+  width: calc(70 * var(--fpx));
+  height: calc(4 * var(--fpx));
+  margin: calc(48 * var(--fpx)) auto;
+  border-radius: calc(2 * var(--fpx));
+  background: var(--color-ink);
+}
+.article-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--color-ink-border-5);
+  padding: calc(2 * var(--fpx)) calc(6 * var(--fpx));
+  border-radius: calc(4 * var(--fpx));
+}
+.article-prose pre {
+  margin-top: calc(28 * var(--fpx));
+  padding: calc(16 * var(--fpx));
+  background: var(--color-ink-border-5);
+  border-radius: var(--radius-card);
+  overflow-x: auto;
+}
+.article-prose pre code {
+  background: none;
+  padding: 0;
 }

@@ -14,9 +14,9 @@ export function Header() {
     modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });
 
   return (
-    <header className="flex h-16 w-full items-center border-b border-white-20 px-4 md:h-20 md:px-8 lg:h-[88px] lg:px-12">
+    <header className="flex h-16 w-full items-center border-b border-white-20 px-4 md:h-20 md:px-8 lg:h-[calc(88*var(--fpx))] lg:px-12">
       <Link to="/" aria-label={headerCopy.homeAriaLabel} className="shrink-0 text-white">
-        <LogoNuance className="h-9 w-auto lg:h-[51px]" />
+        <LogoNuance className="h-9 w-auto lg:h-[calc(51*var(--fpx))]" />
       </Link>
 
       {/* Primary nav — hidden on mobile, shown md+ */}
@@ -35,7 +35,7 @@ export function Header() {
         >
           <IconSearch className="size-5" />
         </button>
-        <SearchInput className="hidden md:flex md:w-48 lg:w-[320px] xl:w-[405px]" />
+        <SearchInput className="hidden md:flex md:w-48 lg:w-[calc(320*var(--fpx))] xl:w-[calc(405*var(--fpx))]" />
 
         {isAuthenticated ? (
           <UserMenu />

@@ -40,7 +40,7 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
         <h1 className="sr-only">{meta.h1}</h1>
         <Hero />
 
-        <div className="mx-auto max-w-[1440px] px-4 py-8 md:px-8 md:py-12 lg:px-14 lg:py-16">
+        <div className="mx-auto max-w-[calc(1440*var(--fpx))] px-4 py-8 md:px-8 md:py-12 lg:px-14 lg:py-16">
           <TabBar />
 
           <div className="mt-10 md:mt-12">

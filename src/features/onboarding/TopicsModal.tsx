@@ -79,7 +79,7 @@ export function TopicsModal({ onComplete }: TopicsModalProps) {
           if the platform returns more tags than the popup body fits. The
           cap is viewport-relative on mobile so a long tag list never
           pushes the footer off a short screen (decision #13). */}
-      <div className="mt-12 max-h-[45dvh] overflow-y-auto md:max-h-[432px]">
+      <div className="mt-12 max-h-[45dvh] overflow-y-auto md:max-h-[calc(432*var(--fpx))]">
         {tags.isLoading && (
           <p className="text-body text-ink-60">{topicsModalCopy.loading}</p>
         )}

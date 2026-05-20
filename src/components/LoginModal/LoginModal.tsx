@@ -44,7 +44,7 @@ export function LoginModal() {
       <p className="mt-7 text-body text-ink">{loginModalCopy.body}</p>
 
       {/* Buttons stack — 74px below body per Figma (y=246 in popup) */}
-      <div className="mx-auto mt-[74px] flex w-[359px] max-w-full flex-col gap-6">
+      <div className="mx-auto mt-[calc(74*var(--fpx))] flex w-[calc(359*var(--fpx))] max-w-full flex-col gap-6">
         <Button
           fullWidth
           onClick={() => handleLogin()}

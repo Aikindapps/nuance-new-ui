@@ -20,7 +20,7 @@ export function Avatar({
   src,
   label,
   sizeClass,
-  textClass = "text-[24px]",
+  textClass = "text-[length:calc(24*var(--fpx))]",
   rounded = "full",
 }: AvatarProps) {
   const [failed, setFailed] = useState(false);

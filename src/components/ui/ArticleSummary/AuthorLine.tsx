@@ -27,7 +27,7 @@ export function AuthorLine({
         src={author.avatarSrc}
         label={author.displayName}
         sizeClass="size-10"
-        textClass="text-[18px]"
+        textClass="text-[length:calc(18*var(--fpx))]"
       />
       <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1 text-body font-medium text-brand-purple">
         {publication && (

@@ -13,7 +13,7 @@ export function Tab({ to, end, children }: TabProps) {
       end={end}
       className={({ isActive }) =>
         [
-          "relative flex items-center justify-center px-[25px] py-3 text-body transition-colors rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple",
+          "relative flex items-center justify-center px-[calc(25*var(--fpx))] py-3 text-body transition-colors rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple",
           isActive
             ? "font-bold text-brand-purple"
             : "font-medium text-ink-80 hover:text-ink",

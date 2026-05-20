@@ -997,3 +997,114 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - `ActorsContext` gains per-method wrappers (decision #18 allowlist) for `registerUser`, `getAllTags`, `followTags` — the first mutation wrappers; they run on the PR #4 authed agent.
 - `RegisterModal` calls `registerUser(handle, displayName, "")`. Cancel / close → `useAuth().logout()`.
 - A shared `Popup` shell (`src/components/ui/Popup.tsx`) is extracted from `LoginModal`'s hand-rolled chrome and all three modals use it.
+
+## #31 — Read Article (PR #7): build Page 3 sections 3.2 + 3.3; defer comments and interactions to Page 4
+
+**Date:** 2026-05-19
+
+**Status:** Active
+
+**Decision:** PR #7 builds the "Read Article" screen — Figma Page 3 (`1:4440`) — scoped to **two of its six sections**: 3.2 "View Article content" (`1:5285`) and 3.3 "View related articles" (`1:5524`). The article body, stored on the canister as an **HTML string**, is rendered with `dangerouslySetInnerHTML` after sanitization by **DOMPurify** (a new dependency). The article gets a real route, `/:handle/:postIdAndBucket/:slug` (URL shape governed by decision #32). Three things are explicitly deferred to the future Page 4 "Article Enrichment" PR: (a) the **comments block** entirely — list display and interactions; (b) the floating **action bar's interactions** (applause, comment, bookmark) — the bar ships as a visual shell with only "Copy link" wired; (c) the author **Follow button** — rendered inert.
+
+**Inputs:**
+
+- Page 3 metadata recon (2026-05-19): the page is a six-section *flow*, not one screen. 3.1 is a full search experience; 3.2 is the core article page; 3.3 adds a related/next-article foldout; 3.4 is an NFT/limited-edition paywall; 3.5/3.6 are publication/author subscription purchase flows. 3.4–3.6 require NUA token transfers (`icrc-ledger`) and the Subscription canister; 3.1 is its own feature.
+- Data-layer research against the vendor Motoko: article content is HTML (`content: Text`, confirmed by `U.calculate_total_word_count` which only counts inside `<...>` tag pairs). `PostBucket.getPost(postId)` (query) returns the body; `PostCore.getPostKeyProperties(postId)` returns views/claps/tags; `PostCore.viewPost(postId)` (oneway) registers a view; `PostCore.getMoreArticlesFromUsers(postId, handles)` feeds the related rails. Comment handle/avatar come back empty from the canister and need User-canister hydration — i.e. comments are real work, not a freebie.
+- Page 4 is named "Article Enrichment" and explicitly covers favourites, tip/claps, follow, share, and comment interactions — those interactions are that PR's identity.
+
+**Options considered:**
+
+- PR scope: **A.** core article page only (3.2). **B. article page + related articles (3.2 + 3.3) — chosen** (Mr Nick, 2026-05-19): 3.3 shares the 3.2 article-detail layout, so the marginal cost is moderate. **C.** all six sections — rejected: the monetization flows pull in token transfers and a second canister; far too large for one PR.
+- Comments: **A.** render the comment list read-only now (indexable content). **B. defer the whole comments section to Page 4 — chosen** (Mr Nick, 2026-05-19): a read-only comments block you cannot interact with is a half-state; comment hydration is real work; cleaner scope boundary.
+- HTML sanitizer: **DOMPurify — chosen.** Article HTML is user-authored and the canister does not sanitize on write, so rendering it raw is a stored-XSS vector. The alternative — a hand-rolled allowlist sanitizer — is more code and easy to get subtly wrong.
+
+**Rationale:**
+
+- Treating Page 3 as a flow (as Page 2 was) keeps the PR scoped to what genuinely belongs together: reading an article and discovering the next one.
+- Bundling the action-bar/comment/follow *interactions* here would duplicate Page 4's purpose and inflate the PR; the visual shells are cheap and let Page 4 wire behaviour onto a finished surface.
+
+**Trade-offs accepted:**
+
+- The shipped article page omits the comments block present in Figma `1:5287` — and with it the comment text, which is indexable content. Accepted: the SEO-critical payload is the article body, and the crawlable surface is the proxy anyway (decision #32).
+- The floating action bar is non-functional except "Copy link" until Page 4.
+
+**How to apply:**
+
+- New feature folder `src/features/article/` (hooks, sections, lib); route component `src/routes/ReadArticle.tsx`.
+- `ActorsContext` gains per-method wrappers (decision #18 allowlist): `getPost`, `getPostKeyProperties`, `viewPost`, `getMoreArticlesFromUsers`.
+- Home `ArticleSummary` cards now link to the canonical article URL via `src/lib/articleUrl.ts` (`buildArticleUrl`).
+- When Page 4 is built: it wires applause/bookmark/share/comment onto the existing action-bar shell, builds the comments block, and makes the author Follow button live.
+
+## #32 — Article SEO is served by an out-of-band crawler proxy; the frontend's obligation is URL-scheme preservation
+
+**Date:** 2026-05-19
+
+**Status:** Active
+
+**Decision:** Search-engine and link-preview SEO for Nuance articles is **not** the responsibility of this React SPA and will not be solved inside it. Production nuance.xyz is fronted by a standalone Node.js reverse proxy (`aikindapps-Nuance/proxy/`) that sniffs the request User-Agent: known crawlers (Googlebot, Bingbot, Twitterbot, `facebookexternalhit`, LinkedInBot, Slackbot, WhatsApp, Applebot, …) are served server-rendered HTML built live from the canisters — full `<title>`/meta/OG plus the article body inlined — while human traffic is transparently proxied through to the SPA. The new frontend has exactly **two obligations** to keep that pipeline working: (1) **emit the article URL exactly** as `/{handle}/{postId}-{bucketCanisterId}/{slug}` — the proxy recovers `postId` and `bucketCanisterId` by splitting URL segment 2 on its first `-`; (2) keep shipping the build to the same `nuance_assets` asset canister so the proxy's passthrough target stays valid. No prerender/SSR/SSG layer is added to this project — consistent with decision #5 deferring the production rendering-mode question to the DAO handoff.
+
+**Inputs:**
+
+- SEO research spike (2026-05-19) into `~/Projects/aikindapps-Nuance/`. The `proxy/` directory is a plain Node + `http-proxy` server (`server.ts` listens on `:8080`), not a canister, not an edge function. `isCrawler()` matches a hardcoded User-Agent list; `buildPostSEO` (`proxy/src/screens/post.ts`) fetches `getPostCompositeQuery` + `getPostKeyProperties` per request and emits a full HTML document with `<main>${post.content}</main>`. Nothing is precomputed or cached — the "plain-text copy" is generated live per crawler hit.
+- The proxy parses the URL: `pathSegments[1].indexOf('-')` splits postId / bucketCanisterId. A changed URL shape makes the parse fail silently and the proxy falls through to proxying the empty SPA shell to the crawler.
+- The proxy is hand-deployed out-of-band — no Dockerfile, no CI workflow, not in the canister repo's build, not under SNS governance. `robots.txt` + `sitemap.xml` ship inside the `nuance_assets` canister (`src/SEO/`); `sitemap.xml` is generated by a manual `BuildSitemap.sh` run. The `KinicEndpoint` canister is a separate Kinic-search integration, unrelated to general SEO (Mr Nick, 2026-05-19).
+
+**Options considered:**
+
+- **A. Add a prerender/SSR layer to this frontend** — rejected: articles are live mainnet data and cannot be enumerated at a local build (no SSG manifest); an SSR server contradicts the local-only / SNS-gated-deploy reality of decision #5; and it would duplicate what the proxy already does.
+- **B. Treat the SPA as the crawlable surface** — rejected: it never has been; client-rendered React is invisible to non-JS crawlers and link-preview scrapers.
+- **C. Keep the proxy as the crawlable surface; the frontend just stays compatible — chosen.**
+
+**Rationale:**
+
+- The crawler pipeline already exists and works; the new frontend's job is not to reinvent it but to avoid breaking it. URL-scheme fidelity is the single hard contract.
+- This vindicates decision #5: there is no SPA-SEO crisis to solve in this project.
+
+**Trade-offs accepted:**
+
+- The proxy is a parallel reimplementation of article rendering — its SEO HTML and the new SPA can drift, and "who operates and updates the proxy" is a genuine open question for the DAO handoff (the proxy is outside SNS governance and canister CI/CD).
+- Human-facing and JS-capable-crawler SEO still depends on the SPA doing its part well — semantic HTML, dynamic `<title>`/meta/OG, JSON-LD, fast code-split loading — which PR #7 Phase 10 delivers. But true crawlability remains the proxy's job.
+- The proxy's `reservedPaths` and crawler list are unaware of the new frontend's route set (`/new`, `/following`, `/write`); reconciling them is a DAO-handoff task, not PR #7 work.
+
+**How to apply:**
+
+- `src/lib/articleUrl.ts` is the single source of the URL shape — `buildArticleUrl` to emit, `parseArticleSegment` to read. Never hand-format an article URL elsewhere.
+- At the eventual production handoff: keep shipping `robots.txt` + `sitemap.xml` (or their successors) inside the asset canister, and flag proxy maintenance/ownership as a handoff item.
+
+## #33 — Desktop layout is fluid-scaled to the 1920 Figma; partially supersedes #13
+
+**Date:** 2026-05-19
+
+**Status:** Active
+
+**Decision:** The desktop UI (≥1024px) **fluidly scales** the 1920-px Figma design: pixel-exact at a 1920 viewport, scaled down proportionally at narrower desktop widths so the page always looks like the Figma — just smaller. Below 1024px the existing mobile-first breakpoint layouts are unchanged (decision #13 still governs there). Implemented with one CSS custom property — `--fpx`, a "design pixel": `1px` by default (so the sub-1024 breakpoint layouts render exactly as before) and `min(1px, 100vw / 1920)` inside an `@media (min-width: 1024px)` rule. Every dimension is expressed as `N × --fpx`: Tailwind's spacing unit (`--spacing: calc(4 * var(--fpx))`), every type-scale token, every radius token, and every literal `[Npx]` utility value across the app (converted to `[calc(N*var(--fpx))]`). Applies to **all screens** — home logged-out/in, the modals, the article page.
+
+**Inputs:**
+
+- PR #7 review (2026-05-19): Mr Nick compared the built article page against the Figma and it read as "too big" with too little whitespace. Diagnosis: the build used the Figma's absolute pixel values (60px title, 932px column, 88px header) — correct, but those are values for a *1920-px-wide* page. At a narrower browser window the same elements fill proportionally more of the screen. The build only matches the Figma 1:1 at a 1920 viewport.
+- A Figma frame is a single fixed width; "how it scales between 1920 and mobile" is not a measurement the file contains — it is a design decision.
+- Mr Nick chose fluid scaling over (a) pure breakpoints — stepped, never proportional between steps — and (b) `transform`-scale-to-fit — text shrinks unboundedly, breaks `position: fixed` descendants, unusual for a reading site.
+
+**Options considered:**
+
+- **A. Pure breakpoints (decision #13 as-is)** — desktop = the Figma 1920 sizes applied at `lg`+; cramped at 1024–1900, exact only at 1920. Rejected: it is the cause of the "too big" report.
+- **B. `transform: scale` the page** — rejected: breaks the article's `position: fixed` overlays (ActionBar, related-articles foldout), can blur text, shrinks text unboundedly.
+- **C. Fluid scaling via a `--fpx` design-pixel — chosen.** Real CSS sizes (no transform), pixel-exact at 1920, proportional below, and `position: fixed` keeps working. The mobile breakpoint layouts are untouched because `--fpx` only goes fluid at ≥1024px.
+
+**Rationale:**
+
+- One variable (`--fpx`) drives the whole system, so the desktop UI scales as a single coherent piece — there is no per-component scaling logic to maintain.
+- Anchoring to `--fpx` rather than the root `font-size` keeps Tailwind's px-based breakpoints and the user's browser-zoom/accessibility settings unaffected.
+- Gating the fluid behaviour behind `@media (min-width: 1024px)` means decision #13's mobile-first breakpoint layouts render byte-identical below 1024px — the change is purely additive for desktop.
+
+**Trade-offs accepted:**
+
+- The 1024px boundary is a hard switch: just below it the (current/eventual mobile) layout renders at 1:1, just above it the desktop layout renders at ~0.53 scale. This is a layout breakpoint, so a visual change there is expected; once the Phase 9 mobile layout exists, ≤1023 is the mobile layout and ≥1024 the fluid desktop.
+- `box-shadow` blur/offset values written as multi-part arbitrary utilities (e.g. `shadow-[0px_3px_5px_...]`) do not scale — a negligible fidelity gap.
+- The mobile range will need its own scaling anchor (to the ~393px mobile Figma) when Phase 9 builds the mobile layouts — `--fpx` will get a second, media-queried definition there.
+
+**How to apply:**
+
+- The system lives entirely in `src/index.css`: `--fpx` (default + the `@media` override), `--spacing`, and the `--text-*` / `--radius-*` tokens as `calc(N * var(--fpx))`.
+- New components: size everything in design pixels. Tailwind spacing/size utilities and the type/radius tokens already scale automatically. For a literal value, write `[calc(N*var(--fpx))]` (font sizes need the `length:` hint — `text-[length:calc(N*var(--fpx))]`). Never hard-code a bare `[Npx]`.
+- This is how the build is verified against Figma: it is pixel-exact at a 1920px viewport. Compare there.

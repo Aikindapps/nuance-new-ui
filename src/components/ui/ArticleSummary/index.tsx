@@ -1,4 +1,6 @@
+import { Link } from "react-router-dom";
 import type { Article } from "../../../features/home/types";
+import { buildArticleUrl } from "../../../lib/articleUrl";
 import { AuthorLine } from "./AuthorLine";
 import { MetaBar } from "./MetaBar";
 
@@ -12,6 +14,12 @@ export function ArticleSummary({
   variant = "small",
 }: ArticleSummaryProps) {
   const large = variant === "large";
+  const articleUrl = buildArticleUrl({
+    handle: article.routeHandle,
+    postId: article.id,
+    bucketCanisterId: article.bucketCanisterId,
+    title: article.title,
+  });
   return (
     <article
       className={
@@ -20,8 +28,8 @@ export function ArticleSummary({
           : "flex h-full flex-col gap-4"
       }
     >
-      <a
-        href={`/article/${article.id}`}
+      <Link
+        to={articleUrl}
         aria-hidden="true"
         tabIndex={-1}
         className={
@@ -40,7 +48,7 @@ export function ArticleSummary({
         ) : (
           <div className="bg-brand-gradient h-full w-full" aria-hidden />
         )}
-      </a>
+      </Link>
 
       <div className="flex flex-1 flex-col gap-4">
         <AuthorLine article={article} large={large} />
@@ -52,9 +60,9 @@ export function ArticleSummary({
                 : "text-title-sm font-bold text-ink line-clamp-3"
             }
           >
-            <a href={`/article/${article.id}`} className="hover:underline">
+            <Link to={articleUrl} className="hover:underline">
               {article.title}
-            </a>
+            </Link>
           </h3>
           {article.excerpt && (
             <p

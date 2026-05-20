@@ -11,12 +11,16 @@ import { OnboardingGate } from "./features/onboarding/OnboardingGate";
 import { muiTheme } from "./theme";
 import { Home } from "./routes/Home";
 import { WriteStub } from "./routes/WriteStub";
+import { ReadArticle } from "./routes/ReadArticle";
 
 const router = createBrowserRouter([
   { path: "/", element: <Home tab="popular" /> },
   { path: "/following", element: <Home tab="following" /> },
   { path: "/new", element: <Home tab="new" /> },
   { path: "/write", element: <WriteStub /> },
+  // Canonical article URL — decision #32. The 3-segment shape never
+  // collides with the single-segment routes above.
+  { path: "/:handle/:postIdAndBucket/:slug", element: <ReadArticle /> },
 ]);
 
 const queryClient = new QueryClient({

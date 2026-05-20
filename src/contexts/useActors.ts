@@ -1,11 +1,16 @@
 import { createContext, useContext } from "react";
 import type {
   GetPostsByFollowers,
+  PostKeyProperties,
   PostTagModel__1,
   Result_1 as FollowTagsResult,
+  Result_5 as PostKeyPropertiesResult,
   TagModel,
 } from "../candid/PostCore/PostCore";
-import type { PostBucketType__1 } from "../candid/PostBucket/PostBucket";
+import type {
+  PostBucketType__1,
+  Result_6 as GetPostResult,
+} from "../candid/PostBucket/PostBucket";
 import type {
   RegisterUserReturn,
   Result as UserResult,
@@ -65,6 +70,28 @@ export type ActorsValue = {
   getAllTags: () => Promise<Array<TagModel>>;
   // Follows the given tag IDs for the authed caller (TopicsModal "Done").
   followTags: (tagIds: string[]) => Promise<FollowTagsResult>;
+  // --- Read Article (PR #7, decision #31) — all query / oneway, anon-safe.
+  // The article body lives in a bucket canister whose ID is dynamic (carried
+  // in the URL), so getPost takes the bucketCanisterId like getPostsByPostIds.
+  // The Result variant is returned raw so the hook layer can map an `err`
+  // (not found / unauthorized draft) to a not-found state vs a thrown error.
+  getPost: (
+    bucketCanisterId: string,
+    postId: string,
+  ) => Promise<GetPostResult>;
+  // Views / claps / tags for a post. PostBucketType carries none of these —
+  // they live on PostKeyProperties in PostCore.
+  getPostKeyProperties: (postId: string) => Promise<PostKeyPropertiesResult>;
+  // Fire-and-forget view registration. `oneway` in Motoko — no return, no
+  // auth gate. Called once when an article opens.
+  viewPost: (postId: string) => Promise<void>;
+  // Up to 5 recent published posts per handle, excluding the current postId.
+  // Key properties only — bodies hydrate via getPostsByPostIds. Drives the
+  // "More from {author}" + "Recommended" rails and the 3.3 foldout.
+  getMoreArticlesFromUsers: (
+    postId: string,
+    handles: string[],
+  ) => Promise<Array<Array<PostKeyProperties>>>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);
