@@ -1,10 +1,12 @@
 import Skeleton from "@mui/material/Skeleton";
 import { useComments } from "../hooks/useComments";
 import { CommentBlock } from "./comments/CommentBlock";
+import { CommentComposer } from "./comments/CommentComposer";
 
-// Article comments block — Figma §4.5 (`1:19747`). Phase 4b renders the
-// populated list via CommentBlock (recursive). Phase 5 adds the composer;
-// Phase 6 the reply composer; Phase 7 the like button.
+// Article comments block — Figma §4.5 (`1:19747`). Phase 5 adds the
+// top-level composer above the list (visible in both empty and populated
+// states). Phase 6 wires the per-comment reply composer; Phase 7 the
+// like button.
 //
 // Mounted inside the article column so the comments align with the body
 // column width (~932px design pixels). Below the AuthorBlock, above the
@@ -28,22 +30,28 @@ export function CommentsSection({ bucketCanisterId, postId }: Props) {
           <LoadingShell />
         ) : query.isError ? (
           <ErrorState onRetry={() => query.refetch()} />
-        ) : query.data.totalNumberOfComments === "0" ? (
-          <EmptyState />
         ) : (
           <div className="flex flex-col gap-6">
             <h2 className="text-title-sm font-medium text-ink">
-              {query.data.totalNumberOfComments} comments
+              {query.data.totalNumberOfComments === "0"
+                ? "No comments yet"
+                : `${query.data.totalNumberOfComments} comments`}
             </h2>
-            <div className="flex flex-col gap-8">
-              {query.data.comments.map((comment) => (
-                <CommentBlock
-                  key={comment.commentId}
-                  comment={comment}
-                  userMap={query.data.userMap}
-                />
-              ))}
-            </div>
+            <CommentComposer
+              bucketCanisterId={bucketCanisterId}
+              postId={postId}
+            />
+            {query.data.comments.length > 0 && (
+              <div className="mt-2 flex flex-col gap-8">
+                {query.data.comments.map((comment) => (
+                  <CommentBlock
+                    key={comment.commentId}
+                    comment={comment}
+                    userMap={query.data.userMap}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -86,15 +94,3 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function EmptyState() {
-  return (
-    <div>
-      <h2 className="text-title-sm font-medium text-ink">
-        No comments yet
-      </h2>
-      <p className="mt-2 text-body text-ink-60">
-        Be the first to share your thoughts on this article.
-      </p>
-    </div>
-  );
-}
