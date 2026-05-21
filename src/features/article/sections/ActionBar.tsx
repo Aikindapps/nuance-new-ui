@@ -120,15 +120,16 @@ function DesktopBar({
           Applause ({claps})
         </button>
 
-        {/* Comment — inert shell; composer wires in Phase 5. Count is live. */}
-        <button
-          type="button"
-          {...INERT_ARIA}
+        {/* Comment — anchors to the comments section (CSS smooth scroll +
+            scroll-mt accounts for the fixed bar's clearance). Composer
+            mounts inline there. */}
+        <a
+          href="#comments"
           className={`${item} transition-colors hover:bg-white-10`}
         >
           <IconComment className="size-6" />
           Comment ({commentCount})
-        </button>
+        </a>
 
         {/* Views — passive stat (no bookmark feature on Nuance) */}
         <div className={item}>
@@ -178,15 +179,14 @@ function MobileBar({
           <IconClaps className="size-6" />
         </button>
 
-        {/* Comment — inert shell */}
-        <button
-          type="button"
-          aria-label="Comment"
-          {...INERT_ARIA}
+        {/* Comment — anchors to the comments section. */}
+        <a
+          href="#comments"
+          aria-label="Jump to comments"
           className={iconButton}
         >
           <IconComment className="size-6" />
-        </button>
+        </a>
 
         {/* Copy link — wired */}
         <button

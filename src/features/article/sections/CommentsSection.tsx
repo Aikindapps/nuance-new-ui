@@ -22,8 +22,9 @@ export function CommentsSection({ bucketCanisterId, postId }: Props) {
 
   return (
     <section
+      id="comments"
       aria-label="Comments"
-      className="px-6 lg:px-14"
+      className="scroll-mt-24 px-6 lg:px-14 lg:scroll-mt-32"
     >
       <div className="border-t border-ink-border/10 pt-8 lg:pt-[calc(50*var(--fpx))]">
         {query.isPending ? (

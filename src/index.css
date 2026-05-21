@@ -117,6 +117,11 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Smooth scroll for anchor jumps (ActionBar Comment button → #comments). */
+html {
+  scroll-behavior: smooth;
+}
+
 /* Fluid scaling (decision #33). Two media-queried --fpx anchors cover the
    full viewport range:
    - >=1024px: scale to the 1920 desktop Figma, capped at 1px (>=1920 exact).
