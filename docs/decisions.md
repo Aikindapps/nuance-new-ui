@@ -1108,3 +1108,67 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - The system lives entirely in `src/index.css`: `--fpx` (default + the `@media` override), `--spacing`, and the `--text-*` / `--radius-*` tokens as `calc(N * var(--fpx))`.
 - New components: size everything in design pixels. Tailwind spacing/size utilities and the type/radius tokens already scale automatically. For a literal value, write `[calc(N*var(--fpx))]` (font sizes need the `length:` hint — `text-[length:calc(N*var(--fpx))]`). Never hard-code a bare `[Npx]`.
 - This is how the build is verified against Figma: it is pixel-exact at a 1920px viewport. Compare there.
+
+## #34 — Article Enrichment (PR #8): 6 of 10 sections; toast service first consumer; logged-out interactions open LoginModal; optimistic flips with rollback
+
+**Date:** 2026-05-21
+
+**Status:** Active
+
+**Decision:** PR #8 wires the four inert-shell interactions left over from PR #7 (Applause / Comment / Share / Follow) and adds a comments block — but only the six sections of Figma Page 4 (`1:15424`) that have designed flows and a viable canister surface. Four sections are deferred or out of scope:
+
+| § | Figma node | In PR #8? | Why / why not |
+|---|---|---|---|
+| 4.1 Favourites | `1:15512` | No | Figma marks the section with a "Not in scope" overlay; no canister surface for favourites. |
+| 4.2 Tip author | `1:16133` | No | Tipping is multi-token (NUA / ICP / ckBTC / others) and depends on Page 7 (Funds Overview) primitives — a balance display + sender-token selection are prerequisites. Lives in a future PR alongside Page 7. **Project-wide implication:** every "applause/clap" on Nuance is a paid token tip, not a free Medium-style multi-clap. `PostCore.clapPost` exists but is not the user-facing path. The user-facing path is `User.spendRestrictedTokensForTipping` (for NUA) or an ICRC-1 ledger transfer + `PostBucket.checkTippingByTokenSymbol(token, …)` (for other tokens), then `PostBucket` writes the `Applaud` record (with `currency: text`). |
+| 4.3 (un)Follow author | `1:17074` | Yes | `User.followAuthor(handle)` / `unfollowAuthor(handle)`. |
+| 4.4 Share article | `1:18426` | Yes | Client-only; social URLs + `navigator.clipboard`. |
+| 4.5 Comment on article | `1:19747` | Yes | `PostBucket.saveComment(SaveCommentModel)` + `getPostComments(postId)`. |
+| 4.6 Reply to comment | `1:18887` | Yes | Same `saveComment` with `replyToCommentId`. |
+| 4.7 (un)Like comment | `1:19461` | Yes | `PostBucket.upvoteComment(commentId)` / `removeCommentVote(commentId)`. Like-only — Figma shows no downvote UI even though `Comment.downVotes` exists on the canister. |
+| 4.8 (un)Follow tag | `1:20284` | No | Figma placeholder only (cover thumbnail, no flow frames). `PostCore.followTag` / `unfollowTag` exist but the UX is undesigned. |
+| 4.9 Follow publication | `1:20286` | Yes | `User.followAuthor(publicationHandle)` — publications are `User` records with `isPublication=true`. Mounted as a dark **hover popover** anchored to the publication name in the existing `Breadcrumb` (not a new section). |
+| 4.10 Report article | `1:21246` | No | Figma placeholder only + no obvious canister method. |
+
+**Inputs:**
+
+- PR #7 deferred the comment block and the four interaction shells (`decision #31`) on the basis that Page 4 designs the wiring. PR #8 is that wiring.
+- Page 4 metadata recon (2026-05-21): 10 sections enumerated; 4.1 is covered by a "Not in scope" overlay; 4.8/4.10 are placeholder-only frames with no designed flows.
+- Canister surface audit: every method needed for the six in-scope sections exists today on `User` and `PostBucket`; no new Motoko required.
+- Mr Nick's correction on tipping (2026-05-21): there are no free claps on Nuance, and tipping is multi-currency. This puts 4.2 firmly behind Page 7 funds work.
+- Page 4 has **no mobile frames** in this Figma snapshot. PR #7's mobile shells stay in service; PR #8's new behaviour is wired identically into MobileBar and reflows the comments list/composer to single column at <1024px.
+
+**Locked sub-decisions:**
+
+1. **Logged-out click on any new mutation → opens `LoginModal`.** Matches the Header/CtaBanner pattern from PR #3. The user re-clicks the mutation post-login; intent does not auto-resume (an "intent queue" is deferred — not in PR #8 scope).
+2. **"N comments" added to `ArticleMasthead` meta row.** Reverses the comment-count deferral in decision #31. Count source is `useComments().data.totalNumberOfComments`.
+3. **Toast service is minimal: success + error.** MUI `Snackbar` + `Alert`. 4s autohide. API: `useToast().show(msg, 'success' | 'error')`. First consumer is the follow mutation (Phase 3a). This is the decision #22 toast-service slot finally being filled, by its first real consumer rather than pre-built.
+4. **Mobile mirrors desktop inline.** No separate mobile design pass for Page 4 (Figma has none); the inherited PR #7 mobile shells get the same handlers, and the comments list/composer reflows to single column.
+5. **Optimistic updates for follow + like; invalidate-only for comment post.** Follow/like need instant flip — `onMutate` snapshot → `onError` rollback → `onSettled` invalidate. Comment posting must be server-confirmed because the canister assigns the `commentId`; optimistic insertion would race with the server-assigned id.
+6. **Cache invalidation on follow:** both `["my-profile"]` AND `["article", bucketCanisterId, postId]`. The latter holds the target author's `UserListItem`, whose `followersCount` would otherwise go stale until the article query naturally refetches.
+7. **`deleteComment` and comment edit are out of PR #8.** Figma shows no UI for either on Page 4. The methods are not added to the `ActorsContext` allowlist (per decision #18) until a real consumer exists.
+
+**Options considered:**
+
+- **A. Build all 10 sections.** Rejected: four of them lack either a designed flow (4.8/4.10) or the prerequisite token-spending plumbing (4.2). 4.1 is annotated "Not in scope" in the file itself.
+- **B. Defer comments to a separate PR.** Rejected: the four inert shells, the comments block, and the Like/Reply interactions are all part of the same article-page reading experience; a comments-only PR would land an article page with applause/follow/share still inert.
+- **C. Build the six in-scope sections in one PR with phased commits — chosen.** Mirrors the PR #4 / PR #7 cadence; reviewer can step phase-by-phase; merge friction concentrated in a single rebase if main moves.
+
+**Rationale:**
+
+- One PR covers the *complete* article-page interaction surface that Figma actually designs today — easier review than a slice that leaves Applause / Share inert while comments land.
+- Toast service is built alongside its first real consumer per decision #22 (no pre-builds).
+- The deferred-tipping decision pushes a substantial multi-canister concern (NUA/ICP/ckBTC, balance display, sender-token selection) into the right home — a PR alongside Page 7's wallet/funds work — rather than splitting it across two PRs.
+
+**Trade-offs accepted:**
+
+- Applause/Tipping (the most user-visible interaction Figma designs) remains inert after PR #8. The current inert "Applause (N)" pill still shows the live count from `PostCore`, so visually the user sees there is *some* engagement signal; the *action* of applauding is wired in the post-Page-7 PR.
+- Optimistic follow/like updates require careful rollback bookkeeping in two query caches per mutation. Mitigated by isolating the snapshot/rollback to `onMutate` / `onError` and using `onSettled` to force a server reconciliation regardless of outcome.
+- The popover-style publication-follow surface (4.9) introduces the project's second MUI `Popper`-based primitive (first is the Share popover in PR #8 Phase 2). Both stay as ad-hoc compositions rather than being factored into a shared `<Popover/>` primitive — extract on third consumer.
+
+**How to apply:**
+
+- For new interactions on the article page: extract a small wrapper component (e.g. `<FollowButton/>`, `<ShareButton/>`) that owns auth gating, mutation state, optimistic flip, and toast feedback. Mount it inside the existing inert shells in `ActionBar.tsx` / `AuthorBlock.tsx`. The shells stay dumb presentation; the wrappers carry the behaviour.
+- For multi-cache mutations: snapshot every cache the optimistic update touches inside `onMutate`, restore them in `onError`, invalidate them in `onSettled`. Document the cache surface in the hook's docstring.
+- For tipping (when it lands): build against the multi-currency `checkTippingByTokenSymbol(token, …)` path, not the NUA-only `spendRestrictedTokensForTipping`. The `Applaud` record carries `currency: text` precisely because the canister supports multiple ledgers.
+- For new auth-gated interactions: a single `onClick` handler that branches on `useAuth().isAuthenticated` — logged-out opens the `LoginModal` via the existing modal service; logged-in calls the mutation. Don't introduce an intent-resume mechanism in PR #8.
