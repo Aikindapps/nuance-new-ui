@@ -1,14 +1,16 @@
+import { useState } from "react";
 import { Avatar } from "../../../../components/ui/Avatar";
 import { formatRelativeTime } from "../../../../lib/formatRelativeTime";
+import { CommentComposer } from "./CommentComposer";
 import type { Comment } from "../../../../candid/PostBucket/PostBucket";
 import type { UserListItem } from "../../../../candid/User/User";
 
 // Single comment in the article comments thread — Figma §4.5 / §4.6.
 //
-// PR #8 Phase 4b ships the visual + recursive structure. Like and Reply
-// buttons are inert shells here:
-//   - Phase 6 wires Reply (opens an inline CommentComposer in reply mode).
-//   - Phase 7 wires Like (the LikeButton component, optimistic upVote).
+// PR #8 Phase 4b shipped the visual + recursive structure; Phase 6 wires
+// the Reply button to open an inline `<CommentComposer/>` in reply mode
+// beneath the comment. Phase 7 wires Like (the LikeButton component,
+// optimistic upVote).
 //
 // Recursion guard: depth 0 = top-level, depth ≥ 1 = indented one level.
 // Replies of replies render at the same indentation as their immediate
@@ -21,10 +23,19 @@ const MAX_INDENT_DEPTH = 1;
 type Props = {
   comment: Comment;
   userMap: Map<string, UserListItem>;
+  bucketCanisterId: string;
+  postId: string;
   depth?: number;
 };
 
-export function CommentBlock({ comment, userMap, depth = 0 }: Props) {
+export function CommentBlock({
+  comment,
+  userMap,
+  bucketCanisterId,
+  postId,
+  depth = 0,
+}: Props) {
+  const [replyOpen, setReplyOpen] = useState(false);
   const user = userMap.get(comment.handle.toLowerCase());
   const displayName = user?.displayName || comment.handle;
   const avatarSrc = user?.avatar || comment.avatar;
@@ -80,15 +91,28 @@ export function CommentBlock({ comment, userMap, depth = 0 }: Props) {
             </button>
             <button
               type="button"
-              aria-disabled
-              title="Coming soon"
-              className="rounded-[calc(4*var(--fpx))] px-2 py-1 transition-colors hover:bg-ink-border-5 disabled:cursor-not-allowed"
+              onClick={() => setReplyOpen((v) => !v)}
+              aria-expanded={replyOpen}
+              className="rounded-[calc(4*var(--fpx))] px-2 py-1 transition-colors hover:bg-ink-border-5"
             >
-              Reply
+              {replyOpen ? "Cancel reply" : "Reply"}
             </button>
           </div>
         </div>
       </div>
+
+      {replyOpen && (
+        <div className={depth === 0 ? "lg:pl-14" : ""}>
+          <CommentComposer
+            bucketCanisterId={bucketCanisterId}
+            postId={postId}
+            replyToCommentId={comment.commentId}
+            replyToHandle={comment.handle}
+            onCancel={() => setReplyOpen(false)}
+            autoFocus
+          />
+        </div>
+      )}
 
       {comment.replies.length > 0 && (
         <div className="mt-2 flex flex-col gap-6">
@@ -97,6 +121,8 @@ export function CommentBlock({ comment, userMap, depth = 0 }: Props) {
               key={reply.commentId}
               comment={reply}
               userMap={userMap}
+              bucketCanisterId={bucketCanisterId}
+              postId={postId}
               depth={Math.min(depth + 1, MAX_INDENT_DEPTH)}
             />
           ))}

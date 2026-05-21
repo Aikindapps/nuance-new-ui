@@ -48,6 +48,8 @@ export function CommentsSection({ bucketCanisterId, postId }: Props) {
                     key={comment.commentId}
                     comment={comment}
                     userMap={query.data.userMap}
+                    bucketCanisterId={bucketCanisterId}
+                    postId={postId}
                   />
                 ))}
               </div>
