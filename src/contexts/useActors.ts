@@ -9,7 +9,9 @@ import type {
 } from "../candid/PostCore/PostCore";
 import type {
   PostBucketType__1,
+  Result as CommentResult,
   Result_6 as GetPostResult,
+  SaveCommentModel,
 } from "../candid/PostBucket/PostBucket";
 import type {
   RegisterUserReturn,
@@ -92,6 +94,44 @@ export type ActorsValue = {
     postId: string,
     handles: string[],
   ) => Promise<Array<Array<PostKeyProperties>>>;
+  // --- Article Enrichment (PR #8, decision #34) — interaction mutations on
+  // the article page. All authed; logged-out calls open LoginModal at the
+  // consumer layer rather than executing. Cache invalidation contract for
+  // follow: both ["my-profile"] and ["article", bucketId, postId] are
+  // invalidated/optimistically updated because the latter holds the target
+  // author's UserListItem (with followersCount). ---
+  // Adds the target handle to the caller's `followersArray` and bumps
+  // the target's followersCount on success. Result.ok is the *updated*
+  // caller's User record; surfaces canister `err` strings (e.g. self-follow
+  // attempts, blocked relationships) to the mutation hook layer.
+  followAuthor: (handle: string) => Promise<UserResult>;
+  unfollowAuthor: (handle: string) => Promise<UserResult>;
+  // Returns the full comment thread (with server-assembled `replies`
+  // recursion) plus `totalNumberOfComments`. Anon-safe query.
+  getPostComments: (
+    bucketCanisterId: string,
+    postId: string,
+  ) => Promise<CommentResult>;
+  // Creates a top-level comment when `replyToCommentId` is omitted; replies
+  // when set. Edits in place when `commentId` is set (out of PR #8 scope —
+  // no UI consumer yet, but the wrapper supports it). Returns the *updated*
+  // full comment thread, so consumers can `setQueryData` without a refetch.
+  saveComment: (
+    bucketCanisterId: string,
+    model: SaveCommentModel,
+  ) => Promise<CommentResult>;
+  // Adds the caller's principal to the comment's `upVotes`. Returns the
+  // updated thread. Optimistic-flip + rollback at the consumer layer.
+  upvoteComment: (
+    bucketCanisterId: string,
+    commentId: string,
+  ) => Promise<CommentResult>;
+  // Removes the caller's vote from a comment (whether up or down).
+  // Same return shape as upvoteComment.
+  removeCommentVote: (
+    bucketCanisterId: string,
+    commentId: string,
+  ) => Promise<CommentResult>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);

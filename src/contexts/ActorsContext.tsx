@@ -110,6 +110,34 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await postCorePromise;
         return actor.getMoreArticlesFromUsers(postId, handles);
       },
+      // Article Enrichment (PR #8, decision #34). Follow/unfollow on User;
+      // every comment method on PostBucket (variable canister ID, so via
+      // getBucket). All return raw variant results — hook layer surfaces
+      // canister `err` strings instead of throwing here.
+      followAuthor: async (handle) => {
+        const actor = await userPromise;
+        return actor.followAuthor(handle);
+      },
+      unfollowAuthor: async (handle) => {
+        const actor = await userPromise;
+        return actor.unfollowAuthor(handle);
+      },
+      getPostComments: async (bucketCanisterId, postId) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.getPostComments(postId);
+      },
+      saveComment: async (bucketCanisterId, model) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.saveComment(model);
+      },
+      upvoteComment: async (bucketCanisterId, commentId) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.upvoteComment(commentId);
+      },
+      removeCommentVote: async (bucketCanisterId, commentId) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.removeCommentVote(commentId);
+      },
     };
   }, [identity]);
 
