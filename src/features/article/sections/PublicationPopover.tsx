@@ -52,7 +52,7 @@ export function PublicationPopover({
           aria-label={`${publication.displayName} publication card`}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
-          className="flex w-[calc(304*var(--fpx))] flex-col gap-3 rounded-card bg-[#202123] p-5 text-white shadow-[var(--shadow-purple-glow-medium)]"
+          className="flex w-[calc(304*var(--fpx))] flex-col gap-3 rounded-card bg-ink p-5 text-white shadow-[var(--shadow-purple-glow-medium)]"
         >
           <h3 className="text-title-sm font-bold">
             {publication.displayName || publication.handle}
