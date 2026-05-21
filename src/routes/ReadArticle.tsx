@@ -191,6 +191,7 @@ export function ReadArticle() {
       <ActionBar
         claps={Number(meta.data?.claps ?? 0) || 0}
         views={Number(meta.data?.views ?? 0) || 0}
+        title={article.data?.post.title ?? ""}
       />
       <RelatedArticlesFoldout articles={recommended.data} />
     </ArticleShell>

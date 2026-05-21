@@ -3,24 +3,26 @@ import { IconClaps } from "../../../components/ui/icons/IconClaps";
 import { IconComment } from "../../../components/ui/icons/IconComment";
 import { IconViews } from "../../../components/ui/icons/IconViews";
 import { IconLink } from "../../../components/ui/icons/IconLink";
-import { IconShare } from "../../../components/ui/icons/IconShare";
+import { ShareButton } from "../../../components/ui/ShareButton/ShareButton";
 import { formatCount } from "../../../lib/formatCount";
 
-// Floating article action bar — Figma 1:5382 (desktop) + 1:5455 (mobile).
+// Floating article action bar — Figma 1:5382 (desktop) + 1:5455 (mobile),
+// share interactions per 4.4 `1:18426` (PR #8 Phase 2).
 // Fixed to the viewport bottom-centre so it stays in reach while reading.
 //
-// PR #7 ships it as a visual shell (decision #31): Applause, Comment, Share
-// are inert — those interactions belong to the Page 4 "Article Enrichment"
-// PR. Only Copy link is wired (needs no canister). The comment count is
-// omitted for the same reason comments are deferred.
+// Applause + Comment remain inert shells — those wire later in PR #8
+// (Phases 3-7). Share is wired: ShareButton opens a popover with the
+// four Figma social channels (Google/LinkedIn/Reddit/Facebook), and on
+// mobile tries `navigator.share` first before falling back. Copy link
+// stays a separate button in the bar per the Figma split.
 //
-// Desktop (Figma 1:5382): Applause + Comment + Views + Copy link — text +
-// icon. The third slot would be Bookmark in Figma but Nuance has no bookmark
+// Desktop (Figma 1:5382): Applause + Comment + Views + Share + Copy link.
+// The third slot would be Bookmark in Figma but Nuance has no bookmark
 // feature, so it shows the view count instead (Mr Nick, 2026-05-19): a
 // passive stat, not a button.
 //
 // Mobile (Figma 1:5455): Applause + Comment + Link + Share — icon-only,
-// drops the view count. Native share-arrow per Figma's NUR / Icon / Share.
+// drops the view count.
 
 type CopyState = "idle" | "copied" | "failed";
 
@@ -32,7 +34,15 @@ const INERT_ARIA = {
   title: "Coming soon",
 };
 
-export function ActionBar({ claps, views }: { claps: number; views: number }) {
+export function ActionBar({
+  claps,
+  views,
+  title,
+}: {
+  claps: number;
+  views: number;
+  title: string;
+}) {
   const [copyState, setCopyState] = useState<CopyState>("idle");
 
   const copyLink = async () => {
@@ -54,11 +64,12 @@ export function ActionBar({ claps, views }: { claps: number; views: number }) {
       <DesktopBar
         claps={claps}
         views={views}
+        title={title}
         copyState={copyState}
         copyLink={copyLink}
       />
       {/* Mobile bar — icon-only, drops Views slot */}
-      <MobileBar copyState={copyState} copyLink={copyLink} />
+      <MobileBar title={title} copyState={copyState} copyLink={copyLink} />
     </>
   );
 }
@@ -78,11 +89,13 @@ function copyAriaLabel(state: CopyState): string {
 function DesktopBar({
   claps,
   views,
+  title,
   copyState,
   copyLink,
 }: {
   claps: number;
   views: number;
+  title: string;
   copyState: CopyState;
   copyLink: () => void;
 }) {
@@ -92,7 +105,7 @@ function DesktopBar({
   return (
     <div className="fixed bottom-6 left-1/2 z-40 hidden -translate-x-1/2 lg:block">
       <div className="bg-brand-gradient-button flex items-center gap-4 rounded-[calc(24*var(--fpx))] p-4 shadow-[0px_3px_5px_rgba(84,5,212,0.4)]">
-        {/* Applause — inert shell (wired in Page 4) */}
+        {/* Applause — inert shell (wired in a later PR #8 phase) */}
         <button
           type="button"
           {...INERT_ARIA}
@@ -102,7 +115,7 @@ function DesktopBar({
           Applause ({claps})
         </button>
 
-        {/* Comment — inert shell; count omitted (comments deferred to Page 4) */}
+        {/* Comment — inert shell; count wires in Phase 4b */}
         <button
           type="button"
           {...INERT_ARIA}
@@ -117,6 +130,9 @@ function DesktopBar({
           <IconViews className="size-6" />
           {formatCount(String(views))} views
         </div>
+
+        {/* Share — opens 4-channel social popover above the bar */}
+        <ShareButton variant="desktop" title={title} />
 
         {/* Copy link — wired (no canister needed) */}
         <button
@@ -133,9 +149,11 @@ function DesktopBar({
 }
 
 function MobileBar({
+  title,
   copyState,
   copyLink,
 }: {
+  title: string;
   copyState: CopyState;
   copyLink: () => void;
 }) {
@@ -175,15 +193,8 @@ function MobileBar({
           <IconLink className="size-6" />
         </button>
 
-        {/* Share — inert shell (Page 4 wires native share sheet) */}
-        <button
-          type="button"
-          aria-label="Share"
-          {...INERT_ARIA}
-          className={iconButton}
-        >
-          <IconShare className="size-6" />
-        </button>
+        {/* Share — native share sheet on mobile when available, else popover */}
+        <ShareButton variant="mobile" title={title} />
       </div>
     </div>
   );
