@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Avatar } from "../../../../components/ui/Avatar";
 import { formatRelativeTime } from "../../../../lib/formatRelativeTime";
 import { CommentComposer } from "./CommentComposer";
+import { LikeButton } from "./LikeButton";
 import type { Comment } from "../../../../candid/PostBucket/PostBucket";
 import type { UserListItem } from "../../../../candid/User/User";
 
@@ -46,7 +47,6 @@ export function CommentBlock({
     ? formatRelativeTime(createdMs)
     : "";
 
-  const upVoteCount = comment.upVotes.length;
   const indentClass = depth > 0 ? "lg:pl-14" : "";
 
   return (
@@ -79,16 +79,12 @@ export function CommentBlock({
             {comment.content}
           </p>
           <div className="mt-1 flex items-center gap-4 text-label text-ink-60">
-            <button
-              type="button"
-              aria-disabled
-              title="Coming soon"
-              aria-label={`Like comment (${upVoteCount} likes)`}
-              className="flex items-center gap-1.5 rounded-[calc(4*var(--fpx))] px-2 py-1 transition-colors hover:bg-ink-border-5 disabled:cursor-not-allowed"
-            >
-              <span aria-hidden>♥</span>
-              <span>{upVoteCount}</span>
-            </button>
+            <LikeButton
+              bucketCanisterId={bucketCanisterId}
+              postId={postId}
+              commentId={comment.commentId}
+              upVotes={comment.upVotes}
+            />
             <button
               type="button"
               onClick={() => setReplyOpen((v) => !v)}
