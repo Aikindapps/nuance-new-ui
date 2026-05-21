@@ -1,11 +1,10 @@
 import Skeleton from "@mui/material/Skeleton";
 import { useComments } from "../hooks/useComments";
+import { CommentBlock } from "./comments/CommentBlock";
 
-// Article comments block — Figma §4.5 (`1:19747`). Phase 4a builds the
-// data hook + four branches (pending / error / empty / populated header).
-// Phase 4b adds CommentBlock with recursive replies + wires the bar/meta
-// count. Phase 5 adds the composer; Phase 6 the reply composer; Phase 7
-// the like button.
+// Article comments block — Figma §4.5 (`1:19747`). Phase 4b renders the
+// populated list via CommentBlock (recursive). Phase 5 adds the composer;
+// Phase 6 the reply composer; Phase 7 the like button.
 //
 // Mounted inside the article column so the comments align with the body
 // column width (~932px design pixels). Below the AuthorBlock, above the
@@ -32,13 +31,20 @@ export function CommentsSection({ bucketCanisterId, postId }: Props) {
         ) : query.data.totalNumberOfComments === "0" ? (
           <EmptyState />
         ) : (
-          // Populated branch is a header-only placeholder in Phase 4a.
-          // Phase 4b plugs CommentBlock + recursive render here.
-          <header>
+          <div className="flex flex-col gap-6">
             <h2 className="text-title-sm font-medium text-ink">
               {query.data.totalNumberOfComments} comments
             </h2>
-          </header>
+            <div className="flex flex-col gap-8">
+              {query.data.comments.map((comment) => (
+                <CommentBlock
+                  key={comment.commentId}
+                  comment={comment}
+                  userMap={query.data.userMap}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </section>

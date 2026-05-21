@@ -5,6 +5,7 @@ import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { useAuth } from "../contexts/useAuth";
 import { parseArticleSegment } from "../lib/articleUrl";
 import { useArticle } from "../features/article/hooks/useArticle";
+import { useComments } from "../features/article/hooks/useComments";
 import { usePostMeta } from "../features/article/hooks/usePostMeta";
 import { useRegisterView } from "../features/article/hooks/useRegisterView";
 import { Breadcrumb, type Crumb } from "../features/article/sections/Breadcrumb";
@@ -70,6 +71,12 @@ export function ReadArticle() {
 
   const article = useArticle(bucketCanisterId, postId);
   const meta = usePostMeta(postId);
+  // Comment count is needed in the ActionBar Comment button label and the
+  // ArticleMasthead meta row. CommentsSection ALSO calls useComments;
+  // React Query dedupes on the shared query key so both subscribers
+  // share the same network round-trip + cache entry.
+  const comments = useComments(bucketCanisterId, postId);
+  const commentCount = Number(comments.data?.totalNumberOfComments ?? 0) || 0;
   useRegisterView(parsed && article.data ? postId : null);
 
   // Rail hooks must run unconditionally — the author handle is "" until the
@@ -148,6 +155,7 @@ export function ReadArticle() {
           author={author}
           publication={publication}
           meta={meta.data ?? null}
+          commentCount={commentCount}
         />
 
         <div className="mt-8 px-6 lg:mt-[calc(50*var(--fpx))] lg:px-24">
@@ -202,6 +210,7 @@ export function ReadArticle() {
         claps={Number(meta.data?.claps ?? 0) || 0}
         views={Number(meta.data?.views ?? 0) || 0}
         title={article.data?.post.title ?? ""}
+        commentCount={commentCount}
       />
       <RelatedArticlesFoldout articles={recommended.data} />
     </ArticleShell>

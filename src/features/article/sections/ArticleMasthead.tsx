@@ -25,11 +25,21 @@ type Props = {
   author: UserListItem | null;
   publication: UserListItem | null;
   meta: PostKeyProperties | null;
+  // Live comment count from useComments. 0 while pending or on error —
+  // the meta row segment hides in that case to avoid showing "0 comments"
+  // misleadingly.
+  commentCount: number;
 };
 
 const PUB_POPOVER_CLOSE_DELAY_MS = 150;
 
-export function ArticleMasthead({ post, author, publication, meta }: Props) {
+export function ArticleMasthead({
+  post,
+  author,
+  publication,
+  meta,
+  commentCount,
+}: Props) {
   const isPub = post.isPublication;
   const authorHandle = (post.creatorHandle || post.handle).toLowerCase();
   const authorName = author?.displayName || authorHandle;
@@ -136,12 +146,20 @@ export function ArticleMasthead({ post, author, publication, meta }: Props) {
             </p>
           </div>
 
-          {/* Meta row — claps · NFT · published · modified · read time · ⋯ */}
+          {/* Meta row — claps · N comments · NFT · published · modified ·
+              read time · ⋯. Comment count appears alongside claps as the
+              second engagement signal (decision #34 reverses #31's
+              deferral). 0 hides — no point shouting an empty thread. */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[length:calc(14*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink-60 lg:gap-x-10 lg:text-body">
             <span className="flex items-center gap-1">
               <IconClaps className="size-4 lg:size-6" />
               {claps}
             </span>
+            {commentCount > 0 && (
+              <span>
+                {commentCount} {commentCount === 1 ? "comment" : "comments"}
+              </span>
+            )}
             {post.nftCanisterId && <IconNft className="size-4 lg:size-6" />}
             {published && <time>{published}</time>}
             {showModified && <span>Modified: {modified}</span>}

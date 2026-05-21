@@ -38,10 +38,12 @@ export function ActionBar({
   claps,
   views,
   title,
+  commentCount,
 }: {
   claps: number;
   views: number;
   title: string;
+  commentCount: number;
 }) {
   const [copyState, setCopyState] = useState<CopyState>("idle");
 
@@ -65,6 +67,7 @@ export function ActionBar({
         claps={claps}
         views={views}
         title={title}
+        commentCount={commentCount}
         copyState={copyState}
         copyLink={copyLink}
       />
@@ -90,12 +93,14 @@ function DesktopBar({
   claps,
   views,
   title,
+  commentCount,
   copyState,
   copyLink,
 }: {
   claps: number;
   views: number;
   title: string;
+  commentCount: number;
   copyState: CopyState;
   copyLink: () => void;
 }) {
@@ -115,14 +120,14 @@ function DesktopBar({
           Applause ({claps})
         </button>
 
-        {/* Comment — inert shell; count wires in Phase 4b */}
+        {/* Comment — inert shell; composer wires in Phase 5. Count is live. */}
         <button
           type="button"
           {...INERT_ARIA}
           className={`${item} transition-colors hover:bg-white-10`}
         >
           <IconComment className="size-6" />
-          Comment
+          Comment ({commentCount})
         </button>
 
         {/* Views — passive stat (no bookmark feature on Nuance) */}
