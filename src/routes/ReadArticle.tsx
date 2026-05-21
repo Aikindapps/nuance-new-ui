@@ -13,6 +13,7 @@ import { ArticleMasthead } from "../features/article/sections/ArticleMasthead";
 import { ArticleBody } from "../features/article/sections/ArticleBody";
 import { ArticleTags } from "../features/article/sections/ArticleTags";
 import { AuthorBlock } from "../features/article/sections/AuthorBlock";
+import { CommentsSection } from "../features/article/sections/CommentsSection";
 import { ActionBar } from "../features/article/sections/ActionBar";
 import { ArticleRail } from "../features/article/sections/ArticleRail";
 import { RelatedArticlesFoldout } from "../features/article/sections/RelatedArticlesFoldout";
@@ -180,6 +181,13 @@ export function ReadArticle() {
           <AuthorBlock
             author={author}
             followingCount={article.data.authorFollowingCount}
+          />
+        </div>
+
+        <div className="mt-8 lg:mt-[calc(50*var(--fpx))]">
+          <CommentsSection
+            bucketCanisterId={post.bucketCanisterId}
+            postId={post.postId}
           />
         </div>
       </main>
