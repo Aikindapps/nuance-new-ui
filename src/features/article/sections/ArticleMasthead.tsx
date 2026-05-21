@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "../../../components/ui/Avatar";
 import { IconClaps } from "../../../components/ui/icons/IconClaps";
@@ -8,6 +9,7 @@ import type { PostBucketType__1 } from "../../../candid/PostBucket/PostBucket";
 import type { UserListItem } from "../../../candid/User/User";
 import type { PostKeyProperties } from "../../../candid/PostCore/PostCore";
 import { formatLongDate, readTimeLabel } from "../lib/articleFormat";
+import { PublicationPopover } from "./PublicationPopover";
 
 // Article masthead — Figma 1:5293 (Title) + 1:5295 (Author details + Subtitle)
 // + 1:5298 (Photo). Title is the page's single <h1>.
@@ -25,6 +27,8 @@ type Props = {
   meta: PostKeyProperties | null;
 };
 
+const PUB_POPOVER_CLOSE_DELAY_MS = 150;
+
 export function ArticleMasthead({ post, author, publication, meta }: Props) {
   const isPub = post.isPublication;
   const authorHandle = (post.creatorHandle || post.handle).toLowerCase();
@@ -32,6 +36,36 @@ export function ArticleMasthead({ post, author, publication, meta }: Props) {
   const authorAt = `@${author?.handle || authorHandle}`;
   const pubHandle = isPub && post.handle ? post.handle.toLowerCase() : null;
   const pubName = publication?.displayName || pubHandle || "";
+
+  // Publication-follow hover popover (§4.9). Anchored to the byline
+  // "In {publication}" link, not the breadcrumb (Mr Nick, 2026-05-21).
+  // Same hover/focus/click + close-delay pattern as the original
+  // Breadcrumb wiring — the cursor needs to be able to move between
+  // trigger and popover without flickering closed.
+  const [pubAnchorEl, setPubAnchorEl] = useState<HTMLAnchorElement | null>(null);
+  const [pubOpen, setPubOpen] = useState(false);
+  const pubCloseTimer = useRef<number | null>(null);
+  const cancelPubClose = () => {
+    if (pubCloseTimer.current !== null) {
+      window.clearTimeout(pubCloseTimer.current);
+      pubCloseTimer.current = null;
+    }
+  };
+  const openPub = () => {
+    cancelPubClose();
+    setPubOpen(true);
+  };
+  const schedulePubClose = () => {
+    cancelPubClose();
+    pubCloseTimer.current = window.setTimeout(() => {
+      setPubOpen(false);
+      pubCloseTimer.current = null;
+    }, PUB_POPOVER_CLOSE_DELAY_MS);
+  };
+  const closePubNow = () => {
+    cancelPubClose();
+    setPubOpen(false);
+  };
 
   const published =
     formatLongDate(post.publishedDate) || formatLongDate(post.created);
@@ -62,7 +96,27 @@ export function ArticleMasthead({ post, author, publication, meta }: Props) {
                 <>
                   <span className="text-ink-60">In</span>
                   <Link
+                    ref={setPubAnchorEl}
                     to={`/${pubHandle}`}
+                    onMouseEnter={publication ? openPub : undefined}
+                    onMouseLeave={publication ? schedulePubClose : undefined}
+                    onFocus={publication ? openPub : undefined}
+                    onBlur={publication ? schedulePubClose : undefined}
+                    onClick={
+                      publication
+                        ? (e) => {
+                            // Publication route not built yet; popover IS
+                            // the interaction. preventDefault + toggle covers
+                            // touch devices that can't hover. Revisit when
+                            // publication pages ship.
+                            e.preventDefault();
+                            if (pubOpen) closePubNow();
+                            else openPub();
+                          }
+                        : undefined
+                    }
+                    aria-haspopup={publication ? "dialog" : undefined}
+                    aria-expanded={publication ? pubOpen : undefined}
                     className="text-brand-purple underline underline-offset-2 hover:no-underline"
                   >
                     {pubName}
@@ -115,6 +169,17 @@ export function ArticleMasthead({ post, author, publication, meta }: Props) {
             className="aspect-[820/474] w-full rounded-card object-cover"
           />
         </div>
+      )}
+
+      {publication && (
+        <PublicationPopover
+          publication={publication}
+          anchorEl={pubAnchorEl}
+          open={pubOpen}
+          onClose={closePubNow}
+          onMouseEnter={openPub}
+          onMouseLeave={schedulePubClose}
+        />
       )}
     </header>
   );

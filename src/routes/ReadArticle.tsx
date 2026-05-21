@@ -8,7 +8,6 @@ import { useArticle } from "../features/article/hooks/useArticle";
 import { usePostMeta } from "../features/article/hooks/usePostMeta";
 import { useRegisterView } from "../features/article/hooks/useRegisterView";
 import { Breadcrumb, type Crumb } from "../features/article/sections/Breadcrumb";
-import { PublicationPopover } from "../features/article/sections/PublicationPopover";
 import { ArticleMasthead } from "../features/article/sections/ArticleMasthead";
 import { ArticleBody } from "../features/article/sections/ArticleBody";
 import { ArticleTags } from "../features/article/sections/ArticleTags";
@@ -121,23 +120,14 @@ export function ReadArticle() {
   // Breadcrumb: Overview / {publication or author} / {category}. The middle
   // crumb links to the publication/author page (route not built yet — a
   // dead link for now, consistent with the home cards' author links).
-  // When this is a publication post, the middle crumb hosts the §4.9
-  // PublicationPopover so readers can follow/unfollow without leaving the
-  // article.
+  // The §4.9 publication follow popover is anchored to the byline link
+  // in ArticleMasthead, not here (Mr Nick, 2026-05-21).
   const crumbs: Crumb[] = [{ label: "Overview", to: "/" }];
   if (post.handle) {
     crumbs.push({
       label:
         publication?.displayName || author?.displayName || post.handle,
       to: `/${post.handle.toLowerCase()}`,
-      popover: publication
-        ? (props) => (
-            <PublicationPopover
-              publication={publication}
-              {...props}
-            />
-          )
-        : undefined,
     });
   }
   if (post.category) crumbs.push({ label: post.category });
