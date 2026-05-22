@@ -7,6 +7,7 @@ import "./index.css";
 import { ActorsProvider } from "./contexts/ActorsContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ModalProvider } from "./services/modal";
+import { ToastProvider } from "./services/toast";
 import { OnboardingGate } from "./features/onboarding/OnboardingGate";
 import { muiTheme } from "./theme";
 import { Home } from "./routes/Home";
@@ -56,11 +57,13 @@ createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <ActorsProvider>
             <ModalProvider>
-              {/* Controller for the Create Account onboarding flow — opens
-                  the register/topics modals when an authed user has no
-                  profile. Renders nothing. */}
-              <OnboardingGate />
-              <RouterProvider router={router} />
+              <ToastProvider>
+                {/* Controller for the Create Account onboarding flow —
+                    opens the register/topics modals when an authed user
+                    has no profile. Renders nothing. */}
+                <OnboardingGate />
+                <RouterProvider router={router} />
+              </ToastProvider>
             </ModalProvider>
           </ActorsProvider>
         </AuthProvider>

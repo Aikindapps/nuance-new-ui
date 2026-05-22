@@ -5,6 +5,7 @@ import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { useAuth } from "../contexts/useAuth";
 import { parseArticleSegment } from "../lib/articleUrl";
 import { useArticle } from "../features/article/hooks/useArticle";
+import { useComments } from "../features/article/hooks/useComments";
 import { usePostMeta } from "../features/article/hooks/usePostMeta";
 import { useRegisterView } from "../features/article/hooks/useRegisterView";
 import { Breadcrumb, type Crumb } from "../features/article/sections/Breadcrumb";
@@ -12,6 +13,7 @@ import { ArticleMasthead } from "../features/article/sections/ArticleMasthead";
 import { ArticleBody } from "../features/article/sections/ArticleBody";
 import { ArticleTags } from "../features/article/sections/ArticleTags";
 import { AuthorBlock } from "../features/article/sections/AuthorBlock";
+import { CommentsSection } from "../features/article/sections/CommentsSection";
 import { ActionBar } from "../features/article/sections/ActionBar";
 import { ArticleRail } from "../features/article/sections/ArticleRail";
 import { RelatedArticlesFoldout } from "../features/article/sections/RelatedArticlesFoldout";
@@ -69,6 +71,12 @@ export function ReadArticle() {
 
   const article = useArticle(bucketCanisterId, postId);
   const meta = usePostMeta(postId);
+  // Comment count is needed in the ActionBar Comment button label and the
+  // ArticleMasthead meta row. CommentsSection ALSO calls useComments;
+  // React Query dedupes on the shared query key so both subscribers
+  // share the same network round-trip + cache entry.
+  const comments = useComments(bucketCanisterId, postId);
+  const commentCount = Number(comments.data?.totalNumberOfComments ?? 0) || 0;
   useRegisterView(parsed && article.data ? postId : null);
 
   // Rail hooks must run unconditionally — the author handle is "" until the
@@ -119,6 +127,8 @@ export function ReadArticle() {
   // Breadcrumb: Overview / {publication or author} / {category}. The middle
   // crumb links to the publication/author page (route not built yet — a
   // dead link for now, consistent with the home cards' author links).
+  // The §4.9 publication follow popover is anchored to the byline link
+  // in ArticleMasthead, not here (Mr Nick, 2026-05-21).
   const crumbs: Crumb[] = [{ label: "Overview", to: "/" }];
   if (post.handle) {
     crumbs.push({
@@ -145,6 +155,7 @@ export function ReadArticle() {
           author={author}
           publication={publication}
           meta={meta.data ?? null}
+          commentCount={commentCount}
         />
 
         <div className="mt-8 px-6 lg:mt-[calc(50*var(--fpx))] lg:px-24">
@@ -170,6 +181,13 @@ export function ReadArticle() {
             followingCount={article.data.authorFollowingCount}
           />
         </div>
+
+        <div className="mt-8 lg:mt-[calc(50*var(--fpx))]">
+          <CommentsSection
+            bucketCanisterId={post.bucketCanisterId}
+            postId={post.postId}
+          />
+        </div>
       </main>
 
       <div className="mt-8 lg:mt-[calc(50*var(--fpx))]">
@@ -191,6 +209,8 @@ export function ReadArticle() {
       <ActionBar
         claps={Number(meta.data?.claps ?? 0) || 0}
         views={Number(meta.data?.views ?? 0) || 0}
+        title={article.data?.post.title ?? ""}
+        commentCount={commentCount}
       />
       <RelatedArticlesFoldout articles={recommended.data} />
     </ArticleShell>

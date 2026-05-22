@@ -9,7 +9,10 @@ import type {
 } from "../candid/PostCore/PostCore";
 import type {
   PostBucketType__1,
+  Result as CommentResult,
+  Result_2 as ReportResult,
   Result_6 as GetPostResult,
+  SaveCommentModel,
 } from "../candid/PostBucket/PostBucket";
 import type {
   RegisterUserReturn,
@@ -48,6 +51,10 @@ export type ActorsValue = {
     includeDraft: boolean,
   ) => Promise<Array<PostBucketType__1>>;
   getUsersByHandles: (handles: string[]) => Promise<Array<UserListItem>>;
+  // Hydrate a batch of UserListItem records by principal text. Comments
+  // come back from PostBucket with `handle` and `avatar` blanked (only
+  // `creator` is populated), so comment-thread hydration goes by-principal.
+  getUsersByPrincipals: (principals: string[]) => Promise<Array<UserListItem>>;
   // Query method: returns the full User record (with displayName, avatar,
   // isVerified, follow counts) for a principal text. Safe on the anonymous
   // agent — Result variant {ok: User} | {err: text} is returned raw so the
@@ -92,6 +99,60 @@ export type ActorsValue = {
     postId: string,
     handles: string[],
   ) => Promise<Array<Array<PostKeyProperties>>>;
+  // --- Article Enrichment (PR #8, decision #34) — interaction mutations on
+  // the article page. All authed; logged-out calls open LoginModal at the
+  // consumer layer rather than executing. Cache invalidation contract for
+  // follow: both ["my-profile"] and ["article", bucketId, postId] are
+  // invalidated/optimistically updated because the latter holds the target
+  // author's UserListItem (with followersCount). ---
+  // Adds the target handle to the caller's `followersArray` and bumps
+  // the target's followersCount on success. Result.ok is the *updated*
+  // caller's User record; surfaces canister `err` strings (e.g. self-follow
+  // attempts, blocked relationships) to the mutation hook layer.
+  followAuthor: (handle: string) => Promise<UserResult>;
+  unfollowAuthor: (handle: string) => Promise<UserResult>;
+  // Returns the full comment thread (with server-assembled `replies`
+  // recursion) plus `totalNumberOfComments`. Anon-safe query.
+  getPostComments: (
+    bucketCanisterId: string,
+    postId: string,
+  ) => Promise<CommentResult>;
+  // Creates a top-level comment when `replyToCommentId` is omitted; replies
+  // when set. Edits in place when `commentId` is set (out of PR #8 scope —
+  // no UI consumer yet, but the wrapper supports it). Returns the *updated*
+  // full comment thread, so consumers can `setQueryData` without a refetch.
+  saveComment: (
+    bucketCanisterId: string,
+    model: SaveCommentModel,
+  ) => Promise<CommentResult>;
+  // Adds the caller's principal to the comment's `upVotes` AND removes the
+  // caller from `downVotes` (the canister enforces single-slot voting per
+  // caller — see PostBucket.main.mo:2954-2982). Returns the updated thread.
+  // Optimistic-flip + rollback at the consumer layer mirrors both arrays.
+  upvoteComment: (
+    bucketCanisterId: string,
+    commentId: string,
+  ) => Promise<CommentResult>;
+  // Mirror of upvoteComment — adds to downVotes, removes from upVotes for
+  // the caller.
+  downvoteComment: (
+    bucketCanisterId: string,
+    commentId: string,
+  ) => Promise<CommentResult>;
+  // Removes the caller's vote from a comment in both directions.
+  // Same return shape as upvoteComment.
+  removeCommentVote: (
+    bucketCanisterId: string,
+    commentId: string,
+  ) => Promise<CommentResult>;
+  // Flags a comment for moderation review — server records the report and
+  // (per production behaviour) fans out to an internal Slack notification.
+  // Result_2 is `{ ok: text } | { err: text }`. Authed only; logged-out
+  // callers open LoginModal at the consumer layer.
+  reportComment: (
+    bucketCanisterId: string,
+    commentId: string,
+  ) => Promise<ReportResult>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);

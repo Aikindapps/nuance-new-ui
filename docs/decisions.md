@@ -1108,3 +1108,152 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 - The system lives entirely in `src/index.css`: `--fpx` (default + the `@media` override), `--spacing`, and the `--text-*` / `--radius-*` tokens as `calc(N * var(--fpx))`.
 - New components: size everything in design pixels. Tailwind spacing/size utilities and the type/radius tokens already scale automatically. For a literal value, write `[calc(N*var(--fpx))]` (font sizes need the `length:` hint — `text-[length:calc(N*var(--fpx))]`). Never hard-code a bare `[Npx]`.
 - This is how the build is verified against Figma: it is pixel-exact at a 1920px viewport. Compare there.
+
+## #34 — Article Enrichment (PR #8): 6 of 10 sections; toast service first consumer; logged-out interactions open LoginModal; optimistic flips with rollback
+
+**Date:** 2026-05-21
+
+**Status:** Active
+
+**Decision:** PR #8 wires the four inert-shell interactions left over from PR #7 (Applause / Comment / Share / Follow) and adds a comments block — but only the six sections of Figma Page 4 (`1:15424`) that have designed flows and a viable canister surface. Four sections are deferred or out of scope:
+
+| § | Figma node | In PR #8? | Why / why not |
+|---|---|---|---|
+| 4.1 Favourites | `1:15512` | No | Figma marks the section with a "Not in scope" overlay; no canister surface for favourites. |
+| 4.2 Tip author | `1:16133` | No | Tipping is multi-token (NUA / ICP / ckBTC / others) and depends on Page 7 (Funds Overview) primitives — a balance display + sender-token selection are prerequisites. Lives in a future PR alongside Page 7. **Project-wide implication:** every "applause/clap" on Nuance is a paid token tip, not a free Medium-style multi-clap. `PostCore.clapPost` exists but is not the user-facing path. The user-facing path is `User.spendRestrictedTokensForTipping` (for NUA) or an ICRC-1 ledger transfer + `PostBucket.checkTippingByTokenSymbol(token, …)` (for other tokens), then `PostBucket` writes the `Applaud` record (with `currency: text`). |
+| 4.3 (un)Follow author | `1:17074` | Yes | `User.followAuthor(handle)` / `unfollowAuthor(handle)`. |
+| 4.4 Share article | `1:18426` | Yes | Client-only; social URLs + `navigator.clipboard`. |
+| 4.5 Comment on article | `1:19747` | Yes | `PostBucket.saveComment(SaveCommentModel)` + `getPostComments(postId)`. |
+| 4.6 Reply to comment | `1:18887` | Yes | Same `saveComment` with `replyToCommentId`. |
+| 4.7 (un)Like comment | `1:19461` | Yes | `PostBucket.upvoteComment(commentId)` / `removeCommentVote(commentId)`. Like-only — Figma shows no downvote UI even though `Comment.downVotes` exists on the canister. |
+| 4.8 (un)Follow tag | `1:20284` | No | Figma placeholder only (cover thumbnail, no flow frames). `PostCore.followTag` / `unfollowTag` exist but the UX is undesigned. |
+| 4.9 Follow publication | `1:20286` | Yes | `User.followAuthor(publicationHandle)` — publications are `User` records with `isPublication=true`. Mounted as a dark **hover popover** anchored to the publication name in the existing `Breadcrumb` (not a new section). |
+| 4.10 Report article | `1:21246` | No | Figma placeholder only + no obvious canister method. |
+
+**Inputs:**
+
+- PR #7 deferred the comment block and the four interaction shells (`decision #31`) on the basis that Page 4 designs the wiring. PR #8 is that wiring.
+- Page 4 metadata recon (2026-05-21): 10 sections enumerated; 4.1 is covered by a "Not in scope" overlay; 4.8/4.10 are placeholder-only frames with no designed flows.
+- Canister surface audit: every method needed for the six in-scope sections exists today on `User` and `PostBucket`; no new Motoko required.
+- Mr Nick's correction on tipping (2026-05-21): there are no free claps on Nuance, and tipping is multi-currency. This puts 4.2 firmly behind Page 7 funds work.
+- Page 4 has **no mobile frames** in this Figma snapshot. PR #7's mobile shells stay in service; PR #8's new behaviour is wired identically into MobileBar and reflows the comments list/composer to single column at <1024px.
+
+**Locked sub-decisions:**
+
+1. **Logged-out click on any new mutation → opens `LoginModal`.** Matches the Header/CtaBanner pattern from PR #3. The user re-clicks the mutation post-login; intent does not auto-resume (an "intent queue" is deferred — not in PR #8 scope).
+2. **"N comments" added to `ArticleMasthead` meta row.** Reverses the comment-count deferral in decision #31. Count source is `useComments().data.totalNumberOfComments`.
+3. **Toast service is minimal: success + error.** MUI `Snackbar` + `Alert`. 4s autohide. API: `useToast().show(msg, 'success' | 'error')`. First consumer is the follow mutation (Phase 3a). This is the decision #22 toast-service slot finally being filled, by its first real consumer rather than pre-built.
+4. **Mobile mirrors desktop inline.** No separate mobile design pass for Page 4 (Figma has none); the inherited PR #7 mobile shells get the same handlers, and the comments list/composer reflows to single column.
+5. **Optimistic updates for follow + like; invalidate-only for comment post.** Follow/like need instant flip — `onMutate` snapshot → `onError` rollback → `onSettled` invalidate. Comment posting must be server-confirmed because the canister assigns the `commentId`; optimistic insertion would race with the server-assigned id.
+6. **Cache invalidation on follow:** both `["my-profile"]` AND `["article", bucketCanisterId, postId]`. The latter holds the target author's `UserListItem`, whose `followersCount` would otherwise go stale until the article query naturally refetches.
+7. **`deleteComment` and comment edit are out of PR #8.** Figma shows no UI for either on Page 4. The methods are not added to the `ActorsContext` allowlist (per decision #18) until a real consumer exists.
+
+**Options considered:**
+
+- **A. Build all 10 sections.** Rejected: four of them lack either a designed flow (4.8/4.10) or the prerequisite token-spending plumbing (4.2). 4.1 is annotated "Not in scope" in the file itself.
+- **B. Defer comments to a separate PR.** Rejected: the four inert shells, the comments block, and the Like/Reply interactions are all part of the same article-page reading experience; a comments-only PR would land an article page with applause/follow/share still inert.
+- **C. Build the six in-scope sections in one PR with phased commits — chosen.** Mirrors the PR #4 / PR #7 cadence; reviewer can step phase-by-phase; merge friction concentrated in a single rebase if main moves.
+
+**Rationale:**
+
+- One PR covers the *complete* article-page interaction surface that Figma actually designs today — easier review than a slice that leaves Applause / Share inert while comments land.
+- Toast service is built alongside its first real consumer per decision #22 (no pre-builds).
+- The deferred-tipping decision pushes a substantial multi-canister concern (NUA/ICP/ckBTC, balance display, sender-token selection) into the right home — a PR alongside Page 7's wallet/funds work — rather than splitting it across two PRs.
+
+**Trade-offs accepted:**
+
+- Applause/Tipping (the most user-visible interaction Figma designs) remains inert after PR #8. The current inert "Applause (N)" pill still shows the live count from `PostCore`, so visually the user sees there is *some* engagement signal; the *action* of applauding is wired in the post-Page-7 PR.
+- Optimistic follow/like updates require careful rollback bookkeeping in two query caches per mutation. Mitigated by isolating the snapshot/rollback to `onMutate` / `onError` and using `onSettled` to force a server reconciliation regardless of outcome.
+- The popover-style publication-follow surface (4.9) introduces the project's second MUI `Popper`-based primitive (first is the Share popover in PR #8 Phase 2). Both stay as ad-hoc compositions rather than being factored into a shared `<Popover/>` primitive — extract on third consumer.
+
+**How to apply:**
+
+- For new interactions on the article page: extract a small wrapper component (e.g. `<FollowButton/>`, `<ShareButton/>`) that owns auth gating, mutation state, optimistic flip, and toast feedback. Mount it inside the existing inert shells in `ActionBar.tsx` / `AuthorBlock.tsx`. The shells stay dumb presentation; the wrappers carry the behaviour.
+- For multi-cache mutations: snapshot every cache the optimistic update touches inside `onMutate`, restore them in `onError`, invalidate them in `onSettled`. Document the cache surface in the hook's docstring.
+- For tipping (when it lands): build against the multi-currency `checkTippingByTokenSymbol(token, …)` path, not the NUA-only `spendRestrictedTokensForTipping`. The `Applaud` record carries `currency: text` precisely because the canister supports multiple ledgers.
+- For new auth-gated interactions: a single `onClick` handler that branches on `useAuth().isAuthenticated` — logged-out opens the `LoginModal` via the existing modal service; logged-in calls the mutation. Don't introduce an intent-resume mechanism in PR #8.
+
+---
+
+## #35 — PR #8 review sweep: fix-ups + m5 expansion (full comment action surface)
+
+**Date:** 2026-05-21
+**Status:** Active. Extends #18 (ActorsContext allowlist) and #34 (cache contract).
+
+**Decision:** Address the senior reviewer's 2 Major + 7 Minor items from the PR #8 review pre-merge as a single sweep. Of the 7 minors, **m5** ('the inline heart is hand-drawn — pull an asset, or defer') expands meaningfully past 'swap one icon': Figma §4.7 (`1:19534`) actually specifies thumbs up + thumbs down (not heart, not like-only), and Mr Nick confirmed both Edit and Report must be functional to match production behaviour. The original PR #8 implementation (heart-shaped like-only button) was a misread of the Figma spec — fold that correction in here rather than ship the regression.
+
+**Action items folded into this sweep:**
+
+| # | Severity | What | Where |
+|---|---|---|---|
+| M1 | Major | Gate global `scroll-behavior: smooth` on `prefers-reduced-motion: no-preference` | `src/index.css` |
+| M2 | Major | Unmount cleanup for `pubCloseTimer` (deferred `setPubOpen(false)`) | `ArticleMasthead.tsx` |
+| m1 | Minor | Converge all 8 Result-discriminating hooks on `result.__kind__ === 'err'` (drop the `'err' in result` shape in 4 read hooks) | `useArticle`/`usePostMeta`/`useComments`/`useMyProfile` |
+| m2 | Minor | Hide `(0)` on ActionBar's desktop "Comment" button — match ArticleMasthead's hide-when-zero treatment | `ActionBar.tsx` |
+| m3 | Minor | Replace broad `['article']` invalidation in follow/unfollow with an in-cache patch of `followersCount` by handle (no refetch) | new `patchFollowerCount.ts` |
+| m4 | Minor | Lowercase the optimistically-appended handle in `useFollowAuthor.onMutate` so it mirrors the canister's reverse-index shape | `useFollowAuthor.ts` |
+| **m5** | **Minor (expanded)** | **Full comment action surface — see below** | **multiple files** |
+| m6 | Minor | Fix misleading 'fixed bar's clearance' comment in ActionBar (the fixed bar at *top* is the Header, not the bottom ActionBar) | `ActionBar.tsx` |
+| m7 | Minor | Drop `hide` from public `ToastContextValue` (consumers never call it; `Snackbar`'s internal `onClose` handles it) | `useToast.ts` |
+
+**m5 — locked sub-decisions:**
+
+1. **Like/Dislike via thumbs, not heart.** Figma §4.7 (`1:19534`) specifies `NUR / Icon / Thumbs up` (asset `203:434`) and `Thumbs down` (asset `203:447`). PR #8 Phase 7's hand-drawn heart was a misread of the Figma 'Liked by @X' status indicator (a separate component) for the action button.
+2. **Owner vs other action sets diverge:**
+   - **Owner:** `Edit` + `Reply` + `Share` (no voting on your own comment — Figma)
+   - **Other:** `Like` + `Dislike` + `Reply` + `Share` + `Flag` (Figma + production)
+3. **Keep per-comment Share** (production has it; Figma omits it). Implementation mirrors prod: single-click copy of `${origin}${pathname}?comment=${commentId}` to clipboard with a success toast. Uses the existing `IconShare` glyph + label 'Share'. Deviation from Figma documented.
+4. **Single `VoteButtons` component owns the up/down pair** + cross-removal optimism. Per-caller mutual exclusion: the canister's `upvoteComment` adds the caller to `upVotes` and removes them from `downVotes` in one call (`PostBucket.main.mo:2954-2982`); `downvoteComment` is the mirror; `removeCommentVote` clears both arrays for the caller. The hook's optimistic update mirrors that — a click on Like while currently downvoted flips counts by +1 / −1 in a single state change. Two separate `LikeButton` + `DislikeButton` components would have split that invariant across two mutation onMutates and risked race conditions.
+5. **`removeCommentVote` is symmetric — rename `useUnlikeComment` → `useUnvoteComment`.** The previous name implied like-direction-only and would mislead the next reader.
+6. **Edit reuses `useSaveComment`** with the existing `commentId` parameter (the canister's `saveComment` is the unified create/edit method via optional `commentId` in `SaveCommentModel`). No new hook. CommentComposer gains an `editCommentId` + `initialDraft` mode; inline-swaps into the comment body when the owner clicks Edit.
+7. **Flag is a one-click report** — matches production. Optimistic `isCensored: true` flip; `reportComment` returns `Result_2`; on success a 'Comment reported.' toast. Subsequent click on an already-censored comment short-circuits with an 'already reported' toast (mirrors production guard).
+8. **Logged-out flag click opens `LoginModal`** (consistent with all other auth-gated mutations per decision #34 sub-decision 1). Share works without auth (just a clipboard copy).
+
+**ActorsContext additions (extending decision #18):** `downvoteComment(bucketId, commentId)` and `reportComment(bucketId, commentId)`. Both are `PostBucket` methods, both authed; gated at the consumer layer.
+
+**Cache contract additions (extending decision #34):**
+- `useDownvoteComment` and `useLikeComment` both filter the caller's principal out of the *other* vote array on optimistic update.
+- `useUnvoteComment` filters from both arrays.
+- `useReportComment` optimistically flips `isCensored: true`.
+- Follow/unfollow no longer invalidate `['article']`; they patch `author.followersCount` / `publication.followersCount` directly by handle.
+
+**Options considered for m5 scope:**
+
+- **A. Match Figma exactly — no per-comment Share.** Rejected: removes a production affordance Mr Nick wants preserved.
+- **B. Match production — show Like/Dislike on own comments + per-comment Share for all.** Rejected: voting on your own comment is a UX wart Figma deliberately cleans up.
+- **C. Figma + keep per-comment Share — chosen.** Cleanest hybrid: Figma's ownership-aware action set, with the prod Share affordance preserved. One documented deviation from Figma rather than two.
+- **D. Defer m5 to a follow-up PR.** Rejected: PR #8 *already* ships a comment-like button, just with the wrong icon and the wrong action surface. Punting m5 leaves the regression in main.
+
+**Rationale:**
+
+- Sweeping the whole review into one fix-up commit-set keeps the merge boundary clean: PR #8 either lands with all reviewer-flagged items addressed, or it doesn't land.
+- The m5 expansion is the right place to correct the underlying misread; pretending it's a one-line icon swap would defer the real fix and accumulate scope debt against the rebuild.
+- Reusing `useSaveComment` (instead of a new `useEditComment` hook) keeps the comment-mutation surface honest about the canister's unified `saveComment` model. Adding a parallel hook for what is one canister method would introduce drift.
+- Direct in-cache follower-count patch is preferable to a refetch in this rebuild: the delta is exactly +/− 1, every cached article query can be patched in microseconds, and we save one network round-trip per follow click.
+
+**Trade-offs accepted:**
+
+- **The Share button on per-comment is a Figma deviation.** Logged in the comment of the `onShare` handler. If a future Figma refresh decides Share belongs only at article level, we drop it here in one line.
+- **Censored comment's body is replaced by a 'content rules' placeholder, but the action row is hidden.** This means Like / Dislike / Reply / Flag are unreachable on a censored comment — matches production semantics (reported comments are read-only). A moderator-driven un-censor would require a fresh canister state, not a frontend toggle.
+- **`useReportComment` does an optimistic `isCensored` flip even though the canister sets censorship only after moderator review.** This is a slight optimistic-pessimism trade — the user gets immediate visual confirmation ('this comment is now under review'), and the `onSettled` invalidate reconciles with the server-truth flag (which may stay `false` until human review). Erring on the user-confidence side.
+
+**How to apply:**
+
+- When adding a new comment-level action: branch ownership at `CommentBlock` and add the button via the existing `InlineButton` shape. Auth-gate via `useAuth().isAuthenticated` → `useModal().open(<LoginModal />)` pattern.
+- When adding a new vote semantic: extend `VoteButtons` rather than creating a parallel pair — the cross-removal invariant lives in one place by design.
+- When adding a new ActorsContext method that touches `Comment`: extend the decision #34 cache contract docstring to specify the optimistic shape *before* writing the hook.
+
+
+**Post-merge fix (folded into the same PR before merge): comment hydration goes by-principal, not by-handle.**
+
+Verified against mainnet 2026-05-21 via `scripts/probe-comments.ts`: `PostBucket.getPostComments` returns `comment.handle = ""` and `comment.avatar = ""` for every comment — only `comment.creator` (principal text) is populated. PR #8's original `useComments` hydration collected handles and called `User.getUsersByHandles`, which always built an empty userMap on this data shape. Every comment rendered with `?` avatar and bare `@` — the rebuild's regression vs production.
+
+Switched to:
+- `useComments.collectCreators(...)` (principals)
+- `User.getUsersByPrincipals(creators)` (added to the ActorsContext allowlist alongside `downvoteComment` / `reportComment`)
+- `userMap` keyed by `principal`, lookup in `CommentBlock` via `userMap.get(comment.creator)`
+- Display fields read from `user.handle` / `user.displayName` / `user.avatar` / `user.isVerified` — `comment.handle` and `comment.avatar` are deliberately ignored as unreliable.
+
+Ownership check (`isOwner`) is also principal-based: `principal?.toText() === comment.creator`. This was a deliberate choice anyway, but is now load-bearing — a handle-based check would have failed identically.
+
+The `scripts/probe-comments.ts` diagnostic is kept under `scripts/` (outside `src/`, eslint-disabled) as a reusable canister-shape probe for the next surprise.
