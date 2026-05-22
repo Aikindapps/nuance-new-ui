@@ -49,7 +49,7 @@ export function useArticle(bucketCanisterId: string, postId: string) {
       // `err` here can only be not-found or unauthorized-draft — a transport
       // failure rejects before a Result is produced. Same reasoning as
       // useMyProfile (PR #6 review m1): treat every `err` as not-found.
-      if ("err" in result) return null;
+      if (result.__kind__ === "err") return null;
       const post = result.ok;
 
       const isPub = post.isPublication;

@@ -19,7 +19,7 @@ export function usePostMeta(postId: string) {
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const result = await getPostKeyProperties(postId);
-      if ("err" in result) return null;
+      if (result.__kind__ === "err") return null;
       return result.ok;
     },
   });

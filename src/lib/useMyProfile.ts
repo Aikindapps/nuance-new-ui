@@ -34,7 +34,7 @@ export function useMyProfile() {
       // which is not a stable contract. Consumers rely on this: WelcomeBanner
       // falls back to a generic greeting, and OnboardingGate opens the
       // RegisterModal (PR #6 review m1).
-      if ("err" in result) {
+      if (result.__kind__ === "err") {
         return null;
       }
       return result.ok;

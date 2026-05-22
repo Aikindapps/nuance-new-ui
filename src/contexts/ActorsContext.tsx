@@ -73,6 +73,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await userPromise;
         return actor.getUsersByHandles(handles);
       },
+      getUsersByPrincipals: async (principals) => {
+        const actor = await userPromise;
+        return actor.getUsersByPrincipals(principals);
+      },
       getUserByPrincipalId: async (principalText) => {
         const actor = await userPromise;
         return actor.getUserByPrincipalId(principalText);
@@ -134,9 +138,17 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getBucket(bucketCanisterId);
         return actor.upvoteComment(commentId);
       },
+      downvoteComment: async (bucketCanisterId, commentId) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.downvoteComment(commentId);
+      },
       removeCommentVote: async (bucketCanisterId, commentId) => {
         const actor = await getBucket(bucketCanisterId);
         return actor.removeCommentVote(commentId);
+      },
+      reportComment: async (bucketCanisterId, commentId) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.reportComment(commentId);
       },
     };
   }, [identity]);

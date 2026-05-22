@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar } from "../../../components/ui/Avatar";
 import { IconClaps } from "../../../components/ui/icons/IconClaps";
@@ -76,6 +76,9 @@ export function ArticleMasthead({
     cancelPubClose();
     setPubOpen(false);
   };
+  // Unmount guard: the 150ms deferred setPubOpen(false) must not fire after
+  // teardown (route change, identity-driven cache rebuild, StrictMode remount).
+  useEffect(() => () => cancelPubClose(), []);
 
   const published =
     formatLongDate(post.publishedDate) || formatLongDate(post.created);

@@ -117,9 +117,13 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Smooth scroll for anchor jumps (ActionBar Comment button → #comments). */
-html {
-  scroll-behavior: smooth;
+/* Smooth scroll for anchor jumps (ActionBar Comment button → #comments).
+   Gated on prefers-reduced-motion: users with vestibular sensitivities
+   or who opt out at the OS level get an instant jump instead. WCAG 2.3.3. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 /* Fluid scaling (decision #33). Two media-queried --fpx anchors cover the

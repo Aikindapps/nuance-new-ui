@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useActors } from "../../../contexts/useActors";
 import { useAuth } from "../../../contexts/useAuth";
+import { patchArticleFollowerCount } from "./patchFollowerCount";
 import type { User } from "../../../candid/User/User";
 
 // Mutation: follow an author or publication by handle.
 //
-// Cache contract (decision #34):
+// Cache contract (decision #34, tightened per PR #8 review m3):
 // - Optimistic update on ["my-profile", principal] — appends the handle to
 //   `followersArray` so `useIsFollowing(handle)` flips to "following"
 //   instantly. The button flips, the user sees the result before the
@@ -13,16 +14,10 @@ import type { User } from "../../../candid/User/User";
 // - On error: roll back ["my-profile"] to its snapshot. Toast fires from
 //   the consumer (FollowButton) via `mutation.error`.
 // - On success: overwrite ["my-profile"] with the server-truth User
-//   record (the canister returns the updated caller's User) so we drop the
-//   optimistic guess for the authoritative value.
-// - On settled: invalidate the entire ["article"] family so the target
-//   author's `followersCount` (held in the article query's cached
-//   `UserListItem`) refetches and the visible "N followers" text updates.
-//
-// The "article" invalidation is broad on purpose: PR #8's FollowButton
-// is generic — it doesn't know which article query it's on. A consumer
-// may be viewing exactly one article at a time, so the cost is one refetch
-// per follow action.
+//   record (the canister returns the updated caller's User), AND patch the
+//   target's `followersCount` in every cached `["article", ...]` query
+//   whose author or publication matches the handle (+1). No refetch — the
+//   delta is exactly one, so we apply it directly.
 
 type Context = {
   previous: User | null;
@@ -52,9 +47,11 @@ export function useFollowAuthor() {
         // `User` is class-merged (bindgen) but the cache stores plain data;
         // the spread loses prototype methods we never call. Cast as User to
         // satisfy TS without resurrecting them.
+        // Handle is lowercased to mirror the canister's reverse-index shape,
+        // matching useUnfollowAuthor's case-folded filter.
         queryClient.setQueryData<User>(key, {
           ...previous,
-          followersArray: [...previous.followersArray, handle],
+          followersArray: [...previous.followersArray, handle.toLowerCase()],
         } as User);
       }
 
@@ -67,16 +64,14 @@ export function useFollowAuthor() {
         context.previous,
       );
     },
-    onSuccess: (updatedUser, _handle, context) => {
+    onSuccess: (updatedUser, handle, context) => {
       if (!context?.principalText) return;
       // Replace optimistic guess with server truth.
       queryClient.setQueryData(
         ["my-profile", context.principalText],
         updatedUser,
       );
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["article"] });
+      patchArticleFollowerCount(queryClient, handle, +1);
     },
   });
 }

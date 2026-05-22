@@ -4,25 +4,14 @@ import { useAuth } from "../../../contexts/useAuth";
 import type { CommentsData } from "./useComments";
 import { updateCommentInTree } from "./likeCommentTree";
 
-// Mutation: upvote (like) a comment.
+// Mutation: downvote (dislike) a comment.
 //
-// Canister behaviour (PostBucket.main.mo:2954-2982): a single upvoteComment
-// call atomically (a) adds the caller's principal to `upVotes` and (b)
-// removes the caller's principal from `downVotes`. Per-caller mutual
-// exclusion — the caller is in at most one of the two arrays at a time,
-// but other users' votes coexist.
+// Mirror of useLikeComment — the canister's `downvoteComment` adds the
+// caller to `downVotes` and removes them from `upVotes` in one call
+// (PostBucket.main.mo:2986-3015). Same per-caller mutual exclusion.
 //
-// Cache contract (decision #34, expanded for PR #8 review m5):
-// - onMutate snapshots ["comments", bucketId, postId] and optimistically
-//   mirrors the canister: add caller to upVotes (idempotent), filter caller
-//   out of downVotes. So a click on Like while currently downvoted moves
-//   counts by +1 / −1 in one flip.
-// - onError rolls back to the snapshot.
-// - onSuccess overwrites the cache with the server-truth thread (the
-//   canister returns the full updated CommentsReturnType + we carry the
-//   previous userMap forward).
-// - onSettled invalidates the key so any stale state reconciles. Cheap
-//   for the comment-thread sizes PR #8 handles.
+// Cache contract follows useLikeComment exactly with the arrays swapped:
+// optimistic add to downVotes (idempotent) + filter caller from upVotes.
 
 type Vars = {
   bucketCanisterId: string;
@@ -34,14 +23,14 @@ type Ctx = {
   previous: CommentsData | undefined;
 };
 
-export function useLikeComment() {
-  const { upvoteComment } = useActors();
+export function useDownvoteComment() {
+  const { downvoteComment } = useActors();
   const { principal } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation<unknown, Error, Vars, Ctx>({
     mutationFn: async ({ bucketCanisterId, commentId }) => {
-      const result = await upvoteComment(bucketCanisterId, commentId);
+      const result = await downvoteComment(bucketCanisterId, commentId);
       if (result.__kind__ === "err") throw new Error(result.err);
       return result.ok;
     },
@@ -55,10 +44,10 @@ export function useLikeComment() {
           ...previous,
           comments: updateCommentInTree(previous.comments, commentId, (c) => ({
             ...c,
-            upVotes: c.upVotes.includes(principalText)
-              ? c.upVotes
-              : [...c.upVotes, principalText],
-            downVotes: c.downVotes.filter((p) => p !== principalText),
+            downVotes: c.downVotes.includes(principalText)
+              ? c.downVotes
+              : [...c.downVotes, principalText],
+            upVotes: c.upVotes.filter((p) => p !== principalText),
           })),
         });
       }

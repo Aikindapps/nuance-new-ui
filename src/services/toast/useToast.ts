@@ -8,7 +8,6 @@ export type ToastSeverity = "success" | "error";
 
 export type ToastContextValue = {
   show: (message: string, severity: ToastSeverity) => void;
-  hide: () => void;
 };
 
 export const ToastContext = createContext<ToastContextValue | null>(null);

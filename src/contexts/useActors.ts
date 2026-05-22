@@ -10,6 +10,7 @@ import type {
 import type {
   PostBucketType__1,
   Result as CommentResult,
+  Result_2 as ReportResult,
   Result_6 as GetPostResult,
   SaveCommentModel,
 } from "../candid/PostBucket/PostBucket";
@@ -50,6 +51,10 @@ export type ActorsValue = {
     includeDraft: boolean,
   ) => Promise<Array<PostBucketType__1>>;
   getUsersByHandles: (handles: string[]) => Promise<Array<UserListItem>>;
+  // Hydrate a batch of UserListItem records by principal text. Comments
+  // come back from PostBucket with `handle` and `avatar` blanked (only
+  // `creator` is populated), so comment-thread hydration goes by-principal.
+  getUsersByPrincipals: (principals: string[]) => Promise<Array<UserListItem>>;
   // Query method: returns the full User record (with displayName, avatar,
   // isVerified, follow counts) for a principal text. Safe on the anonymous
   // agent — Result variant {ok: User} | {err: text} is returned raw so the
@@ -120,18 +125,34 @@ export type ActorsValue = {
     bucketCanisterId: string,
     model: SaveCommentModel,
   ) => Promise<CommentResult>;
-  // Adds the caller's principal to the comment's `upVotes`. Returns the
-  // updated thread. Optimistic-flip + rollback at the consumer layer.
+  // Adds the caller's principal to the comment's `upVotes` AND removes the
+  // caller from `downVotes` (the canister enforces single-slot voting per
+  // caller — see PostBucket.main.mo:2954-2982). Returns the updated thread.
+  // Optimistic-flip + rollback at the consumer layer mirrors both arrays.
   upvoteComment: (
     bucketCanisterId: string,
     commentId: string,
   ) => Promise<CommentResult>;
-  // Removes the caller's vote from a comment (whether up or down).
+  // Mirror of upvoteComment — adds to downVotes, removes from upVotes for
+  // the caller.
+  downvoteComment: (
+    bucketCanisterId: string,
+    commentId: string,
+  ) => Promise<CommentResult>;
+  // Removes the caller's vote from a comment in both directions.
   // Same return shape as upvoteComment.
   removeCommentVote: (
     bucketCanisterId: string,
     commentId: string,
   ) => Promise<CommentResult>;
+  // Flags a comment for moderation review — server records the report and
+  // (per production behaviour) fans out to an internal Slack notification.
+  // Result_2 is `{ ok: text } | { err: text }`. Authed only; logged-out
+  // callers open LoginModal at the consumer layer.
+  reportComment: (
+    bucketCanisterId: string,
+    commentId: string,
+  ) => Promise<ReportResult>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);

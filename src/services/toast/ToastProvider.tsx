@@ -42,10 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setActive(null);
   }, []);
 
-  const value = useMemo<ToastContextValue>(
-    () => ({ show, hide }),
-    [show, hide],
-  );
+  const value = useMemo<ToastContextValue>(() => ({ show }), [show]);
 
   return (
     <ToastContext.Provider value={value}>

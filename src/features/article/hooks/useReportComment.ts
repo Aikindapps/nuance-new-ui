@@ -1,16 +1,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useActors } from "../../../contexts/useActors";
-import { useAuth } from "../../../contexts/useAuth";
 import type { CommentsData } from "./useComments";
 import { updateCommentInTree } from "./likeCommentTree";
 
-// Mutation: unlike (remove vote) a comment.
+// Mutation: report a comment for moderation review.
 //
-// Mirror of useLikeComment — same cache contract, inverse optimistic
-// update (filters the caller's principal text out of the comment's
-// `upVotes`). The canister method `removeCommentVote` clears any
-// up-or-down vote the caller has on this comment; Figma shows like-only
-// UI so in practice this always undoes a like.
+// `reportComment` on PostBucket returns `Result_2 = { ok: text } | { err: text }`
+// — `ok` is a confirmation string, `err` happens (e.g.) when the same caller
+// has already reported the same comment. The canister sets `comment.isCensored`
+// for already-flagged content; the optimistic update mirrors that so the UI
+// can short-circuit a second click.
+//
+// No cross-removal, no array reshape — just a flag flip. We do optimistic
+// censor + rollback on error, then invalidate the thread on settle so any
+// thread-wide state (e.g. moderator-driven content hide) reconciles with
+// the canister.
 
 type Vars = {
   bucketCanisterId: string;
@@ -22,28 +26,26 @@ type Ctx = {
   previous: CommentsData | undefined;
 };
 
-export function useUnlikeComment() {
-  const { removeCommentVote } = useActors();
-  const { principal } = useAuth();
+export function useReportComment() {
+  const { reportComment } = useActors();
   const queryClient = useQueryClient();
 
   return useMutation<unknown, Error, Vars, Ctx>({
     mutationFn: async ({ bucketCanisterId, commentId }) => {
-      const result = await removeCommentVote(bucketCanisterId, commentId);
+      const result = await reportComment(bucketCanisterId, commentId);
       if (result.__kind__ === "err") throw new Error(result.err);
       return result.ok;
     },
     onMutate: async ({ bucketCanisterId, postId, commentId }) => {
-      const principalText = principal?.toText();
       const key = ["comments", bucketCanisterId, postId];
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData<CommentsData>(key);
-      if (previous && principalText) {
+      if (previous) {
         queryClient.setQueryData<CommentsData>(key, {
           ...previous,
           comments: updateCommentInTree(previous.comments, commentId, (c) => ({
             ...c,
-            upVotes: c.upVotes.filter((p) => p !== principalText),
+            isCensored: true,
           })),
         });
       }

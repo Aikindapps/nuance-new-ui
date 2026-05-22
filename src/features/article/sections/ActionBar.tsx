@@ -120,15 +120,17 @@ function DesktopBar({
           Applause ({claps})
         </button>
 
-        {/* Comment — anchors to the comments section (CSS smooth scroll +
-            scroll-mt accounts for the fixed bar's clearance). Composer
-            mounts inline there. */}
+        {/* Comment — anchors to the comments section. The smooth scroll
+            comes from CSS (gated on prefers-reduced-motion); scroll-mt on
+            #comments leaves clearance under the fixed Header at the top of
+            the viewport. (This ActionBar is fixed-bottom, so it needs no
+            scroll offset of its own.) Composer mounts inline there. */}
         <a
           href="#comments"
           className={`${item} transition-colors hover:bg-white-10`}
         >
           <IconComment className="size-6" />
-          Comment ({commentCount})
+          {commentCount > 0 ? `Comment (${commentCount})` : "Comment"}
         </a>
 
         {/* Views — passive stat (no bookmark feature on Nuance) */}

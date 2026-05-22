@@ -11,30 +11,31 @@ import type { UserListItem } from "../../../candid/User/User";
 // Two-stage fetch:
 // 1. PostBucket.getPostComments → returns full thread (server-assembled
 //    `replies` recursion + totalNumberOfComments).
-// 2. User.getUsersByHandles for every commenter + every reply handle —
-//    lowercased per project lesson 2026-04-22 (the User canister's
-//    reverse index keys on lowercase).
+// 2. User.getUsersByPrincipals for every commenter + every reply creator —
+//    BY PRINCIPAL, because PostBucket returns `comment.handle` and
+//    `comment.avatar` blanked. Only `creator` (principal text) is reliable
+//    on the Comment record (verified against mainnet canister 2026-05-21).
 //
-// Returns `userMap` keyed by lowercase handle for downstream CommentBlock
+// Returns `userMap` keyed by principal text for downstream CommentBlock
 // rendering. A failed hydration call doesn't fail the whole query —
 // comments still render with whatever User records came back; missing
-// commenters fall back to handle-only display.
+// commenters fall back to "(unknown user)".
 
 export type CommentsData = CommentsReturnType & {
   userMap: Map<string, UserListItem>;
 };
 
-function collectHandles(comments: ReadonlyArray<Comment>): string[] {
+function collectCreators(comments: ReadonlyArray<Comment>): string[] {
   const out: string[] = [];
   for (const c of comments) {
-    if (c.handle) out.push(c.handle);
-    if (c.replies.length > 0) out.push(...collectHandles(c.replies));
+    if (c.creator) out.push(c.creator);
+    if (c.replies.length > 0) out.push(...collectCreators(c.replies));
   }
   return out;
 }
 
 export function useComments(bucketCanisterId: string, postId: string) {
-  const { getPostComments, getUsersByHandles } = useActors();
+  const { getPostComments, getUsersByPrincipals } = useActors();
 
   return useQuery<CommentsData>({
     queryKey: ["comments", bucketCanisterId, postId],
@@ -44,20 +45,20 @@ export function useComments(bucketCanisterId: string, postId: string) {
     // saveComment / upvote / removeVote so the staleTime is only a guard.
     queryFn: async () => {
       const result = await getPostComments(bucketCanisterId, postId);
-      if ("err" in result) throw new Error(result.err);
+      if (result.__kind__ === "err") throw new Error(result.err);
 
-      const handles = Array.from(
-        new Set(collectHandles(result.ok.comments).map((h) => h.toLowerCase())),
+      const principals = Array.from(
+        new Set(collectCreators(result.ok.comments)),
       );
 
-      const users = handles.length
-        ? await getUsersByHandles(handles).catch((e) => {
+      const users = principals.length
+        ? await getUsersByPrincipals(principals).catch((e) => {
             console.warn("[useComments] user hydration failed:", e);
             return [] as UserListItem[];
           })
         : ([] as UserListItem[]);
 
-      const userMap = new Map(users.map((u) => [u.handle.toLowerCase(), u]));
+      const userMap = new Map(users.map((u) => [u.principal, u]));
 
       return {
         comments: result.ok.comments,

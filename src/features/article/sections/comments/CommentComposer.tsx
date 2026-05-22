@@ -34,7 +34,13 @@ type Props = {
   // model's replyToCommentId differ.
   replyToCommentId?: string;
   replyToHandle?: string;
-  onCancel?: () => void; // surfaced for the reply-mode "x cancel" affordance
+  // When set, the composer is in edit mode (review m5). Pre-fills with
+  // `initialDraft`; submit calls saveComment with this commentId so the
+  // canister updates in place. `replyToCommentId` MUST be omitted when
+  // editing — the two modes are mutually exclusive.
+  editCommentId?: string;
+  initialDraft?: string;
+  onCancel?: () => void; // also fires on successful submit when set
   autoFocus?: boolean;
 };
 
@@ -43,6 +49,8 @@ export function CommentComposer({
   postId,
   replyToCommentId,
   replyToHandle,
+  editCommentId,
+  initialDraft = "",
   onCancel,
   autoFocus = false,
 }: Props) {
@@ -51,13 +59,18 @@ export function CommentComposer({
   const toast = useToast();
   const saveComment = useSaveComment();
 
-  const [draft, setDraft] = useState("");
-  const isReply = Boolean(replyToCommentId);
+  const [draft, setDraft] = useState(initialDraft);
+  const isEdit = Boolean(editCommentId);
+  const isReply = !isEdit && Boolean(replyToCommentId);
   const trimmed = draft.trim();
   const length = draft.length;
   const overLimit = length > MAX_LEN;
+  const isUnchanged = isEdit && trimmed === initialDraft.trim();
   const canSubmit =
-    trimmed.length > 0 && !overLimit && !saveComment.isPending;
+    trimmed.length > 0 &&
+    !overLimit &&
+    !saveComment.isPending &&
+    !isUnchanged;
 
   const submit = () => {
     if (!isAuthenticated) {
@@ -71,18 +84,30 @@ export function CommentComposer({
         bucketCanisterId,
         postId,
         content: trimmed,
-        replyToCommentId,
+        replyToCommentId: isEdit ? undefined : replyToCommentId,
+        commentId: editCommentId,
       },
       {
         onSuccess: () => {
-          setDraft("");
-          toast.show(isReply ? "Reply posted." : "Comment posted.", "success");
+          if (!isEdit) setDraft("");
+          toast.show(
+            isEdit
+              ? "Comment saved."
+              : isReply
+                ? "Reply posted."
+                : "Comment posted.",
+            "success",
+          );
           onCancel?.();
         },
         onError: (err) => {
           toast.show(
             err.message ||
-              (isReply ? "Could not post reply." : "Could not post comment."),
+              (isEdit
+                ? "Could not save changes."
+                : isReply
+                  ? "Could not post reply."
+                  : "Could not post comment."),
             "error",
           );
         },
@@ -90,9 +115,11 @@ export function CommentComposer({
     );
   };
 
-  const placeholder = isReply
-    ? `Reply to @${replyToHandle ?? ""}…`
-    : "Share your thoughts on this article…";
+  const placeholder = isEdit
+    ? "Edit your comment…"
+    : isReply
+      ? `Reply to @${replyToHandle ?? ""}…`
+      : "Share your thoughts on this article…";
 
   return (
     <form
@@ -102,13 +129,19 @@ export function CommentComposer({
       }}
       className="flex flex-col gap-3"
     >
-      {isReply && (
+      {(isReply || isEdit) && (
         <div className="flex items-center justify-between text-label text-ink-60">
           <span>
-            Replying to{" "}
-            <span className="font-medium text-ink-80">
-              @{replyToHandle}
-            </span>
+            {isEdit ? (
+              "Editing comment"
+            ) : (
+              <>
+                Replying to{" "}
+                <span className="font-medium text-ink-80">
+                  @{replyToHandle}
+                </span>
+              </>
+            )}
           </span>
           {onCancel && (
             <button
@@ -145,10 +178,14 @@ export function CommentComposer({
           className="bg-brand-gradient-button rounded-card px-6 py-2.5 text-body font-medium text-white shadow-[var(--shadow-purple-glow-medium)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saveComment.isPending
-            ? "Posting…"
-            : isReply
-              ? "Post reply"
-              : "Post comment"}
+            ? isEdit
+              ? "Saving…"
+              : "Posting…"
+            : isEdit
+              ? "Save"
+              : isReply
+                ? "Post reply"
+                : "Post comment"}
         </button>
       </div>
     </form>

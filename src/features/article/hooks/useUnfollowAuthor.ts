@@ -1,15 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useActors } from "../../../contexts/useActors";
 import { useAuth } from "../../../contexts/useAuth";
+import { patchArticleFollowerCount } from "./patchFollowerCount";
 import type { User } from "../../../candid/User/User";
 
 // Mutation: unfollow an author or publication by handle.
 //
-// Mirror of `useFollowAuthor` — same cache contract (decision #34), inverse
-// optimistic update (filters the handle out of `followersArray` rather
-// than appending). Handle comparison is case-insensitive on the optimistic
-// side because the User canister stores via a lowercase reverse index;
-// the server-truth response in onSuccess is what we end up with regardless.
+// Mirror of `useFollowAuthor` — same cache contract (decision #34, tightened
+// per PR #8 review m3), inverse optimistic update (filters the handle out of
+// `followersArray` rather than appending) and a −1 patch of the target's
+// `followersCount` in cached article queries. Handle comparison is
+// case-insensitive on the optimistic side because the User canister stores
+// via a lowercase reverse index; the server-truth response in onSuccess is
+// what we end up with regardless.
 
 type Context = {
   previous: User | null;
@@ -55,15 +58,13 @@ export function useUnfollowAuthor() {
         context.previous,
       );
     },
-    onSuccess: (updatedUser, _handle, context) => {
+    onSuccess: (updatedUser, handle, context) => {
       if (!context?.principalText) return;
       queryClient.setQueryData(
         ["my-profile", context.principalText],
         updatedUser,
       );
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["article"] });
+      patchArticleFollowerCount(queryClient, handle, -1);
     },
   });
 }

@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import Skeleton from "@mui/material/Skeleton";
+import { useSearchParams } from "react-router-dom";
 import { useComments } from "../hooks/useComments";
 import { CommentBlock } from "./comments/CommentBlock";
 import { CommentComposer } from "./comments/CommentComposer";
@@ -11,6 +13,10 @@ import { CommentComposer } from "./comments/CommentComposer";
 // Mounted inside the article column so the comments align with the body
 // column width (~932px design pixels). Below the AuthorBlock, above the
 // rails — matches Figma `1:18798` frame ordering.
+//
+// Deep-link: `?comment=<commentId>` (emitted by the per-comment Share
+// affordance in CommentBlock) scrolls the matching <article> into view
+// once the tree has rendered. Mirrors production's comment-link UX.
 
 type Props = {
   bucketCanisterId: string;
@@ -19,6 +25,20 @@ type Props = {
 
 export function CommentsSection({ bucketCanisterId, postId }: Props) {
   const query = useComments(bucketCanisterId, postId);
+  const [searchParams] = useSearchParams();
+  const deepLinkCommentId = searchParams.get("comment");
+
+  useEffect(() => {
+    if (!deepLinkCommentId || !query.data) return;
+    // Wait for the next animation frame so the freshly-rendered comment
+    // tree exists in the DOM before scrollIntoView resolves the target.
+    const id = requestAnimationFrame(() => {
+      document
+        .getElementById(`comment-${deepLinkCommentId}`)
+        ?.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [deepLinkCommentId, query.data]);
 
   return (
     <section
