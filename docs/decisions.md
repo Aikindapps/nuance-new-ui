@@ -1257,3 +1257,56 @@ Switched to:
 Ownership check (`isOwner`) is also principal-based: `principal?.toText() === comment.creator`. This was a deliberate choice anyway, but is now load-bearing — a handle-based check would have failed identically.
 
 The `scripts/probe-comments.ts` diagnostic is kept under `scripts/` (outside `src/`, eslint-disabled) as a reusable canister-shape probe for the next surprise.
+
+---
+
+## #36 — Article editor: Lexical (reaffirms #22; supersedes #22's Quill-for-short-fields clause); TipTap evaluated and declined
+
+**Date:** 2026-05-23
+
+**Status:** Active. Reaffirms the editor portion of #22.
+
+**Decision:** The Write Article rich-text editor (Page 5 / PR #9) uses **Lexical**, as committed in #22. **TipTap** (ProseMirror) was evaluated as an alternative and not adopted. The article body remains **HTML** in the canister `content` field (unchanged from PR #7); Lexical converts via `@lexical/html` (`$generateHtmlFromNodes` on save, `$generateNodesFromDOM` on load). Local autosave stores Lexical's native `editorState` JSON losslessly (browser-only), converting to HTML only on canister Save/Publish.
+
+**Inputs:**
+- #22 (2026-04-30, the senior engineer's service catalog) committed Lexical for the long-form editor — but predated PR #7's finding that the body is stored as **HTML**, which is the dominant input to the editor choice.
+- TipTap's case: HTML-native model (no JSON↔HTML conversion seam), and `BubbleMenu` / `FloatingMenu` map directly onto the two Page-5 popups (selection toolbar + "+" block menu) with less custom code.
+- The counter-case that decided it: Lexical has **no paid tier** (fully MIT, Meta-backed); TipTap is **freemium** (Tiptap Pro/Cloud) with features moved behind a paywall over time — relevant for an SNS-governed DAO avoiding cost/lock-in. Editor choice has **zero SEO/indexing effect** (indexing is owned by the read-side `ArticleHead` + the crawler proxy, decision #32) — so SEO was explicitly NOT a differentiator (a framing Claude corrected after over-attributing an SEO edge to TipTap).
+- Round-trip de-risk (read-only mainnet probe, 25 real articles): the legacy editor was **Quill**, not Lexical. The stored-HTML tag universe is exactly `a, blockquote, br, em, h1, h2, h3, img, li, ol, p, pre, span, strong, ul` — no `<hr>`, no `<figure>`, no inline `style=`. Lexical's node set covers all of it on import; minor re-save drift only on empty `<p><br></p>` spacers and old Quill code blocks (both cosmetic, outside authoring scope).
+- Mr Nick consulted the senior human engineer for a second opinion before confirming Lexical.
+
+**Options considered:**
+- A. **Lexical** (keep #22). **Chosen.**
+- B. TipTap (override #22). Rejected — its advantages don't pay off for an HTML-storing rebuild, and it adds a freemium dependency.
+
+**Trade-offs accepted:**
+- Lexical's JSON model means HTML in/out goes through `@lexical/html` conversion (the round-trip seam) — mitigated by the narrow, known Quill tag set and an early de-risk chunk that round-trips real articles before building UI.
+- A custom `ImageNode` is required (Lexical has no built-in image node); its `exportDOM` must emit a bare `<img>` to match the read renderer's `.article-prose img`.
+
+**How to apply:**
+- Register every node the legacy Quill markup uses (+ the custom `ImageNode`). Register `CodeNode` for import-only (never offered in the menus).
+- Lazy-load the `/write` + `/my-articles` routes so all `@lexical/*` stays out of the home/article bundles.
+- The read side (PR #7 renderer + crawler proxy) is unchanged and remains the security boundary (DOMPurify on read).
+- **Supersedes the Quill-for-short-fields clause of #22.** Lexical is the project's *only* rich-text editor; every other field (title, subtitle, bio, comments) is a plain input / `<textarea>`. Verified 2026-05-23: comments shipped plain in PR #8 (`CommentComposer.tsx:158`) and no Quill exists in the repo — the clause was never acted on. Two libraries = two bundles + two serialization formats + double maintenance for no payoff. If a short field ever needs rich text, use a minimal Lexical config, not a second library.
+
+---
+
+## #37 — Drafts require a topic (backend-enforced); accepted for this project
+
+**Date:** 2026-05-24
+
+**Status:** Active.
+
+**Decision:** Saving an article as a draft requires a non-empty body AND 1–3 topics — exactly like publishing. This is enforced by `PostCore.save` on the live canister: the `content == ""` and `tagIds.size() == 0/ > 3` checks run **unconditionally**, not gated by `isDraft` (`~/Projects/aikindapps-Nuance/src/PostCore/main.mo`, in `save`). The frontend accepts this rather than working around it — the topic picker gates both Save-as-draft and Publish (picked once per article; afterwards "Save as draft" saves directly).
+
+**Inputs:**
+- Mr Nick wanted topic-free drafts (topics only at publish). Verified the constraint is **backend**, not the frontend check.
+- Frontend-only project (#1) against the SNS-governed mainnet canister (#5) — the validation can't be changed here. There's only one save method (no separate draft path).
+
+**Options considered:**
+- A. Local-only tag-less drafts (browser autosave only). Rejected — won't appear in My Articles / cross-device; a confusing two-tier draft system.
+- B. **Accept the backend rule.** **Chosen** (Mr Nick, 2026-05-24).
+- C. Relax the canister `tagIds.size() == 0` check for `isDraft` posts. Deferred — a Motoko change requiring an SNS proposal; out of this frontend project. Revisit if topic-free drafts become a product goal.
+
+**How to apply:**
+- Keep the topic picker gating both draft and publish. If topic-free drafts are wanted later, that's backend task C, not a frontend tweak.

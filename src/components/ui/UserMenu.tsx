@@ -1,4 +1,5 @@
 import { useState, type MouseEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -17,6 +18,7 @@ import { headerCopy } from "../../constants/copy";
 
 export function UserMenu() {
   const { principal, logout } = useAuth();
+  const navigate = useNavigate();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
   if (!principal) return null;
@@ -26,6 +28,11 @@ export function UserMenu() {
 
   const handleOpen = (e: MouseEvent<HTMLButtonElement>) => setAnchor(e.currentTarget);
   const handleClose = () => setAnchor(null);
+
+  const handleMyArticles = () => {
+    handleClose();
+    navigate("/my-articles");
+  };
 
   const handleLogout = async () => {
     handleClose();
@@ -59,6 +66,7 @@ export function UserMenu() {
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
+        <MenuItem onClick={handleMyArticles}>{headerCopy.myArticles}</MenuItem>
         <MenuItem onClick={handleLogout}>{headerCopy.logout}</MenuItem>
       </Menu>
     </>

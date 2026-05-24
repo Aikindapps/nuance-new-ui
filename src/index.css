@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Tailwind v4 removed the default `cursor: pointer` on <button>. Restore it
+   app-wide so every interactive button shows the pointer cursor (the cover
+   "choose file", editor toolbar/menu, and all prior screens' buttons). In
+   @layer base so per-element utilities (e.g. cursor-not-allowed on a disabled
+   menu item) still override it. */
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 /* Canonical token definitions live in this @theme block.
    The MUI theme in src/theme/index.ts references the same CSS variables
    (`var(--color-...)`, etc.) so both layers consume one source. See
@@ -68,6 +79,7 @@
   --color-brand-purple-light: #935bfb;     /* gradient end-stop */
   --color-brand-purple-5: rgba(84, 5, 212, 0.05); /* nur/purple/5% — tinted bg (WriteCtaBanner) */
   --color-brand-purple-10: rgba(84, 5, 212, 0.1); /* nur/purple/10% — tag pill bg (logged-in Topics rail) */
+  --color-brand-purple-fluor: #914eff;     /* nur/purple-fluor/100 — editor block-menu active item + active toolbar btn (decision #36) */
   --color-ink: #202123;                    /* nur/black/100% (text) */
   --color-ink-80: rgba(32, 33, 35, 0.8);   /* nur/black/80% (text) */
   --color-ink-60: rgba(32, 33, 35, 0.6);   /* nur/black/60% (text) */
