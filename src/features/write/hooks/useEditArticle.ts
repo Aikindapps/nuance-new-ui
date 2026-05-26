@@ -10,6 +10,10 @@ export type EditArticleInitial = {
   coverUrl: string;
   tagIds: string[];
   editorStateJson: string;
+  // Canister truth (`!post.isDraft`): editing a published article saves in place
+  // ("Save changes", isDraft:false) instead of unpublishing it. A newer local
+  // autosave only overrides the body/fields — never the published state.
+  isPublished: boolean;
 };
 
 // Loads an existing article into editor-ready shape for /write/:postIdAndBucket.
@@ -29,12 +33,15 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
       ]);
       if (postRes.__kind__ === "err") return null;
       const post = postRes.ok;
+      const isPublished = !post.isDraft;
       const tagIds =
         metaRes.__kind__ === "ok"
           ? metaRes.ok.tags.map((t) => t.tagId)
           : [];
 
       // Prefer a newer local autosave (unsaved edits) over the canister copy.
+      // The autosave only carries body/fields — published state stays canister
+      // truth so a restored draft of a live article still "Saves changes".
       const local = loadDraft(post.postId);
       const canisterModified = Number(post.modified) || 0;
       if (local && local.savedAt > canisterModified) {
@@ -45,6 +52,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
           coverUrl: local.coverUrl,
           tagIds: local.tagIds.length > 0 ? local.tagIds : tagIds,
           editorStateJson: local.editorStateJson,
+          isPublished,
         };
       }
       return {
@@ -54,6 +62,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
         coverUrl: post.headerImage,
         tagIds,
         editorStateJson: htmlToEditorStateJson(post.content),
+        isPublished,
       };
     },
   });

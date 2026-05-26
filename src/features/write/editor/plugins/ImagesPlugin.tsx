@@ -9,6 +9,7 @@ import {
 } from "../nodes/ImageNode";
 import { useImageUpload } from "../../hooks/useImageUpload";
 import { useToast } from "../../../../services/toast";
+import { writeArticleCopy } from "../../../../constants/copy";
 
 // Wires in-body images: the INSERT_IMAGE_COMMAND (inserts an ImageNode at the
 // selection) plus paste-image and drop-image on the editable region. The block
@@ -29,7 +30,13 @@ export function ImagesPlugin() {
         const url = await upload(file);
         editor.dispatchCommand(INSERT_IMAGE_COMMAND, { src: url, altText: "" });
       } catch (e) {
-        show("Image upload failed. Please try again.", "error");
+        const msg = (e as Error)?.message;
+        show(
+          msg === writeArticleCopy.toasts.imageTooLarge
+            ? msg
+            : "Image upload failed. Please try again.",
+          "error",
+        );
         console.error("[image upload]", e);
       }
     };

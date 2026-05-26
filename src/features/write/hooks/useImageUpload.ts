@@ -1,7 +1,9 @@
 import { useCallback } from "react";
 import { useActors } from "../../../contexts/useActors";
+import { writeArticleCopy } from "../../../constants/copy";
 
 const MAX_CHUNK_SIZE = 1024 * 1024 * 2; // 2 MB — matches production storageService
+const MAX_FILE_SIZE = 1024 * 1024 * 10; // 10 MB cap per image (PR #9 review m1)
 
 // Uploads an image to the Storage canister in 2 MB chunks and returns its
 // public URL. Mirrors the production storageService chunking exactly: offset
@@ -15,6 +17,9 @@ export function useImageUpload() {
   return useCallback(
     async (file: File): Promise<string> => {
       if (file.size === 0) throw new Error("Empty file");
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error(writeArticleCopy.toasts.imageTooLarge);
+      }
 
       const idResult = await getNewContentId();
       if (idResult.__kind__ === "err") throw new Error(idResult.err);

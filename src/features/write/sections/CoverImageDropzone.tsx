@@ -25,7 +25,13 @@ export function CoverImageDropzone({
     try {
       onChange(await upload(file));
     } catch (e) {
-      show("Cover upload failed. Please try again.", "error");
+      const msg = (e as Error)?.message;
+      show(
+        msg === writeArticleCopy.toasts.imageTooLarge
+          ? msg
+          : "Cover upload failed. Please try again.",
+        "error",
+      );
       console.error("[cover upload]", e);
     } finally {
       setUploading(false);

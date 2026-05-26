@@ -1,20 +1,28 @@
 import { writeArticleCopy } from "../../../constants/copy";
 import { IconUndo } from "../../../components/ui/icons/IconUndo";
 import { IconRedo } from "../../../components/ui/icons/IconRedo";
+import { IconPreview } from "../../../components/ui/icons/IconPreview";
 
 // Bottom action bar (Figma NUR / Action bar, "Writing"): fixed, centered,
-// purple-gradient pill. Undo · Redo │ Save as draft · Continue. Preview is
-// deferred and the AI "SEO" button is the deferred AI feature (decision #36).
+// purple-gradient pill. Undo · Redo │ Preview · Save · Continue. The AI "SEO"
+// button is the deferred AI feature (decision #36); everything else from
+// the Figma action bar is wired.
 export function ActionBar({
   onUndo,
   onRedo,
-  onSaveDraft,
+  onPreview,
+  onSave,
+  saveLabel,
   onContinue,
   saving,
 }: {
   onUndo: () => void;
   onRedo: () => void;
-  onSaveDraft: () => void;
+  onPreview: () => void;
+  // Secondary save: "Save as draft" for new/draft articles, "Save changes" for
+  // an already-published one (preserves published state — decision #38).
+  onSave: () => void;
+  saveLabel: string;
   onContinue: () => void;
   saving: boolean;
 }) {
@@ -41,11 +49,19 @@ export function ActionBar({
       </div>
       <button
         type="button"
-        onClick={onSaveDraft}
+        onClick={onPreview}
+        className="flex h-[calc(48*var(--fpx))] items-center justify-center gap-[calc(8*var(--fpx))] rounded-[calc(8*var(--fpx))] pl-[calc(20*var(--fpx))] pr-[calc(24*var(--fpx))] text-body font-medium text-white transition-colors hover:bg-white/10"
+      >
+        <IconPreview className="size-[calc(24*var(--fpx))]" />
+        {c.preview}
+      </button>
+      <button
+        type="button"
+        onClick={onSave}
         disabled={saving}
         className="flex h-[calc(48*var(--fpx))] items-center justify-center rounded-[calc(8*var(--fpx))] border border-white px-[calc(24*var(--fpx))] text-body font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {c.saveDraft}
+        {saveLabel}
       </button>
       <button
         type="button"

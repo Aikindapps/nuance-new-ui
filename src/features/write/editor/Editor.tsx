@@ -5,10 +5,12 @@ import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
 import { EditorRefPlugin } from "@lexical/react/LexicalEditorRefPlugin";
 import type { RefObject } from "react";
 import type { LexicalEditor } from "lexical";
 import { createEditorConfig } from "./editorConfig";
+import { EditorErrorBoundary } from "./EditorErrorBoundary";
 import { FloatingToolbarPlugin } from "./plugins/FloatingToolbarPlugin";
 import { BlockMenuPlugin } from "./plugins/BlockMenuPlugin";
 import { LinkPopoverPlugin } from "./plugins/LinkPopoverPlugin";
@@ -33,14 +35,17 @@ export function Editor({
   editorRef?: RefObject<LexicalEditor | null | undefined>;
 }) {
   const initialConfig = createEditorConfig((error) => {
-    // Don't swallow editor errors — surface them.
+    // Always log. Re-throw only in dev so the EditorErrorBoundary surfaces it
+    // loudly while developing; in prod swallow it so a recoverable editor
+    // glitch can't take down the whole /write route (PR #9 review M2).
     console.error("[Lexical]", error);
-    throw error;
+    if (import.meta.env.DEV) throw error;
   }, initialStateJson);
 
   return (
-    <LexicalComposer initialConfig={initialConfig}>
-      <div className="relative">
+    <EditorErrorBoundary>
+      <LexicalComposer initialConfig={initialConfig}>
+        <div className="relative">
         <RichTextPlugin
           contentEditable={
             <ContentEditable
@@ -58,13 +63,15 @@ export function Editor({
         <HistoryPlugin />
         <ListPlugin />
         <LinkPlugin />
+        <HorizontalRulePlugin />
         <FloatingToolbarPlugin />
         <BlockMenuPlugin />
         <LinkPopoverPlugin />
         <ImagesPlugin />
         {autosave && <AutosavePlugin {...autosave} />}
         {editorRef && <EditorRefPlugin editorRef={editorRef} />}
-      </div>
-    </LexicalComposer>
+        </div>
+      </LexicalComposer>
+    </EditorErrorBoundary>
   );
 }

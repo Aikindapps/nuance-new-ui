@@ -16,11 +16,14 @@ export function LeaveGuardDialog({
   onLeave,
   onCancel,
   saving,
+  saveLabel,
 }: {
   onSaveDraft: () => void;
   onLeave: () => void;
   onCancel: () => void;
   saving: boolean;
+  // "Save as draft" (new/draft) or "Save changes" (editing a published post).
+  saveLabel: string;
 }) {
   const c = writeArticleCopy.leaveGuard;
   return (
@@ -35,7 +38,7 @@ export function LeaveGuardDialog({
             {c.leave}
           </Button>
           <Button sx={primaryButtonSx} onClick={onSaveDraft} disabled={saving}>
-            {c.saveDraft}
+            {saveLabel}
           </Button>
         </>
       }

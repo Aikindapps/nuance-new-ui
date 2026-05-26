@@ -1,6 +1,8 @@
-import { $getRoot, type LexicalEditor } from "lexical";
+import { $getRoot, $nodesOfType, type LexicalEditor } from "lexical";
 import { $generateHtmlFromNodes } from "@lexical/html";
+import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import { hardenLinks } from "../../../lib/htmlSanitize";
+import { ImageNode } from "../editor/nodes/ImageNode";
 
 // Serialize the editor body to sanitized HTML for the canister `content` field
 // (decision #36). $generateHtmlFromNodes runs inside a read; hardenLinks adds
@@ -15,11 +17,16 @@ export function serializeEditorHtml(editor: LexicalEditor): string {
   return hardenLinks(html);
 }
 
-// True when the body has no text and no block content (just an empty
-// paragraph) — the canister rejects an empty body.
+// True when the body has neither text nor media — the canister rejects an
+// empty body. A photo-only or divider-only article counts as content (PR #9
+// review M3): image and horizontal-rule nodes carry no text, so a plain
+// text-empty check would wrongly block them from being saved or published.
 export function isEditorEmpty(editor: LexicalEditor): boolean {
   return editor.getEditorState().read(() => {
-    const root = $getRoot();
-    return root.getTextContent().trim() === "" && root.getChildrenSize() <= 1;
+    if ($getRoot().getTextContent().trim() !== "") return false;
+    return (
+      $nodesOfType(ImageNode).length === 0 &&
+      $nodesOfType(HorizontalRuleNode).length === 0
+    );
   });
 }

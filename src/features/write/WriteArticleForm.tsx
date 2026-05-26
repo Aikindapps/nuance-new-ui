@@ -23,6 +23,7 @@ import {
   LEAVE_GUARD_TITLE_ID,
   LeaveGuardDialog,
 } from "./sections/LeaveGuardDialog";
+import { PreviewOverlay } from "./sections/PreviewOverlay";
 import { Editor } from "./editor/Editor";
 import { useSavePost } from "./hooks/useSavePost";
 import type { EditArticleInitial } from "./hooks/useEditArticle";
@@ -60,6 +61,22 @@ export function WriteArticleForm({
   const [postId, setPostId] = useState(initial?.postId ?? "");
   // Editing starts clean (matches canister); a restored new draft starts dirty.
   const [dirty, setDirty] = useState(initial ? false : restored != null);
+  // Editing a live article: save in place ("Save changes", isDraft:false) so it
+  // stays published instead of being silently unpublished (decision #38). New
+  // articles and drafts keep the "Save as draft" path.
+  const isPublished = initial?.isPublished ?? false;
+
+  // Preview snapshot — populated when the writer clicks Preview; reading the
+  // editor at click time keeps the overlay decoupled from the editor's live
+  // state, so opening preview doesn't re-render the editor and closing it
+  // returns the writer to the same place untouched.
+  const [previewSnapshot, setPreviewSnapshot] = useState<{
+    title: string;
+    subtitle: string;
+    coverUrl: string;
+    bodyHtml: string;
+    modifiedMs: string;
+  } | null>(null);
 
   const editorRef = useRef<LexicalEditor | null | undefined>(null);
   const markDirty = useCallback(() => setDirty(true), []);
@@ -73,6 +90,22 @@ export function WriteArticleForm({
     () => editorRef.current?.dispatchCommand(REDO_COMMAND, undefined),
     [],
   );
+
+  const handlePreview = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    // Snapshot the editor body as HTML at click time; PreviewOverlay renders
+    // it through the same ArticleBody / .article-prose path as the published
+    // read view. "Modified now" reflects that this is the current unsaved
+    // state, not the canister copy.
+    setPreviewSnapshot({
+      title,
+      subtitle,
+      coverUrl,
+      bodyHtml: serializeEditorHtml(editor),
+      modifiedMs: String(Date.now()),
+    });
+  }, [title, subtitle, coverUrl]);
 
   // The single canister write. Validates body + tags (canister-enforced),
   // builds the personal-post model, captures the returned postId, and clears
@@ -133,7 +166,11 @@ export function WriteArticleForm({
             const post = await doSave(mode === "publish" ? false : true, picked);
             if (post) {
               if (mode === "publish") {
-                show(C.toasts.published, "success");
+                // Re-publishing an already-live article = saving changes.
+                show(
+                  isPublished ? C.toasts.changesSaved : C.toasts.published,
+                  "success",
+                );
                 navigate(post.url || "/");
               } else {
                 show(C.toasts.savedDraft, "success");
@@ -145,19 +182,23 @@ export function WriteArticleForm({
         { ariaLabelledBy: PUBLISH_MODAL_TITLE_ID, dismissable: true },
       );
     },
-    [modal, tagIds, doSave, show, navigate],
+    [modal, tagIds, doSave, show, navigate, isPublished],
   );
 
-  const handleSaveDraft = useCallback(async () => {
-    // Drafts also need topics (canister). Route through the modal to pick them
-    // the first time; once chosen, "Save as draft" saves directly.
-    if (tagIds.length >= 1) {
-      const post = await doSave(true, tagIds);
-      if (post) show(C.toasts.savedDraft, "success");
-    } else {
-      openPublish("draft");
+  const handleSave = useCallback(async () => {
+    // Editing a published article saves in place and stays live (decision #38);
+    // a new/draft article saves as a draft. Both need ≥1 topic (canister), so
+    // route through the modal to pick topics the first time; once chosen, this
+    // saves directly.
+    if (tagIds.length < 1) {
+      openPublish(isPublished ? "publish" : "draft");
+      return;
     }
-  }, [tagIds, doSave, show, openPublish]);
+    const post = await doSave(isPublished ? false : true, tagIds);
+    if (post) {
+      show(isPublished ? C.toasts.changesSaved : C.toasts.savedDraft, "success");
+    }
+  }, [isPublished, tagIds, doSave, show, openPublish]);
 
   const handleBack = useCallback(() => {
     if (!dirty) {
@@ -176,16 +217,20 @@ export function WriteArticleForm({
         onSaveDraft={async () => {
           if (tagIds.length < 1) {
             modal.close();
-            openPublish("draft");
+            openPublish(isPublished ? "publish" : "draft");
             return;
           }
-          const post = await doSave(true, tagIds);
+          const post = await doSave(isPublished ? false : true, tagIds);
           if (post) {
-            show(C.toasts.savedDraft, "success");
+            show(
+              isPublished ? C.toasts.changesSaved : C.toasts.savedDraft,
+              "success",
+            );
             modal.close();
             navigate(MY_ARTICLES);
           }
         }}
+        saveLabel={isPublished ? C.actionBar.saveChanges : C.actionBar.saveDraft}
       />,
       { ariaLabelledBy: LEAVE_GUARD_TITLE_ID, dismissable: true },
     );
@@ -199,6 +244,7 @@ export function WriteArticleForm({
     show,
     openPublish,
     autosaveId,
+    isPublished,
   ]);
 
   const statusText = dirty ? C.unsavedChanges : postId ? C.saved : C.notSavedYet;
@@ -215,7 +261,7 @@ export function WriteArticleForm({
         >
           <IconBack className="size-[calc(18*var(--fpx))]" />
         </button>
-        <StatusTag label={C.statusDraft} />
+        <StatusTag label={isPublished ? C.statusPublished : C.statusDraft} />
         <span className="text-body text-ink-60">{statusText}</span>
       </div>
 
@@ -273,10 +319,20 @@ export function WriteArticleForm({
       <ActionBar
         onUndo={handleUndo}
         onRedo={handleRedo}
-        onSaveDraft={handleSaveDraft}
+        onPreview={handlePreview}
+        onSave={handleSave}
+        saveLabel={isPublished ? C.actionBar.saveChanges : C.actionBar.saveDraft}
         onContinue={() => openPublish("publish")}
         saving={saveMutation.isPending}
       />
+
+      {previewSnapshot && (
+        <PreviewOverlay
+          {...previewSnapshot}
+          isPublished={isPublished}
+          onClose={() => setPreviewSnapshot(null)}
+        />
+      )}
     </article>
   );
 }

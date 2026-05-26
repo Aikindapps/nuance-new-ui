@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $getRoot } from "lexical";
 import { saveDraft } from "../../../../services/autosave/store";
+import { isEditorEmpty } from "../../lib/htmlSerialize";
 
 const DEBOUNCE_MS = 2000;
 
@@ -35,13 +35,16 @@ export function AutosavePlugin({
 
     const flush = () => {
       const editorState = editor.getEditorState();
-      const isEmpty = editorState.read(() => {
-        const root = $getRoot();
-        return (
-          root.getTextContent().trim() === "" && root.getChildrenSize() <= 1
-        );
-      });
-      if (isEmpty && !title.trim() && !subtitle.trim() && !coverUrl) return;
+      // Shared empty-check (PR #9 review M3) so an image-only body autosaves
+      // too. Still skip an entirely-empty draft (no body, no fields) so opening
+      // /write doesn't create a junk "new" slot.
+      if (
+        isEditorEmpty(editor) &&
+        !title.trim() &&
+        !subtitle.trim() &&
+        !coverUrl
+      )
+        return;
       saveDraft(id, {
         title,
         subtitle,

@@ -128,13 +128,16 @@ export const writeArticleCopy = {
   coverPrompt: "Drop highlighted image here or ",
   coverChooseFile: "choose file",
   statusDraft: "Draft",
+  statusPublished: "Published",
   notSavedYet: "Not saved yet",
   saved: "Saved",
   unsavedChanges: "Unsaved changes",
   actionBar: {
     undo: "Undo",
     redo: "Redo",
+    preview: "Preview",
     saveDraft: "Save as draft",
+    saveChanges: "Save changes",
     continue: "Continue",
   },
   publish: {
@@ -157,11 +160,24 @@ export const writeArticleCopy = {
   },
   toasts: {
     savedDraft: "Saved as draft.",
+    changesSaved: "Changes saved.",
     published: "Published!",
     emptyBody: "Add some content before saving.",
     tooLong: "This article is too long to save.",
     needTopic: "Add at least one topic.",
     saveFailed: "Couldn't save. Please try again.",
+    imageTooLarge: "Image is too large (max 10 MB).",
+  },
+  editorError: {
+    title: "The editor hit a problem",
+    body: "Your last autosave is safe. Reload the editor to keep writing.",
+    reload: "Reload editor",
+  },
+  preview: {
+    open: "Preview",
+    close: "Close preview",
+    lastModified: "Last modified",
+    noContent: "Nothing to preview yet.",
   },
 };
 
