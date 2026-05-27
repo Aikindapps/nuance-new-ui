@@ -11,7 +11,6 @@ import { ToastProvider } from "./services/toast";
 import { OnboardingGate } from "./features/onboarding/OnboardingGate";
 import { muiTheme } from "./theme";
 import { Home } from "./routes/Home";
-import { WriteStub } from "./routes/WriteStub";
 import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingShell";
 
 // Article route ships as its own chunk — DOMPurify + Crimson Text + every
@@ -24,11 +23,40 @@ import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingS
 // eslint-disable-next-line react-refresh/only-export-components
 const ReadArticle = lazy(() => import("./routes/ReadArticle"));
 
+// Write Article (PR #9) — lazy so all @lexical/* stays out of the home bundle.
+// eslint-disable-next-line react-refresh/only-export-components
+const WriteArticle = lazy(() => import("./routes/WriteArticle"));
+// eslint-disable-next-line react-refresh/only-export-components
+const MyArticles = lazy(() => import("./routes/MyArticles"));
+
 const router = createBrowserRouter([
   { path: "/", element: <Home tab="popular" /> },
   { path: "/following", element: <Home tab="following" /> },
   { path: "/new", element: <Home tab="new" /> },
-  { path: "/write", element: <WriteStub /> },
+  {
+    path: "/write",
+    element: (
+      <Suspense fallback={<ArticleLoadingShell />}>
+        <WriteArticle />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/write/:postIdAndBucket",
+    element: (
+      <Suspense fallback={<ArticleLoadingShell />}>
+        <WriteArticle />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/my-articles",
+    element: (
+      <Suspense fallback={<ArticleLoadingShell />}>
+        <MyArticles />
+      </Suspense>
+    ),
+  },
   // Canonical article URL — decision #32. The 3-segment shape never
   // collides with the single-segment routes above.
   {

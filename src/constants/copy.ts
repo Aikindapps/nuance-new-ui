@@ -88,6 +88,7 @@ export const headerCopy = {
   notificationsAriaLabel: "Notifications",
   openMenuAriaLabel: "Open menu",
   userMenuAriaLabel: "Account menu",
+  myArticles: "My articles",
   logout: "Logout",
 };
 
@@ -113,15 +114,102 @@ export const writeCtaBannerCopy = {
   primaryAriaLabel: "Create a new article",
 };
 
-export const writeStubCopy = {
+export const writeArticleCopy = {
   metadata: {
-    title: "Nuance — Article editor (coming soon)",
+    title: "Nuance — Write an article",
     description:
-      "The Nuance article editor is on the roadmap. Check back soon or follow @nuance for updates.",
+      "Write and publish your article on Nuance, the on-chain blogging platform.",
   },
-  heading: "Article editor coming soon",
-  body: "The new Nuance writing experience is on the way. For now, keep reading — and we'll let you know when authoring is ready.",
-  backLabel: "Back to Nuance",
+  titlePlaceholder: "Title",
+  subtitlePlaceholder: "Add a subtitle",
+  bodyPlaceholder: "Start your story…",
+  loadingArticle: "Loading article…",
+  loadError: "This article could not be loaded for editing.",
+  coverPrompt: "Drop highlighted image here or ",
+  coverChooseFile: "choose file",
+  statusDraft: "Draft",
+  statusPublished: "Published",
+  notSavedYet: "Not saved yet",
+  saved: "Saved",
+  unsavedChanges: "Unsaved changes",
+  actionBar: {
+    undo: "Undo",
+    redo: "Redo",
+    preview: "Preview",
+    saveDraft: "Save as draft",
+    saveChanges: "Save changes",
+    continue: "Continue",
+  },
+  publish: {
+    titlePublish: "Publish",
+    titleDraft: "Save as draft",
+    topicsLabel: "Topics",
+    topicsPlaceholder: "Search topics…",
+    topicsHint: "Choose 1–3 topics.",
+    publishButton: "Publish",
+    saveDraftButton: "Save as draft",
+    cancel: "Cancel",
+    closeAriaLabel: "Close",
+  },
+  leaveGuard: {
+    title: "Leave without saving?",
+    body: "You have unsaved changes. Save this as a draft before you leave?",
+    saveDraft: "Save as draft",
+    leave: "Leave without saving",
+    closeAriaLabel: "Close",
+  },
+  toasts: {
+    savedDraft: "Saved as draft.",
+    changesSaved: "Changes saved.",
+    published: "Published!",
+    emptyBody: "Add some content before saving.",
+    tooLong: "This article is too long to save.",
+    needTopic: "Add at least one topic.",
+    saveFailed: "Couldn't save. Please try again.",
+    imageTooLarge: "Image is too large (max 10 MB).",
+  },
+  editorError: {
+    title: "The editor hit a problem",
+    body: "Your last autosave is safe. Reload the editor to keep writing.",
+    reload: "Reload editor",
+  },
+  preview: {
+    open: "Preview",
+    close: "Close preview",
+    lastModified: "Last modified",
+    noContent: "Nothing to preview yet.",
+  },
+};
+
+export const myArticlesCopy = {
+  metadata: {
+    title: "Nuance — My articles",
+    description: "Manage your drafts and published articles on Nuance.",
+  },
+  heading: "My articles",
+  newArticle: "Write a new article",
+  tabs: { all: "All", published: "Published", drafts: "Drafts" },
+  empty: {
+    all: "You haven't written anything yet.",
+    published: "No published articles yet.",
+    drafts: "No drafts yet.",
+  },
+  loading: "Loading…",
+  loadError: "Couldn't load your articles.",
+  draftPill: "Draft",
+  edit: "Edit",
+  view: "View",
+  delete: "Delete",
+  deleting: "Deleting…",
+  deleteConfirm: {
+    title: "Delete article?",
+    body: "This permanently deletes the article. This can't be undone.",
+    confirm: "Delete",
+    cancel: "Cancel",
+    closeAriaLabel: "Close",
+  },
+  deleted: "Article deleted.",
+  deleteFailed: "Couldn't delete. Please try again.",
 };
 
 export const loginModalCopy = {

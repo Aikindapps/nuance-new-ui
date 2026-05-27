@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import DOMPurify from "dompurify";
+import { hardenLinks } from "../../../lib/htmlSanitize";
 
 // Article body renderer (PR #7 Phase 4, decision #31).
 //
@@ -10,19 +11,8 @@ import DOMPurify from "dompurify";
 // while keeping the safe content. Element styling lives in `.article-prose`
 // (src/index.css) since the canister HTML carries no classes.
 
-// Harden external links: any anchor with `target` gets `rel="noopener
-// noreferrer"` so it can't leak window.opener. Done as a post-sanitize
-// DOM walk rather than DOMPurify.addHook (which is module-global and
-// would affect every future sanitize caller). PR #7 review m6.
-function hardenLinks(html: string): string {
-  if (!html) return html;
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  doc.querySelectorAll("a[target]").forEach((a) => {
-    a.setAttribute("rel", "noopener noreferrer");
-  });
-  return doc.body.innerHTML;
-}
-
+// `hardenLinks` (external-link rel hardening, PR #7 review m6) now lives in
+// src/lib/htmlSanitize.ts so the PR #9 editor's save path reuses it.
 export function ArticleBody({ html }: { html: string }) {
   const clean = useMemo(() => hardenLinks(DOMPurify.sanitize(html)), [html]);
 

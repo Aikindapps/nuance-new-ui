@@ -2,15 +2,19 @@ import { createContext, useContext } from "react";
 import type {
   GetPostsByFollowers,
   PostKeyProperties,
+  PostSaveModel,
   PostTagModel__1,
   Result_1 as FollowTagsResult,
+  Result_4 as SavePostResult,
   Result_5 as PostKeyPropertiesResult,
   TagModel,
 } from "../candid/PostCore/PostCore";
 import type {
   PostBucketType__1,
   Result as CommentResult,
+  Result_1 as UpdateDraftResult,
   Result_2 as ReportResult,
+  Result_4 as DeletePostResult,
   Result_6 as GetPostResult,
   SaveCommentModel,
 } from "../candid/PostBucket/PostBucket";
@@ -19,6 +23,7 @@ import type {
   Result as UserResult,
   UserListItem,
 } from "../candid/User/User";
+import type { Content, Result as StorageResult } from "../candid/Storage/Storage";
 
 // ActorsContext + hook + types live in this file so ActorsContext.tsx is a
 // pure component file. Satisfies `react-refresh/only-export-components`.
@@ -153,6 +158,44 @@ export type ActorsValue = {
     bucketCanisterId: string,
     commentId: string,
   ) => Promise<ReportResult>;
+  // --- Write Article (PR #9, decision #36) — first post-authoring writes +
+  // the Storage canister's first use in the project. All mutations run on the
+  // authed agent (msg.caller = the writer); Result variants returned raw so
+  // the hook layer can surface canister `err` strings inline. ---
+  // Create/edit/draft/publish in one call: empty postId = new, non-empty =
+  // edit; isDraft toggles draft vs publish. content is HTML (<=300k). PostCore
+  // validates, routes to a bucket, and returns the saved Post.
+  savePost: (model: PostSaveModel) => Promise<SavePostResult>;
+  // Publish (false) / unpublish (true) an existing post. PostBucket method, so
+  // the bucketCanisterId (from the saved Post) is required.
+  updatePostDraft: (
+    bucketCanisterId: string,
+    postId: string,
+    isDraft: boolean,
+  ) => Promise<UpdateDraftResult>;
+  // Delete a post (PostBucket.delete_). Authors cannot delete premium posts —
+  // the canister returns an err in that case.
+  deletePost: (
+    bucketCanisterId: string,
+    postId: string,
+  ) => Promise<DeletePostResult>;
+  // The authed caller's posts for the My Articles list. Half-open (from, to)
+  // range like every PostCore list method. PostKeyProperties only — bodies
+  // hydrate separately via getPostsByPostIds.
+  getMyAllPosts: (from: number, to: number) => Promise<Array<PostKeyProperties>>;
+  getMyDraftPosts: (
+    from: number,
+    to: number,
+  ) => Promise<Array<PostKeyProperties>>;
+  getMyPublishedPosts: (
+    from: number,
+    to: number,
+  ) => Promise<Array<PostKeyProperties>>;
+  // Storage canister chunked upload (cover + in-body images). getNewContentId
+  // allocates an upload id; uploadBlob sends one chunk and returns the
+  // data-canister id (used to build the public asset URL).
+  getNewContentId: () => Promise<StorageResult>;
+  uploadBlob: (content: Content) => Promise<StorageResult>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);

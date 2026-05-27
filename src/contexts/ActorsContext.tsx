@@ -3,6 +3,7 @@ import type { HttpAgent } from "@icp-sdk/core/agent";
 import {
   createPostBucketActor,
   createPostCoreActor,
+  createStorageActor,
   createUserActor,
 } from "../lib/actors";
 import { createAgent } from "../lib/agent";
@@ -34,6 +35,7 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
     const agentPromise: Promise<HttpAgent> = createAgent(identity);
     const postCorePromise = agentPromise.then(createPostCoreActor);
     const userPromise = agentPromise.then(createUserActor);
+    const storagePromise = agentPromise.then(createStorageActor);
     const bucketPromises = new Map<string, ReturnType<typeof createPostBucketActor>>();
 
     const getBucket = async (bucketCanisterId: string) => {
@@ -149,6 +151,41 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       reportComment: async (bucketCanisterId, commentId) => {
         const actor = await getBucket(bucketCanisterId);
         return actor.reportComment(commentId);
+      },
+      // Write Article (PR #9, decision #36). save/getMy*Posts run on PostCore
+      // (authed agent → msg.caller = the writer); updatePostDraft/delete_ on
+      // the post's bucket; getNewContentId/uploadBlob on the Storage canister.
+      savePost: async (model) => {
+        const actor = await postCorePromise;
+        return actor.save(model);
+      },
+      updatePostDraft: async (bucketCanisterId, postId, isDraft) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.updatePostDraft(postId, isDraft);
+      },
+      deletePost: async (bucketCanisterId, postId) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.delete_(postId);
+      },
+      getMyAllPosts: async (from, to) => {
+        const actor = await postCorePromise;
+        return actor.getMyAllPosts(from, to);
+      },
+      getMyDraftPosts: async (from, to) => {
+        const actor = await postCorePromise;
+        return actor.getMyDraftPosts(from, to);
+      },
+      getMyPublishedPosts: async (from, to) => {
+        const actor = await postCorePromise;
+        return actor.getMyPublishedPosts(from, to);
+      },
+      getNewContentId: async () => {
+        const actor = await storagePromise;
+        return actor.getNewContentId();
+      },
+      uploadBlob: async (content) => {
+        const actor = await storagePromise;
+        return actor.uploadBlob(content);
       },
     };
   }, [identity]);

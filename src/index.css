@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Tailwind v4 removed the default `cursor: pointer` on <button>. Restore it
+   app-wide so every interactive button shows the pointer cursor (the cover
+   "choose file", editor toolbar/menu, and all prior screens' buttons). In
+   @layer base so per-element utilities (e.g. cursor-not-allowed on a disabled
+   menu item) still override it. */
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 /* Canonical token definitions live in this @theme block.
    The MUI theme in src/theme/index.ts references the same CSS variables
    (`var(--color-...)`, etc.) so both layers consume one source. See
@@ -68,6 +79,7 @@
   --color-brand-purple-light: #935bfb;     /* gradient end-stop */
   --color-brand-purple-5: rgba(84, 5, 212, 0.05); /* nur/purple/5% — tinted bg (WriteCtaBanner) */
   --color-brand-purple-10: rgba(84, 5, 212, 0.1); /* nur/purple/10% — tag pill bg (logged-in Topics rail) */
+  --color-brand-purple-fluor: #914eff;     /* nur/purple-fluor/100 — editor block-menu active item + active toolbar btn (decision #36) */
   --color-ink: #202123;                    /* nur/black/100% (text) */
   --color-ink-80: rgba(32, 33, 35, 0.8);   /* nur/black/80% (text) */
   --color-ink-60: rgba(32, 33, 35, 0.6);   /* nur/black/60% (text) */
@@ -296,13 +308,18 @@ body {
   color: var(--color-ink-60);
   text-align: center;
 }
+/* Divider (Figma 1:37898) — three brand-purple rounded pills (8 · 70 · 8 with
+   4px gaps, 4 tall, rounded full-pill). Drawn as an inline SVG background so
+   the published `<hr>` from the canister HTML renders the same shape as the
+   editor's HorizontalRuleNode without needing a custom Lexical node. */
 .article-prose hr {
   border: 0;
-  width: calc(70 * var(--fpx));
+  width: calc(94 * var(--fpx));
   height: calc(4 * var(--fpx));
   margin: calc(48 * var(--fpx)) auto;
-  border-radius: calc(2 * var(--fpx));
-  background: var(--color-ink);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 94 4' preserveAspectRatio='none'><rect width='8' height='4' rx='2' fill='%235405d4'/><rect x='12' width='70' height='4' rx='2' fill='%235405d4'/><rect x='86' width='8' height='4' rx='2' fill='%235405d4'/></svg>");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 .article-prose code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;

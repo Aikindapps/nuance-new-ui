@@ -38,6 +38,8 @@ function formatPublishedDate(publishedDate: string, created: string): string {
 export async function hydrateArticles(
   actors: Pick<ActorsValue, "getPostsByPostIds" | "getUsersByHandles">,
   keyProps: PostKeyProperties[],
+  // My Articles needs draft bodies; the public feeds pass false (default).
+  includeDraft = false,
 ): Promise<Article[]> {
   if (keyProps.length === 0) return [];
 
@@ -53,7 +55,7 @@ export async function hydrateArticles(
   // React Query handles the truly-broken case.
   const bucketResults = await Promise.all(
     Array.from(byBucket.entries()).map(([bucketId, ids]) =>
-      actors.getPostsByPostIds(bucketId, ids, false).catch((e) => {
+      actors.getPostsByPostIds(bucketId, ids, includeDraft).catch((e) => {
         console.warn(`[hydrateArticles] bucket ${bucketId} failed:`, e);
         return [];
       }),
