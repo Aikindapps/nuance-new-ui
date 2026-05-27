@@ -1310,3 +1310,33 @@ The `scripts/probe-comments.ts` diagnostic is kept under `scripts/` (outside `sr
 
 **How to apply:**
 - Keep the topic picker gating both draft and publish. If topic-free drafts are wanted later, that's backend task C, not a frontend tweak.
+
+---
+
+## #38 — Editing a published article saves in place ("Save changes")
+
+**Date:** 2026-05-27
+
+**Status:** Active.
+
+**Decision:** When a user edits an article that is already published, the editor saves the changes **in place** — the article stays published, and the primary action is labeled "Save changes" (not "Publish"). The old Nuance frontend's flow required unpublishing first, editing as a draft, then republishing; the rebuild does not. Premium articles are out of PR #9 scope and are not covered by this decision.
+
+**Inputs:**
+- The legacy frontend's unpublish-first workflow was a UX choice, not a canister constraint. Verified against the vendor monorepo: `PostBucket.save` (`~/Projects/aikindapps-Nuance/src/PostBucket/main.mo`, ~line 1389+) accepts an in-place update of a regular published post. The only canister-side editability lock is `ArticleNotEditable`, which fires for **premium** published posts — premium is out of PR #9 scope.
+- PR #9's `useEditArticle` already carries an `isPublished` flag through the editor; the only remaining question was the policy + label, not the wiring.
+- Mr Nick wants the rebuild's authoring UX to feel modern (Substack / Medium semantics), not modal-heavy.
+
+**Options considered:**
+- **A. "Save changes" preserves published.** Single button, label flips by status, no extra dialogs. **Chosen.** Recommended.
+- B. Warn-before-unpublish dialog on edit of a published article. Rejected — replicates the legacy friction without a canister-side reason.
+- C. "Save changes" + a separate explicit "Unpublish" action. Deferred — there's no Figma for an Unpublish affordance in PR #9, and the canister supports it via a future `setPostDraft` / equivalent if/when it's needed.
+
+**Trade-offs accepted:**
+- No "unpublish" path in this PR. If a user wants to take an article down, they currently can't from the editor — they would need to delete. Acceptable for PR #9 (Figma doesn't show Unpublish); revisit when Page 5 gets a follow-up pass or when My Articles grows article-level actions.
+- The status pill (Draft / Published) becomes the only signal of state during editing. Mitigated by flipping the primary button label in sync ("Save as draft" vs "Save changes").
+
+**How to apply:**
+- `useEditArticle` is the source of truth for `isPublished`. The save handler branches on it: `isDraft: !isPublished` on the canister payload.
+- Primary button label is derived from `isPublished` — never hard-coded. If a new editor surface is built (e.g. a different write screen), it must read the same flag, not duplicate the logic.
+- The leave-guard respects published state (a published edit with unsaved changes prompts on navigation, same as a draft).
+- If premium editing is ever wired in, this decision does **not** extend to it — the `ArticleNotEditable` canister error must be handled explicitly (likely a read-only state + explainer toast).
