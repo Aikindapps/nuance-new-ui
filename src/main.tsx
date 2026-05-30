@@ -28,6 +28,9 @@ const ReadArticle = lazy(() => import("./routes/ReadArticle"));
 const WriteArticle = lazy(() => import("./routes/WriteArticle"));
 // eslint-disable-next-line react-refresh/only-export-components
 const MyArticles = lazy(() => import("./routes/MyArticles"));
+// Notifications (PR #10) — lazy; the page only ever loads after a bell click.
+// eslint-disable-next-line react-refresh/only-export-components
+const NotificationsPage = lazy(() => import("./routes/NotificationsPage"));
 
 const router = createBrowserRouter([
   { path: "/", element: <Home tab="popular" /> },
@@ -54,6 +57,14 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<ArticleLoadingShell />}>
         <MyArticles />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/notifications",
+    element: (
+      <Suspense fallback={<ArticleLoadingShell />}>
+        <NotificationsPage />
       </Suspense>
     ),
   },

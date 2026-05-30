@@ -92,6 +92,26 @@ export const headerCopy = {
   logout: "Logout",
 };
 
+// Notifications (PR #10, Figma 1:51584). The foldout + /notifications route
+// share copy. The header line is depicted in the Figma; the empty state /
+// view-all / route copy are invented here (the Figma is a draft and omits
+// them).
+export const notificationsCopy = {
+  title: "Notifications",
+  viewAll: "View all",
+  emptyTitle: "No notifications yet",
+  emptyHint: "Follow some writers or topics and updates will show up here.",
+  loadMore: "Load more",
+  loadingError: "Couldn't load your notifications. Try refreshing.",
+  closeAriaLabel: "Close notifications",
+  // /notifications route — Figma is silent; copy is invented for the full page.
+  routeHeading: "Notifications",
+  routeMetaTitle: "Notifications — Nuance",
+  routeMetaDescription:
+    "Recent activity from writers, publications, and topics you follow on Nuance.",
+  loading: "Loading…",
+};
+
 export const homeLoggedInCopy = {
   // WelcomeBanner copy. "Welcome back" for registered users (profile fetch
   // returned a User record); "Welcome to Nuance" for unregistered principals

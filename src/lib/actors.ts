@@ -3,6 +3,7 @@ import { createActor as createPostCore } from "../candid/PostCore/PostCore";
 import { createActor as createPostBucket } from "../candid/PostBucket/PostBucket";
 import { createActor as createUser } from "../candid/User/User";
 import { createActor as createStorage } from "../candid/Storage/Storage";
+import { createActor as createNotifications } from "../candid/Notifications/Notifications";
 import canisterIds from "../config/canister_ids.json";
 
 // PR #4 Phase 4: pure factories. Caller (ActorsContext) owns caching and
@@ -24,4 +25,8 @@ export function createPostBucketActor(agent: HttpAgent, bucketCanisterId: string
 
 export function createStorageActor(agent: HttpAgent) {
   return createStorage(canisterIds.Storage.ic, { agent });
+}
+
+export function createNotificationsActor(agent: HttpAgent) {
+  return createNotifications(canisterIds.Notifications.ic, { agent });
 }

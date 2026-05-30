@@ -1,9 +1,12 @@
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { LogoNuance } from "./icons/LogoNuance";
 import { IconSearch } from "./icons/IconSearch";
 import { IconBell } from "./icons/IconBell";
 import { UserMenu } from "./UserMenu";
 import { headerCopy } from "../../constants/copy";
+import { NotificationsFoldout } from "../../features/notifications/NotificationsFoldout";
+import { useUnreadCount } from "../../features/notifications/hooks/useUnreadCount";
 
 // Figma 1:50116 — the logged-in Header is materially different from
 // HomeLoggedOut's purple-band Header: white background, ink-border/20
@@ -17,6 +20,10 @@ import { headerCopy } from "../../constants/copy";
 // icon button; the Start-writing button hides; bell + avatar stay visible.
 
 export function HeaderLoggedIn() {
+  const bellRef = useRef<HTMLButtonElement>(null);
+  const [foldoutOpen, setFoldoutOpen] = useState(false);
+  const unreadCount = useUnreadCount();
+
   return (
     <header className="flex h-16 w-full items-center border-b border-ink-border/20 bg-white px-4 md:h-20 md:px-8 lg:h-[calc(88*var(--fpx))] lg:px-12">
       <Link
@@ -46,17 +53,49 @@ export function HeaderLoggedIn() {
           {headerCopy.startWriting}
         </Link>
 
-        <button
-          type="button"
+        {/* Mobile (<md): bell is a Link → /notifications. No foldout — the
+            355px panel doesn't fit a phone viewport, and full-page navigation
+            is the natural pattern there. */}
+        <Link
+          to="/notifications"
           aria-label={headerCopy.notificationsAriaLabel}
-          className="relative flex size-10 items-center justify-center rounded-card text-brand-purple transition-colors hover:bg-brand-purple-5 lg:size-12"
+          className="relative flex size-10 items-center justify-center rounded-card text-brand-purple transition-colors hover:bg-brand-purple-5 md:hidden"
         >
-          <IconBell className="size-5 lg:size-6" />
-          <span
-            aria-hidden
-            className="absolute right-2 top-2 size-2 rounded-full bg-notification lg:right-[calc(10*var(--fpx))] lg:top-[calc(10*var(--fpx))]"
-          />
-        </button>
+          <IconBell className="size-5" />
+          {unreadCount > 0 && (
+            <span
+              aria-hidden
+              className="absolute right-2 top-2 size-2 rounded-full bg-notification"
+            />
+          )}
+        </Link>
+
+        {/* Desktop (md+): bell toggles the anchored foldout. */}
+        <div className="relative hidden md:block">
+          <button
+            ref={bellRef}
+            type="button"
+            aria-label={headerCopy.notificationsAriaLabel}
+            aria-expanded={foldoutOpen}
+            aria-haspopup="dialog"
+            onClick={() => setFoldoutOpen((o) => !o)}
+            className="relative flex size-10 items-center justify-center rounded-card text-brand-purple transition-colors hover:bg-brand-purple-5 lg:size-12"
+          >
+            <IconBell className="size-5 lg:size-6" />
+            {unreadCount > 0 && (
+              <span
+                aria-hidden
+                className="absolute right-2 top-2 size-2 rounded-full bg-notification lg:right-[calc(10*var(--fpx))] lg:top-[calc(10*var(--fpx))]"
+              />
+            )}
+          </button>
+          {foldoutOpen && (
+            <NotificationsFoldout
+              anchorRef={bellRef}
+              onClose={() => setFoldoutOpen(false)}
+            />
+          )}
+        </div>
 
         <UserMenu />
       </div>
