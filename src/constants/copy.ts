@@ -103,7 +103,6 @@ export const notificationsCopy = {
   emptyHint: "Follow some writers or topics and updates will show up here.",
   loadMore: "Load more",
   loadingError: "Couldn't load your notifications. Try refreshing.",
-  closeAriaLabel: "Close notifications",
   // /notifications route — Figma is silent; copy is invented for the full page.
   routeHeading: "Notifications",
   routeMetaTitle: "Notifications — Nuance",

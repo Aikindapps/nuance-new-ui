@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { useAuth } from "../contexts/useAuth";
@@ -9,6 +9,7 @@ import { NotificationItem } from "../features/notifications/NotificationItem";
 import { NotificationsEmpty } from "../features/notifications/NotificationsEmpty";
 import { useMarkRead } from "../features/notifications/hooks/useMarkRead";
 import { useNotificationsRoute } from "../features/notifications/hooks/useNotifications";
+import { useUnreadSnapshot } from "../features/notifications/hooks/useUnreadSnapshot";
 
 // /notifications — full-page surface for the bell. Figma silent on this view;
 // mobile bell click lands here (Phase 4) and a "View all" link from the
@@ -26,6 +27,18 @@ export function NotificationsPage() {
   const profile = useMyProfile();
   const query = useNotificationsRoute();
   const markRead = useMarkRead();
+
+  const allNotifications =
+    query.data?.pages.flatMap((p) => p.notifications) ?? [];
+  // Freeze the unread accent per id across pagination; the mark-read effect
+  // below clears `read` optimistically but the styling persists (PR #10 M2/A).
+  const unreadSnapshot = useUnreadSnapshot(allNotifications);
+  // Each page carries only its own principals; merge once per data change
+  // rather than on every render.
+  const userMap = useMemo(
+    () => mergeUserMaps(query.data?.pages ?? []),
+    [query.data?.pages],
+  );
 
   // Track which notification ids we've already marked so we don't bulk-mark
   // the same id more than once across pagination.
@@ -48,8 +61,6 @@ export function NotificationsPage() {
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
   const c = notificationsCopy;
-  const allNotifications = query.data?.pages.flatMap((p) => p.notifications) ?? [];
-  const userMap = mergeUserMaps(query.data?.pages ?? []);
   const myHandle = profile.data?.handle ?? null;
   const showEmpty = query.isSuccess && allNotifications.length === 0;
 
@@ -80,6 +91,7 @@ export function NotificationsPage() {
                   notification={n}
                   userMap={userMap}
                   myHandle={myHandle}
+                  unread={unreadSnapshot.has(n.id)}
                   variant="route"
                 />
               ))}

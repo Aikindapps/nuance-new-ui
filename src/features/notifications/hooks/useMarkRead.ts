@@ -38,6 +38,14 @@ export function useMarkRead() {
       if (!principalText || ids.length === 0) {
         return { snapshot: [] };
       }
+      // Cancel any in-flight refetch first. getUserNotifications is a
+      // non-certified `query`, and refetchOnWindowFocus commonly fires exactly
+      // as the foldout opens — without this, a fetch resolving after the
+      // optimistic flip would clobber it with stale read=false (rows flip back
+      // to unread, bell dot re-lights).
+      await queryClient.cancelQueries({
+        queryKey: ["notifications", principalText],
+      });
       const idSet = new Set(ids);
       // Touch every ["notifications", principalText, *] query — there can be
       // up to two (foldout + route).

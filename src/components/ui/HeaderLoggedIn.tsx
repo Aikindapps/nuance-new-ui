@@ -77,7 +77,7 @@ export function HeaderLoggedIn() {
             type="button"
             aria-label={headerCopy.notificationsAriaLabel}
             aria-expanded={foldoutOpen}
-            aria-haspopup="dialog"
+            aria-haspopup="true"
             onClick={() => setFoldoutOpen((o) => !o)}
             className="relative flex size-10 items-center justify-center rounded-card text-brand-purple transition-colors hover:bg-brand-purple-5 lg:size-12"
           >

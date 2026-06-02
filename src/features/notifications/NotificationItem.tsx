@@ -12,6 +12,10 @@ import { formatRelativeTime } from "./lib/relativeTime";
 //   unread → text white-100; right edge has a 4×fill vertical white-20 pill.
 //   read   → text white-60; no accent pill.
 //
+// `unread` is supplied by the parent (via useUnreadSnapshot), not derived from
+// notification.read: opening a surface optimistically flips read=true to clear
+// the bell dot, but the row's accent persists for the session (PR #10 M2/A).
+//
 // The pill is rendered as an absolutely-positioned element inside the row
 // (rather than positioned globally by index in the panel) so re-renders /
 // reorders don't desync the accent from the row it belongs to.
@@ -20,6 +24,7 @@ type Props = {
   notification: Notification;
   userMap: UserMap;
   myHandle: string | null;
+  unread: boolean;
   variant: "foldout" | "route";
 };
 
@@ -27,6 +32,7 @@ export function NotificationItem({
   notification,
   userMap,
   myHandle,
+  unread,
   variant,
 }: Props) {
   const isFoldout = variant === "foldout";
@@ -38,7 +44,6 @@ export function NotificationItem({
     />
   );
   const time = formatRelativeTime(notification.timestamp);
-  const unread = !notification.read;
 
   if (isFoldout) {
     return (
