@@ -33,3 +33,9 @@ dist-ssr
 
 # Claude Code per-machine settings (autoMemoryDirectory path is machine-specific)
 .claude/settings.json
+
+# dfx build/deploy artifacts (PR #11 UAT canister). NOT canister_ids.json —
+# that holds the public UAT canister id and is committed on purpose so deploys
+# from any clone target the same canister.
+.dfx/
+.env.dfx

@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:uat": "VITE_DEPLOY_TARGET=uat tsc -b && VITE_DEPLOY_TARGET=uat vite build",
+    "build:prod": "VITE_DEPLOY_TARGET=prod tsc -b && VITE_DEPLOY_TARGET=prod vite build",
+    "deploy:uat": "./scripts/deploy-uat.sh",
     "lint": "eslint .",
     "preview": "vite preview"
   },

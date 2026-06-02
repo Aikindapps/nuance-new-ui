@@ -1405,3 +1405,48 @@ The `scripts/probe-comments.ts` diagnostic is kept under `scripts/` (outside `sr
 - Adding a new notification type: extend `collectPrincipals` (#39), add a `NotificationBody` branch, and rely on the exhaustive fallback until then.
 - Do **not** add amounts to notification copy — that surface is Page 7. If settings UI is ever built, wire the two settings endpoints into `useActors` first.
 - Row unread styling must come from `useUnreadSnapshot`, never `notification.read` directly; `NotificationItem` takes `unread` as a prop.
+
+---
+
+## #41 — UAT mainnet asset canister (`nuance_uat`), operator-controlled, outside the SNS
+
+**Date:** 2026-06-02
+
+**Status:** Active. **Re-scopes the "deployment scope: local only" lock-in** — operator-controlled mainnet UAT is now in scope; the SNS-controlled prod canister (`nuance.xyz`) remains out of scope. (Decision #1 "frontend only" is unaffected and still holds.)
+
+**Decision:** Deploy a fresh, dfx-managed mainnet **asset** canister `nuance_uat` to validate the rebuild in a real boundary-node + certified-response + cross-origin-agent environment before the SNS-gated prod swap. The canister is controlled by Mr Nick's personal `nick-mainnet` identity (password-protected PEM) — **not** the Nuance DAO — so it needs no SNS proposal. Served at `https://<canister-id>.icp0.io/`, deployed via `npm run deploy:uat`.
+
+**Inputs:**
+- The rebuild had only ever run as `vite dev` against live mainnet backends. That never exercises the boundary node, certified asset responses, or the true cross-origin agent path (`<id>.icp0.io` → `icp-api.io`) that prod will use.
+- Backend canisters cannot be isolated without parallel Motoko canisters (out of scope, ~15× cycle cost). UAT therefore shares prod backends.
+- II 2.0 binds the principal to `derivationOrigin || frontend_origin`; the UAT origin is not in prod's `.well-known/ii-alternative-origins` whitelist.
+- dfx 0.30.2 (already installed, matches the vendor/SNS deploy mechanism) uses the cycles ledger directly — no wallet canister needed.
+
+**Options considered:**
+- A. Vercel/Netlify preview — rejected (doesn't exercise an asset canister or the IC boundary node).
+- B. Local replica only (`dfx start`) — rejected (no boundary node / cross-origin agent path).
+- C. Add the UAT origin to prod's `ii-alternative-origins` — rejected (requires an SNS proposal, defeats the "no-SNS" goal).
+- D. Parallel mainnet UAT backends — rejected (out of scope, ~15× cycles).
+- **E. Fresh mainnet asset canister, accept fresh principal + shared prod backends.** **Chosen.**
+
+**Trade-offs accepted (do not relitigate):**
+- **UAT writes mutate real production data** on nuance.xyz. UAT is "new UI on a separate URL against prod backends," not a sandbox.
+- **UAT login ≠ nuance.xyz login.** Same Google account → different principal per origin; OpenID does not unify principals across canisters.
+- **Single-controller lock-in risk.** A lost PEM = an ungovernable canister. Mitigated by adding a backup controller immediately after the first deploy.
+
+**Implementation notes:**
+- `AuthContext.tsx` switched from `import.meta.env.PROD` to `VITE_DEPLOY_TARGET` (`dev | uat | prod`). Only `prod` opts into `derivationOrigin`; `dev` and `uat` both stay `undefined` (fresh principal). The old toggle would have mis-fired for any `vite build` (UAT included) by deriving against prod, breaking auth on the UAT origin.
+- `dfx.json` omits the vendor's `well-known/` + `SEO/` source dirs — UAT deliberately does not host its own `ii-alternative-origins` (keeps the principal split explicit); SEO meta + JSON-LD come from the SPA shell (PR #7).
+- `public/.ic-assets.json5` sets `enable_aliasing: true` (SPA deep-link fallback — load-bearing for React Router), long-cache for hashed `assets/**`, `security_policy: "standard"`.
+- `public/robots.txt` disallows all indexing.
+- `scripts/deploy-uat.sh` guards the active identity and creates the canister with an **explicit `--with-cycles` allocation (default 1 TC)** rather than relying on dfx's undocumented default — chosen because the funding balance is modest (see below), not the assumed 10 TC.
+- `canister_ids.json` (repo root, dfx-generated) is committed; `.dfx/` and `.env.dfx` are gitignored. Distinct from `src/config/canister_ids.json` (runtime backend map).
+
+**Funding (deviation from the approved plan):** the plan assumed the one-per-lifetime ~10 TC developer faucet coupon. Mr Nick had no coupon, so cycles came from **converting ICP** (`dfx cycles convert --amount <ICP> --ic`) → **2.054 TC** in the `nick-mainnet` cycles-ledger account. Sufficient: an idle ~1.5 MB asset canister burns ~150–300 B cycles/month, so 1 TC runs for decades; the deploy script allocates 1 TC and keeps the rest as reserve.
+
+**Concrete deploy artifacts** (fill in after the first deploy):
+- Controller principal (`nick-mainnet`): `stmaa-4xjxj-5nqul-e3i2o-knf4c-4rbjz-233ky-3xdb3-d7pua-qr34f-6ae`
+- Canister ID: _(TBD on first deploy)_
+- URL: `https://<canister-id>.icp0.io/`
+- Module hash / starting cycle balance: _(TBD)_
+- Backup controller principal: _(TBD — add immediately after first deploy)_

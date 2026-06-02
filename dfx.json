@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "canisters": {
+    "nuance_uat": {
+      "type": "assets",
+      "source": ["dist/"],
+      "frontend": { "entrypoint": "dist/index.html" }
+    }
+  },
+  "output_env_file": ".env.dfx"
+}

@@ -43,23 +43,39 @@ const IDLE_OPTIONS: AuthClientCreateOptions["idleOptions"] = {
   disableIdle: true,
 };
 
-// Decision #27 — principal preservation across the prod handoff.
+// Decisions #27 + #41 — principal preservation is controlled by
+// derivationOrigin, which is bound specifically to the *prod* canister origin.
 //
 // All existing nuance.xyz user principals are derived against the production
-// asset canister URL. The .well-known/ii-alternative-origins file there
-// whitelists nuance.xyz + www.nuance.xyz, so any frontend served from those
-// domains gets the SAME principal each existing user already has → their
-// User canister profile, articles, follows, and NUA balance carry over with
-// zero migration.
+// asset canister URL. Its .well-known/ii-alternative-origins file whitelists
+// nuance.xyz + www.nuance.xyz, so a frontend served from those domains gets
+// the SAME principal each existing user already has → their User canister
+// profile, articles, follows, and NUA balance carry over with zero migration.
 //
-// Local dev (`localhost:5173`) is intentionally NOT in the whitelist — so
-// `import.meta.env.PROD` is false here, derivationOrigin stays undefined,
-// and the local principal is fresh-per-device (a test identity, not the
-// developer's real Nuance account).
+// Three deploy targets, switched by VITE_DEPLOY_TARGET (see package.json):
+//   - dev  (vite dev, var unset)    → undefined → fresh per-device principal
+//                                      (a local test identity, not a real
+//                                      Nuance account; localhost is not in the
+//                                      prod whitelist anyway).
+//   - uat  (VITE_DEPLOY_TARGET=uat) → undefined → fresh per-canister principal.
+//                                      The UAT asset canister origin is NOT in
+//                                      prod's ii-alternative-origins whitelist,
+//                                      so deriving against prod here would FAIL
+//                                      auth — UAT must use its own origin.
+//   - prod (VITE_DEPLOY_TARGET=prod)→ PROD_DERIVATION_ORIGIN → principals carry
+//                                      over via the whitelist above.
+//
+// Only `prod` opts into derivation. The previous `import.meta.env.PROD` toggle
+// mis-fired for *any* `vite build` (UAT included) by deriving against prod,
+// which would break auth on the UAT origin (decision #41).
 const PROD_DERIVATION_ORIGIN = "https://exwqn-uaaaa-aaaaf-qaeaa-cai.ic0.app";
-const DERIVATION_ORIGIN: string | undefined = import.meta.env.PROD
-  ? PROD_DERIVATION_ORIGIN
-  : undefined;
+const DEPLOY_TARGET = import.meta.env.VITE_DEPLOY_TARGET as
+  | "dev"
+  | "uat"
+  | "prod"
+  | undefined;
+const DERIVATION_ORIGIN: string | undefined =
+  DEPLOY_TARGET === "prod" ? PROD_DERIVATION_ORIGIN : undefined;
 
 // Lazy singleton for the default (no-openIdProvider) AuthClient. Reused for
 // session restore, classic-II sign-in, and sign-out, which all share the same
