@@ -30,3 +30,6 @@ dist-ssr
 
 # Local-only working drafts (review notes, scratch files)
 .review-*.md
+
+# Claude Code per-machine settings (autoMemoryDirectory path is machine-specific)
+.claude/settings.json

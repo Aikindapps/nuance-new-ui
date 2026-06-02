@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import type { HttpAgent } from "@icp-sdk/core/agent";
 import {
+  createNotificationsActor,
   createPostBucketActor,
   createPostCoreActor,
   createStorageActor,
@@ -36,6 +37,7 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
     const postCorePromise = agentPromise.then(createPostCoreActor);
     const userPromise = agentPromise.then(createUserActor);
     const storagePromise = agentPromise.then(createStorageActor);
+    const notificationsPromise = agentPromise.then(createNotificationsActor);
     const bucketPromises = new Map<string, ReturnType<typeof createPostBucketActor>>();
 
     const getBucket = async (bucketCanisterId: string) => {
@@ -186,6 +188,17 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       uploadBlob: async (content) => {
         const actor = await storagePromise;
         return actor.uploadBlob(content);
+      },
+      // Notifications (PR #10). Indices on the wire are decimal strings; the
+      // hook layer takes numbers and converts here so consumers never see
+      // string math.
+      getUserNotifications: async (from, to) => {
+        const actor = await notificationsPromise;
+        return actor.getUserNotifications(String(from), String(to));
+      },
+      markNotificationsAsRead: async (notificationIds) => {
+        const actor = await notificationsPromise;
+        return actor.markNotificationsAsRead(notificationIds);
       },
     };
   }, [identity]);

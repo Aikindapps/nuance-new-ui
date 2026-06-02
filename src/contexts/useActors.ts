@@ -24,6 +24,9 @@ import type {
   UserListItem,
 } from "../candid/User/User";
 import type { Content, Result as StorageResult } from "../candid/Storage/Storage";
+import type {
+  GetUserNotificationsResponse,
+} from "../candid/Notifications/Notifications";
 
 // ActorsContext + hook + types live in this file so ActorsContext.tsx is a
 // pure component file. Satisfies `react-refresh/only-export-components`.
@@ -196,6 +199,17 @@ export type ActorsValue = {
   // data-canister id (used to build the public asset URL).
   getNewContentId: () => Promise<StorageResult>;
   uploadBlob: (content: Content) => Promise<StorageResult>;
+  // --- Notifications (PR #10) — bell foldout + /notifications route. Both
+  // methods take/return string-encoded numerics: `from`/`to` are a half-open
+  // index range, totalCount is a decimal string. Authed only — anon callers
+  // see a permission err from the canister; hook layer guards on `isAuthed`
+  // so we never call from logged-out. Settings endpoints (get/update) are
+  // intentionally not exposed yet — no settings UI in PR #10.
+  getUserNotifications: (
+    from: number,
+    to: number,
+  ) => Promise<GetUserNotificationsResponse>;
+  markNotificationsAsRead: (notificationIds: string[]) => Promise<void>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);

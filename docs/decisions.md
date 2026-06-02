@@ -1340,3 +1340,68 @@ The `scripts/probe-comments.ts` diagnostic is kept under `scripts/` (outside `sr
 - Primary button label is derived from `isPublished` — never hard-coded. If a new editor surface is built (e.g. a different write screen), it must read the same flag, not duplicate the logic.
 - The leave-guard respects published state (a published edit with unsaved changes prompts on navigation, same as a draft).
 - If premium editing is ever wired in, this decision does **not** extend to it — the `ArticleNotEditable` canister error must be handled explicitly (likely a read-only state + explainer toast).
+
+---
+
+## #39 — Notifications hydrate by-principal (extends #35 to a second canister type)
+
+**Date:** 2026-06-02
+
+**Status:** Active.
+
+**Decision:** Notification rows are hydrated **by-principal**, not by handle. The Notifications canister's `Notification.content` carries `*Principal*` text fields for every actor (commenter, tipper, follower, subscriber, post writer, etc.) but no handles or avatars. After a page fetch, every principal appearing on the page is collected and resolved batch-style via `User.getUsersByPrincipals`; the resulting `Map<principalText, UserListItem>` rides along with the page object (`NotificationsPage.userMap`) so the renderer never issues its own lookup. This extends decision #35 (PR #8 comments hydrate by-principal because `Comment.handle`/`avatar` come back blank) from comments to a second canister type.
+
+**Inputs:**
+- Verified against the vendor monorepo (`~/Projects/aikindapps-Nuance/src/NotificationsV3/main.mo`): `getUserNotifications(from, to)` returns `Notification` records whose content variants hold principal-id text, never resolved handles.
+- PR #8 already established the by-principal pattern + `getUsersByPrincipals` batch call; the User canister method and `UserListItem` shape were already wired in `useActors`.
+- Notifications paginate, and each page contains a different (small) set of principals — a per-page batch resolve is cheap and avoids an N+1 of per-row lookups.
+
+**Options considered:**
+- **A. Per-page batch resolve via `getUsersByPrincipals`, map rides with the page.** **Chosen.** Mirrors #35, one extra call per page, renderer stays pure.
+- B. Resolve each principal lazily per row (N calls per page). Rejected — N+1 fan-out, worse latency, no upside.
+- C. Hope the canister returns handles. Rejected — it doesn't.
+
+**Trade-offs accepted:**
+- The bell-dot/header path (`useUnreadCount` → foldout query) and the `/notifications` route query each resolve their own page's principals, so on `/notifications` two notification queries + two `getUsersByPrincipals` calls fire. Accepted as the documented cost of the shared-cache design (PR #10 review m6).
+- A principal the batch misses renders as a graceful `@someone` fallback rather than a raw principal hash (`Handle` component).
+
+**How to apply:**
+- `collectPrincipals(content)` (pure util in `lib/collectPrincipals.ts`) is the single place that enumerates which principal fields each of the 14 variants carries. A new variant with a new actor field must be added there **and** in `notificationLabel.tsx`.
+- The renderer reads `userMap.get(principalText)?.handle ?? "@someone"` — never the raw principal.
+- Caller pattern: `fetchPage` in `hooks/useNotifications.ts` builds the map; the route merges per-page maps via `mergeUserMaps`.
+
+---
+
+## #40 — Notification rendering & read-state policy (generic inline template; money deferred; snapshot-at-open unread styling)
+
+**Date:** 2026-06-02
+
+**Status:** Active.
+
+**Decision:** Three linked policy calls for how notifications render:
+
+1. **One generic inline template per variant** — `@actor + verb + target`, no per-type icons, no avatars. All 14 `NotificationContent` variants render through a single `NotificationBody` switch (`notificationLabel.tsx`) with an exhaustive fallback (`"You have a new notification"`) so an unrecognized canister-side variant degrades safely instead of crashing the foldout. Matches the depicted Figma row shape (1:51584) and keeps foldout rows single-line dense.
+
+2. **Money / token amounts are deliberately omitted** from notification copy. Amount-bearing variants (`TipReceived`, `PremiumArticleSold`, `AuthorGainsNewSubscriber`, …) show *what happened* without an amount ("@actor tipped you on '…'"). Exact balances/amounts belong on Page 7 (Funds Overview); duplicating them here would either go stale or fight the unread-count refresh. Settings endpoints (`getUserNotificationSettings`, `updateNotificationSettings`) exist in the candid but are intentionally **not** exposed in `useActors` — no settings UI in PR #10.
+
+3. **Read-state styling uses a snapshot-at-open, not the live `read` flag** (PR #10 review M2, option A). Opening a surface fires a bulk mark-read whose optimistic update flips `read=true` to clear the bell dot. If row styling read `notification.read` directly, the designed unread accent (Figma 1:51584) would vanish within a frame of opening. Instead `useUnreadSnapshot` freezes which ids were unread the first time the surface saw them; the dot clears immediately while the row accent persists until the surface is closed/reopened.
+
+**Inputs:**
+- Figma 1:51584 is a draft: it depicts a generic row shape with read/unread states, no per-type iconography, and is silent on the `/notifications` route and money display.
+- The Notifications canister exposes settings endpoints and amount data, but Page 7 (Funds) is the planned home for balances/amounts.
+- Senior review of PR #10 surfaced that mark-read-on-open instantly destroyed the unread treatment (M2); the by-principal/optimistic-cache machinery (#39, M1) made a clean read-state freeze the right fix.
+
+**Options considered:**
+- Rendering: **A. generic inline template, no icons/avatars** (chosen) vs B. per-type icons (no Figma, more surface, defer).
+- Money: **A. omit, defer to Page 7** (chosen) vs B. inline amounts (stale-risk, fights refresh).
+- Read-state (M2): **A. snapshot-at-open — dot clears, accent persists** (chosen) vs B. mark-read on close (fuzzier on the route) vs C. accept instant-clear (the Figma read/unread states would be effectively unused).
+
+**Trade-offs accepted:**
+- No per-type visual differentiation; all notifications look alike except for the verb/target text. Revisit if a future Figma adds iconography.
+- The bell dot reflects only the foldout's first page of unread (PR #10 review m1) — with more unread than `FOLDOUT_PAGE_SIZE`, opening marks page 1 read and the dot dims while later pages still hold unread. A true unread count needs a canister endpoint that doesn't exist; out of scope.
+- `useUnreadSnapshot` implements the freeze via React's setState-during-render derived-state pattern (not a ref-during-render — the latter tripped 6 `react-hooks/refs` lint errors and was rejected).
+
+**How to apply:**
+- Adding a new notification type: extend `collectPrincipals` (#39), add a `NotificationBody` branch, and rely on the exhaustive fallback until then.
+- Do **not** add amounts to notification copy — that surface is Page 7. If settings UI is ever built, wire the two settings endpoints into `useActors` first.
+- Row unread styling must come from `useUnreadSnapshot`, never `notification.read` directly; `NotificationItem` takes `unread` as a prop.
