@@ -4,7 +4,9 @@ set -euo pipefail
 # Deploy the UAT asset canister (nuance_uat) to mainnet. PR #11, decision #41.
 # Run from the repo root: `npm run deploy:uat`.
 
-DFX="${DFX:-/Users/nicholaso/Library/Application Support/org.dfinity.dfx/bin/dfx}"
+# Prefer dfx on PATH (portable across clones); fall back to the dfxvm install
+# location. Override with DFX=… if dfx lives elsewhere.
+DFX="${DFX:-$(command -v dfx || echo "/Users/nicholaso/Library/Application Support/org.dfinity.dfx/bin/dfx")}"
 IDENTITY="${DFX_IDENTITY:-nick-mainnet}"
 # Cycles to allocate to the canister on FIRST create. dfx's default create
 # amount is undocumented and may exceed a modest cycles-ledger balance, so we
@@ -13,13 +15,14 @@ IDENTITY="${DFX_IDENTITY:-nick-mainnet}"
 # already exists). Override with WITH_CYCLES=… if needed.
 WITH_CYCLES="${WITH_CYCLES:-1000000000000}"
 
-echo "→ Building (VITE_DEPLOY_TARGET=uat)…"
-VITE_DEPLOY_TARGET=uat npm run build
-
+# Fail fast on the wrong identity BEFORE spending time on a build.
 echo "→ Sanity checks…"
 "$DFX" identity whoami | grep -qx "$IDENTITY" || {
   echo "FAIL: active identity is not $IDENTITY (run: \"$DFX\" identity use $IDENTITY)"; exit 1; }
 "$DFX" cycles --network ic balance
+
+echo "→ Building (VITE_DEPLOY_TARGET=uat)…"
+VITE_DEPLOY_TARGET=uat npm run build
 
 echo "→ Deploying nuance_uat to mainnet…"
 "$DFX" deploy nuance_uat --network ic --identity "$IDENTITY" --with-cycles "$WITH_CYCLES"
