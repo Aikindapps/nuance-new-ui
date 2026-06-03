@@ -11,9 +11,10 @@ standalone [`aikindapps/nuance-frontend`](https://github.com/aikindapps/nuance-f
 ## Scope
 
 - **Frontend only.** No Motoko changes.
-- **Local development only.** No production deploys from this repository.
-  `nuance.xyz` is SNS-governed; any production update requires a community
-  proposal + vote, and the DAO performs the deploy.
+- **Local development + a personal UAT mainnet canister** (see [Deployment](#deployment)).
+  No production (`nuance.xyz`) deploys from this repository. `nuance.xyz` is
+  SNS-governed; any production update requires a community proposal + vote, and
+  the DAO performs the deploy.
 
 ## Stack
 
@@ -104,6 +105,47 @@ case-preserved handle. See `docs/decisions.md` and source comments.
 
 ## Deployment
 
-Deferred. This build runs locally only. Production deployment happens via the
-Nuance SNS DAO — a community proposal and vote — once the rebuild is
-screen-complete.
+**Production (`nuance.xyz`) is deferred.** It happens via the Nuance SNS DAO — a
+community proposal and vote — once the rebuild is screen-complete. Nothing in
+this repo deploys to prod.
+
+### UAT mainnet canister
+
+A personal, dfx-managed asset canister (`nuance_uat`) for validating the rebuild
+in a real boundary-node + certified-response environment before the SNS-gated
+prod swap. It belongs to the operator, **not** the Nuance DAO — no SNS proposal
+needed (decision #41).
+
+> [!WARNING]
+> **UAT writes hit production data.** The backend canisters are shared and
+> cannot be isolated, so any write you make on UAT — publishing, commenting,
+> liking, following — mutates **real `nuance.xyz` data**. UAT is "new UI on a
+> separate URL against prod backends," not a sandbox.
+
+**Prerequisites**
+- `dfx` 0.30.2+.
+- A password-protected mainnet identity named `nick-mainnet`
+  (`dfx identity new nick-mainnet --storage-mode password-protected`).
+- Cycles in that identity's cycles-ledger account (faucet coupon, or
+  `dfx cycles convert --amount <ICP> --ic`). ~1 TC is plenty.
+
+**Deploy**
+```bash
+npm run deploy:uat
+```
+One command: builds with `VITE_DEPLOY_TARGET=uat`, guards that the active
+identity is `nick-mainnet`, deploys, and prints the URL. The canister is served
+at `https://<canister-id>.icp0.io/`.
+
+**Login behavior.** Internet Identity 2.0 derives the principal per origin, so
+signing in on UAT with the *same* Google account as `nuance.xyz` produces a
+**different** principal — the UAT origin is not in prod's
+`.well-known/ii-alternative-origins` whitelist. OpenID does not unify principals
+across canisters. Only a `VITE_DEPLOY_TARGET=prod` build (served from the
+whitelisted prod origin) carries existing principals over.
+
+**Note on `canister_ids.json`.** The dfx-generated `canister_ids.json` at the
+**repo root** holds the public UAT canister id and is committed on purpose, so
+deploys from any clone target the same canister. Do not confuse it with
+`src/config/canister_ids.json`, which is the runtime map of backend canister
+ids the app talks to.
