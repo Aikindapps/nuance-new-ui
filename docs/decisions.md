@@ -1444,9 +1444,12 @@ The `scripts/probe-comments.ts` diagnostic is kept under `scripts/` (outside `sr
 
 **Funding (deviation from the approved plan):** the plan assumed the one-per-lifetime ~10 TC developer faucet coupon. Mr Nick had no coupon, so cycles came from **converting ICP** (`dfx cycles convert --amount <ICP> --ic`) → **2.054 TC** in the `nick-mainnet` cycles-ledger account. Sufficient: an idle ~1.5 MB asset canister burns ~150–300 B cycles/month, so 1 TC runs for decades; the deploy script allocates 1 TC and keeps the rest as reserve.
 
-**Concrete deploy artifacts** (fill in after the first deploy):
-- Controller principal (`nick-mainnet`): `stmaa-4xjxj-5nqul-e3i2o-knf4c-4rbjz-233ky-3xdb3-d7pua-qr34f-6ae`
-- Canister ID: _(TBD on first deploy)_
-- URL: `https://<canister-id>.icp0.io/`
-- Module hash / starting cycle balance: _(TBD)_
-- Backup controller principal: _(TBD — add immediately after first deploy)_
+**Concrete deploy artifacts** (first deploy 2026-06-03):
+- Canister ID: `t7yut-2iaaa-aaaah-quu3a-cai`
+- URL: https://t7yut-2iaaa-aaaah-quu3a-cai.icp0.io/
+- Controller principal (`nick-mainnet`, sole controller): `stmaa-4xjxj-5nqul-e3i2o-knf4c-4rbjz-233ky-3xdb3-d7pua-qr34f-6ae`
+- Module hash: `0x63d122d0149a29f4e48603efdd7d2bce656a6a83bac1e3207897c68e8e225bb6`
+- Cycles: created with a 1 TC `--with-cycles` allocation out of the 2.054 TC balance (~1 TC reserve retained).
+- Backup controller principal: _(TBD — single-controller lock-in risk still open; add via `dfx canister update-settings … --add-controller` from a backup identity)_
+
+**Post-deploy verification (2026-06-03):** gate 1 (asset serve + `ic-certificate`) ✅, gate 3 (SPA deep-link fallback via `enable_aliasing`) ✅, gate 5 (cross-origin backend round-trip — articles + storage images load) ✅, robots.txt ✅. **Risk #3 materialized and was fixed:** the standard policy's `img-src 'self' data:` blocked all Nuance imagery (`*.raw.icp0.io` thumbnails / covers / avatars); overridden to `img-src 'self' data: https:` (single CSP header, `connect-src` agent endpoint preserved — verified on the live canister). Gates 4/6/7/8 (auth + authed writes) pending — gated on the "writes hit prod data" decision.
