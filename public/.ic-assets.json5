@@ -5,7 +5,18 @@
   {
     "match": "**/*",
     "security_policy": "standard",
-    "headers": { "Cache-Control": "public, max-age=0, must-revalidate" },
+    "headers": {
+      "Cache-Control": "public, max-age=0, must-revalidate",
+      // Override the standard policy's `img-src 'self' data:`, which blocks
+      // every Nuance image: thumbnails, cover images, and avatars are served
+      // from `*.raw.icp0.io/storage`, and article bodies embed images from
+      // arbitrary external origins. Allow any https image source — img-src
+      // cannot execute code, and script-src stays 'self'. Every other
+      // directive is copied verbatim from the standard policy (PR #11 review
+      // of Risk #3). Keep connect-src exactly as-is — it carries the
+      // https://icp-api.io agent endpoint the app depends on.
+      "Content-Security-Policy": "default-src 'self';script-src 'self';connect-src 'self' http://localhost:* https://icp0.io https://*.icp0.io https://icp-api.io;img-src 'self' data: https:;style-src * 'unsafe-inline';style-src-elem * 'unsafe-inline';font-src *;object-src 'none';base-uri 'self';frame-ancestors 'none';form-action 'self';upgrade-insecure-requests;",
+    },
     "allow_raw_access": false,
   },
   {
