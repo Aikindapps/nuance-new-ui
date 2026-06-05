@@ -5,6 +5,13 @@ import { IconViews } from "../../../components/ui/icons/IconViews";
 import { IconLink } from "../../../components/ui/icons/IconLink";
 import { ShareButton } from "../../../components/ui/ShareButton/ShareButton";
 import { formatCount } from "../../../lib/formatCount";
+import { useAuth } from "../../../contexts/useAuth";
+import { useModal } from "../../../services/modal";
+import {
+  LoginModal,
+  LOGIN_MODAL_TITLE_ID,
+} from "../../../components/LoginModal/LoginModal";
+import { TipModal, TIP_MODAL_TITLE_ID } from "../../wallet/tip/TipModal";
 
 // Floating article action bar — Figma 1:5382 (desktop) + 1:5455 (mobile),
 // share interactions per 4.4 `1:18426` (PR #8 Phase 2).
@@ -26,26 +33,41 @@ import { formatCount } from "../../../lib/formatCount";
 
 type CopyState = "idle" | "copied" | "failed";
 
-// `aria-disabled` + `title` on inert shells so AT users hear them as not-yet
-// active and sighted users get a hover tooltip — clicking does nothing, but
-// the button's state is now honestly communicated. PR #7 review M6.
-const INERT_ARIA = {
-  "aria-disabled": true as const,
-  title: "Coming soon",
-};
-
 export function ActionBar({
   claps,
   views,
   title,
   commentCount,
+  postId,
+  bucketCanisterId,
 }: {
   claps: number;
   views: number;
   title: string;
   commentCount: number;
+  postId: string;
+  bucketCanisterId: string;
 }) {
   const [copyState, setCopyState] = useState<CopyState>("idle");
+  const { isAuthenticated } = useAuth();
+  const modal = useModal();
+
+  // Applause = tip (§4.2). Logged-out opens LoginModal (matches the comment/
+  // vote affordances); logged-in opens the multi-token TipModal.
+  const onApplaud = () => {
+    if (!isAuthenticated) {
+      modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });
+      return;
+    }
+    modal.open(
+      <TipModal
+        postId={postId}
+        bucketCanisterId={bucketCanisterId}
+        onClose={modal.close}
+      />,
+      { ariaLabelledBy: TIP_MODAL_TITLE_ID },
+    );
+  };
 
   const copyLink = async () => {
     try {
@@ -70,9 +92,15 @@ export function ActionBar({
         commentCount={commentCount}
         copyState={copyState}
         copyLink={copyLink}
+        onApplaud={onApplaud}
       />
       {/* Mobile bar — icon-only, drops Views slot */}
-      <MobileBar title={title} copyState={copyState} copyLink={copyLink} />
+      <MobileBar
+        title={title}
+        copyState={copyState}
+        copyLink={copyLink}
+        onApplaud={onApplaud}
+      />
     </>
   );
 }
@@ -96,6 +124,7 @@ function DesktopBar({
   commentCount,
   copyState,
   copyLink,
+  onApplaud,
 }: {
   claps: number;
   views: number;
@@ -103,6 +132,7 @@ function DesktopBar({
   commentCount: number;
   copyState: CopyState;
   copyLink: () => void;
+  onApplaud: () => void;
 }) {
   const item =
     "flex h-12 items-center gap-2 rounded-card pl-5 pr-6 text-body font-medium text-white";
@@ -110,11 +140,11 @@ function DesktopBar({
   return (
     <div className="fixed bottom-6 left-1/2 z-40 hidden -translate-x-1/2 lg:block">
       <div className="bg-brand-gradient-button flex items-center gap-4 rounded-[calc(24*var(--fpx))] p-4 shadow-[0px_3px_5px_rgba(84,5,212,0.4)]">
-        {/* Applause — inert shell (wired in a later PR #8 phase) */}
+        {/* Applause — opens the tip modal (§4.2) / LoginModal when logged out */}
         <button
           type="button"
-          {...INERT_ARIA}
-          className="flex h-12 items-center gap-2 rounded-card bg-white pl-4 pr-5 text-body font-medium text-brand-purple"
+          onClick={onApplaud}
+          className="flex h-12 items-center gap-2 rounded-card bg-white pl-4 pr-5 text-body font-medium text-brand-purple transition-opacity hover:opacity-90"
         >
           <IconClaps className="size-6" />
           Applause ({claps})
@@ -160,10 +190,12 @@ function MobileBar({
   title,
   copyState,
   copyLink,
+  onApplaud,
 }: {
   title: string;
   copyState: CopyState;
   copyLink: () => void;
+  onApplaud: () => void;
 }) {
   const iconButton =
     "flex size-12 items-center justify-center rounded-card text-white transition-colors hover:bg-white-10";
@@ -171,11 +203,11 @@ function MobileBar({
   return (
     <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 lg:hidden">
       <div className="bg-brand-gradient-button flex items-center gap-2 rounded-[calc(16*var(--fpx))] p-2 shadow-[0px_3px_5px_rgba(84,5,212,0.4)]">
-        {/* Applause — inert shell */}
+        {/* Applause — opens the tip modal (§4.2) / LoginModal when logged out */}
         <button
           type="button"
           aria-label="Applause"
-          {...INERT_ARIA}
+          onClick={onApplaud}
           className="flex size-12 items-center justify-center rounded-card bg-white text-brand-purple"
         >
           <IconClaps className="size-6" />

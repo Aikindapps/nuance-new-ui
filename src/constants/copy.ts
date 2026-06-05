@@ -283,3 +283,70 @@ export const topicsModalCopy = {
   // Accessible label for the topic-picker button group (review m3).
   pickerAriaLabel: "Topics",
 };
+
+// Wallet / Funds Overview (Page 7, PR-1). Deposit/Withdraw render but are
+// deferred ("Coming soon") to a later PR — see decision #42.
+export const walletCopy = {
+  metaTitle: "Wallet — Nuance",
+  metaDescription:
+    "Manage your Nuance wallet: NUA, ICP and ckBTC balances, and claim your free NUA.",
+  // Intro section (Figma 1:46392).
+  introHeading: "My Wallet",
+  introBody:
+    "Here you can manage your Nuance wallet. With the amount of tokens you can buy NFT keys that give you access to certain Nuance articles or applaud authors on their work.",
+  depositLabel: "Deposit",
+  withdrawLabel: "Withdraw",
+  comingSoon: "Coming soon",
+  // Deposit modal (no Figma — adapted from prod's deposit modal). Read-only
+  // address display so funds can be sent in (decision #42 update).
+  depositTitle: "Deposit tokens to this wallet",
+  depositBody:
+    "Send NUA, ICP or ckBTC to the address below from any ICRC-1 wallet. Tokens appear here once the transfer settles.",
+  depositInWallet: "Currently in your wallet",
+  depositSelectLabel: "Select currency to deposit",
+  // ICP is addressed by its legacy account identifier; NUA/ckBTC by principal.
+  depositAddressPrincipal: "Your deposit address (principal)",
+  depositAddressAccountId: "Your ICP deposit address (account ID)",
+  depositCopy: "Copy address",
+  depositCopied: "Address copied to clipboard.",
+  depositCloseAria: "Close",
+  // Currency holdings (Figma 1:46399). Subtitle for the NUA/Free-NUA cards.
+  nuanceToken: "Nuance token",
+  balanceError: "—",
+  // Free NUA tokens (Figma 1:48312).
+  freeNuaHeading: "Free NUA tokens",
+  freeNuaBody:
+    "Free Nuance Tokens are only meant to be used on Nuance before they become refundable. 7 days after your last request, you can request a refill of free new NUA up to a total of 50 NUA.",
+  // {time} → HH:MM:SS, {max} → max claimable.
+  claimCountdown: "till new free tokens",
+  claimReady: "Free NUA available to claim",
+  claimLabel: "Claim {max} NUA tokens",
+  claiming: "Claiming…",
+  claimSuccess: "Free NUA claimed.",
+  claimError: "Couldn’t claim Free NUA. Try again.",
+};
+
+// Tip Author / Applaud modal (Page 4 §4.2). No detailed Figma frame — adapted
+// from prod's clap-modal flow. An applaud = 1 NUA; paid in NUA/ICP/ckBTC. The
+// recipient split (writer / publication / DAO) is entirely canister-side.
+export const tipModalCopy = {
+  title: "Start applauding!",
+  body: "By applauding this article you tip the writer a fragment of your wallet. One applaud equals one Nuance Token (NUA).",
+  readMore: "Read more",
+  readMoreUrl: "https://wiki.nuance.xyz/nuance/how-to-tip-applaud-a-writer",
+  inWallet: "Currently in your wallet",
+  selectLabel: "Pay with",
+  amountLabel: "Your applaud amount",
+  amountPlaceholder: "Amount",
+  // {max} → the max applauds the selected balance allows.
+  maxLabel: "Max {max}",
+  costPrefix: "≈",
+  overMax: "That’s more than your balance allows.",
+  terms: "I understand this sends a real, irreversible token transfer.",
+  applaudLabel: "Applaud",
+  applauding: "Applauding…",
+  successTitle: "Thanks for applauding!",
+  successBody: "Your applause is on its way to the writer.",
+  successClose: "Done",
+  closeAria: "Close",
+};

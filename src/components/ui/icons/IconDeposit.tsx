@@ -1,0 +1,21 @@
+type Props = { className?: string };
+
+// Figma node I1:46397;31:261 (NUR / Icon / Deposit) — down arrow into a tray.
+export function IconDeposit({ className = "" }: Props) {
+  return (
+    <svg
+      viewBox="0 0 16 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M8 0C8.55228 0 9 0.447715 9 1V12.5858L13.2929 8.29289C13.6834 7.90237 14.3166 7.90237 14.7071 8.29289C15.0976 8.68342 15.0976 9.31658 14.7071 9.70711L8.70711 15.7071C8.31658 16.0976 7.68342 16.0976 7.29289 15.7071L1.29289 9.70711C0.902369 9.31658 0.902369 8.68342 1.29289 8.29289C1.68342 7.90237 2.31658 7.90237 2.70711 8.29289L7 12.5858V1C7 0.447715 7.44772 0 8 0ZM0 19C0 18.4477 0.447715 18 1 18H15C15.5523 18 16 18.4477 16 19C16 19.5523 15.5523 20 15 20H1C0.447715 20 0 19.5523 0 19Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}

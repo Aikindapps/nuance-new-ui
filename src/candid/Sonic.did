@@ -1,0 +1,25 @@
+// Minimal interface for the Sonic DEX swap pools.
+// The full pool service exposes liquidity/position/swap methods we never call;
+// this rebuild only reads price quotes for the wallet "= N NUA" conversion.
+// Source: ~/Projects/aikindapps-Nuance/src/nuance_assets/services/sonic/Sonic.did
+type Error =
+ variant {
+   CommonError;
+   InsufficientFunds;
+   InternalError: text;
+   UnsupportedToken: text;
+ };
+type SwapArgs =
+ record {
+   amountIn: text;
+   amountOutMinimum: text;
+   zeroForOne: bool;
+ };
+type Result =
+ variant {
+   err: Error;
+   ok: nat;
+ };
+service : {
+  quote: (SwapArgs) -> (Result) query;
+}
