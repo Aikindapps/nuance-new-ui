@@ -71,9 +71,16 @@ export function useTipAuthor(postId: string, bucketCanisterId: string) {
       const tokensToSend = BigInt(Math.floor(tokensToSendNum));
       if (tokensToSend <= 0n) throw new Error("That amount is too small to send.");
 
+      // postId is a numeric (Nat) string from the canister; guard anyway so a
+      // malformed id can't become NaN → toBase256 → all-zeros subaccount, which
+      // would silently misdirect funds to the bucket's default account.
+      const postNat = parseInt(postId, 10);
+      if (!Number.isFinite(postNat)) {
+        throw new Error("Invalid post reference — can’t send this tip.");
+      }
       const to = {
         owner: Principal.fromText(bucketCanisterId),
-        subaccount: toBase256(parseInt(postId, 10), 32),
+        subaccount: toBase256(postNat, 32),
       };
 
       if (token === "NUA") {
@@ -90,6 +97,13 @@ export function useTipAuthor(postId: string, bucketCanisterId: string) {
           } else {
             // Restricted covers part; the rest is a regular NUA transfer. Both
             // legs must succeed, else surface a precise partial-failure error.
+            // KNOWN LIMITATION: the two legs aren't atomic. If one succeeds and
+            // the other fails, the successful leg's funds are already in the
+            // post escrow but we throw (no settlement call this run). They are
+            // NOT lost — the next checkTippingByTokenSymbol for this post settles
+            // the accumulated escrow — but the user sees "failed" after partial
+            // movement. Acceptable (mirrors prod's escrow model); revisit if a
+            // true rollback is ever required. Untested on live UAT.
             const remainder = tokensToSend - availableRestricted;
             const [restrictedRes, regularRes] = await Promise.all([
               spendRestrictedTokensForTipping(

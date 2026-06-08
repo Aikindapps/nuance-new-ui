@@ -77,7 +77,11 @@ export function TipModal({
     const decimals = TOKENS[token].decimals;
     const e8s = tokenE8sForNua(prices.data, token, amount * 10 ** decimals);
     if (e8s == null) return null;
-    return (Math.floor(e8s) / 10 ** decimals).toFixed(token === "NUA" ? 0 : 4);
+    // Per-token precision: NUA is whole; ICP at 4dp; ckBTC needs full 8dp or a
+    // realistic tip (~33 base units = 0.00000033) rounds to "0.0000" and reads
+    // as free.
+    const costDecimals = token === "NUA" ? 0 : token === "ckBTC" ? 8 : 4;
+    return (Math.floor(e8s) / 10 ** decimals).toFixed(costDecimals);
   }, [prices.data, amount, token]);
 
   const valid = amount > 0 && amount <= maxApplauds && terms && !!prices.data;
