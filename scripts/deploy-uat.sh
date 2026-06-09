@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Prefer dfx on PATH (portable across clones); fall back to the dfxvm install
 # location. Override with DFX=… if dfx lives elsewhere.
-DFX="${DFX:-$(command -v dfx || echo "/Users/nicholaso/Library/Application Support/org.dfinity.dfx/bin/dfx")}"
+DFX="${DFX:-$(command -v dfx || echo "$HOME/Library/Application Support/org.dfinity.dfx/bin/dfx")}"
 IDENTITY="${DFX_IDENTITY:-nick-mainnet}"
 # Cycles to allocate to the canister on FIRST create. dfx's default create
 # amount is undocumented and may exceed a modest cycles-ledger balance, so we
