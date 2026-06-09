@@ -1,9 +1,12 @@
 import { useMemo, type ReactNode } from "react";
 import type { HttpAgent } from "@icp-sdk/core/agent";
+import { Principal } from "@icp-sdk/core/principal";
 import {
+  createIcrc1Actor,
   createNotificationsActor,
   createPostBucketActor,
   createPostCoreActor,
+  createSonicActor,
   createStorageActor,
   createUserActor,
 } from "../lib/actors";
@@ -45,6 +48,25 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       if (cached) return cached;
       const actor = createPostBucketActor(await agentPromise, bucketCanisterId);
       bucketPromises.set(bucketCanisterId, actor);
+      return actor;
+    };
+
+    // PR-1 (wallet/tipping): ICRC-1 ledger + Sonic pool actors are per-canister,
+    // so they cache lazily by canisterId like buckets.
+    const icrc1Actors = new Map<string, ReturnType<typeof createIcrc1Actor>>();
+    const getIcrc1 = async (ledgerCanisterId: string) => {
+      const cached = icrc1Actors.get(ledgerCanisterId);
+      if (cached) return cached;
+      const actor = createIcrc1Actor(await agentPromise, ledgerCanisterId);
+      icrc1Actors.set(ledgerCanisterId, actor);
+      return actor;
+    };
+    const sonicActors = new Map<string, ReturnType<typeof createSonicActor>>();
+    const getSonic = async (poolCanisterId: string) => {
+      const cached = sonicActors.get(poolCanisterId);
+      if (cached) return cached;
+      const actor = createSonicActor(await agentPromise, poolCanisterId);
+      sonicActors.set(poolCanisterId, actor);
       return actor;
     };
 
@@ -199,6 +221,33 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       markNotificationsAsRead: async (notificationIds) => {
         const actor = await notificationsPromise;
         return actor.markNotificationsAsRead(notificationIds);
+      },
+      // Wallet + Tipping (PR-1, decision #42). Balance/quote reads are anon-safe;
+      // claim/spend/transfer route through the authed agent (msg.caller).
+      getIcrc1Balance: async (ledgerCanisterId, owner, subaccount) => {
+        const actor = await getIcrc1(ledgerCanisterId);
+        return actor.icrc1_balance_of({ owner: Principal.fromText(owner), subaccount });
+      },
+      getSonicQuote: async (poolCanisterId, args) => {
+        const actor = await getSonic(poolCanisterId);
+        return actor.quote(args);
+      },
+      claimRestrictedTokens: async () => {
+        const actor = await userPromise;
+        return actor.claimRestrictedTokens();
+      },
+      // Arg order: (bucketCanisterId, postId, amount) — the raw actor's order.
+      spendRestrictedTokensForTipping: async (bucketCanisterId, postId, amount) => {
+        const actor = await userPromise;
+        return actor.spendRestrictedTokensForTipping(bucketCanisterId, postId, amount);
+      },
+      transferIcrc1: async (ledgerCanisterId, to, amount, fee) => {
+        const actor = await getIcrc1(ledgerCanisterId);
+        return actor.icrc1_transfer({ to, amount, fee });
+      },
+      checkTippingByTokenSymbol: async (bucketCanisterId, postId, symbol) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.checkTippingByTokenSymbol(postId, symbol, "");
       },
     };
   }, [identity]);

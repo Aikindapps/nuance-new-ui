@@ -6,6 +6,37 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 
 ---
 
+## #42 — Page 7 (Funds) sequencing + PR-1 scope; standalone /wallet; bigint + both-legs tipping
+
+**Date:** 2026-06-03
+
+**Status:** Active.
+
+**Decision:** Page 7 "Funds Overview" + Page 4 §4.2 "Tip Author" are built across multiple PRs, not one. **PR-1 = shared token infrastructure + Currency-holdings balances + Free-NUA claim + the §4.2 Tip Author modal.** Deferred to later PRs: the Wallet History table (a 7-source client-side aggregation), Article Keys (ext_v2 NFT), and the full Deposit/Withdraw flows (their buttons render but stay inert "Coming soon" per the decision #26 stub convention). Four sub-decisions inside PR-1:
+1. **Standalone `/wallet` route**, not a profile tab. The Figma shows the wallet as one tab in a profile nav (`1:48372`/header `1:48373`), but no profile-tab infrastructure exists in the rebuild yet; building it would balloon PR-1. Ship `/wallet` as a flat lazy route with `HeaderLoggedIn`, exactly like `/notifications`. Profile-tab integration is a future PR.
+2. **bigint end-to-end for all ledger amounts** (balances, transfers, fees); convert to `number` only at the display boundary (`fromE8s`/`formatToken`) and for the inherently-float Sonic cross-rate display. Prod uses `Number` throughout and risks precision loss on large e8s values — this is a deliberate improvement.
+3. **Tipping requires both legs to succeed.** When Free-NUA partially covers a NUA tip, the restricted-spend and the regular-transfer run in `Promise.all`. Prod accepts success if *either* leg resolves (can leave a half-applied tip); PR-1 requires both and surfaces a precise partial-failure error.
+4. **Token/ledger/Sonic config lives in a new `src/config/tokens.ts`** (typed module), not `canister_ids.json` — ledgers and Sonic pools are not Nuance canisters. `USER_CANISTER_ID` is re-exported from `canister_ids.json` to avoid drift.
+
+**Inputs:**
+- Initial recon wrongly concluded the funds/history/keys backend was missing. Mr Nick corrected: **all of it is live in production today** (except BNB, illustrative in the Figma). The authoritative wiring is the monorepo's bundled prod frontend at `~/Projects/aikindapps-Nuance/src/nuance_assets/` — verified call sites for balances (`icrc1_balance_of` per ledger; restricted NUA at `owner=USER_CANISTER, subaccount=claimInfo.subaccount`), claim (`User.claimRestrictedTokens`), tipping (`spendRestrictedTokensForTipping` + per-post-subaccount `icrc1_transfer` + `checkTippingByTokenSymbol` settlement), and Sonic price quotes.
+- Full Page 7 is 5 blocks; History and Keys are each large and independent. Tipping shares the balance/Sonic/transfer infra with holdings, and was the original reason to do Page 7 — so it leads.
+- `User`/`PostBucket` bindings for claim/tip already exist in `src/candid/`; only ICRC-1 + Sonic bindings are missing.
+
+**Options considered (sequencing):** A. Infra+Balances+Tip+Claim first (**chosen**); B. whole Page 7 in one large PR (rejected — too big, History/Keys backend-heavy); C. tip-only first (rejected — wastes the shared balance work); D. wallet-page-first, tipping later (rejected — front-loads the heavy aggregation before the high-value feature).
+
+**Trade-offs accepted:**
+- Real-money risk: tip/claim are irreversible mainnet transfers and UAT shares prod backends. Mitigated by minimal-amount manual test protocol on a throwaway funded principal.
+- `/wallet` lacks the Figma's profile-tab chrome until a later PR.
+
+**How to apply:**
+- Build per the approved plan (`~/.claude/plans/wild-jingling-honey.md`). Arg order for `spendRestrictedTokensForTipping` is `(bucketCanisterId, postId, amount)` at the raw-actor layer — do **not** copy the prod clap-modal's reordered call.
+- Later PRs pick up Wallet History, Article Keys, and Deposit/Withdraw; this decision does not pre-commit their design.
+
+**Update (2026-06-05) — Deposit promoted from inert stub to a read-only address view.** During PR-1 build the Deposit button graduated from the "Coming soon" stub (point 15 above) to `src/features/wallet/deposit/DepositModal.tsx`: a read-only modal showing the user's deposit address for the selected token — ICP by its legacy account-identifier (`principalToAccountIdentifier`), NUA/ckBTC by principal — with copy-to-clipboard. **No transfer call; it moves no money.** Withdraw stays deferred-inert. Account-identifier derivation is covered by `scripts/verify-account-id.ts` (CRC32 + independent SHA-224 self-consistency). Point 15 now reads: Withdraw inert "Coming soon"; Deposit = read-only address view; Wallet History + Article Keys still deferred.
+
+---
+
 ## #1 — Scope: frontend only
 
 **Date:** 2026-04-21
@@ -1455,3 +1486,11 @@ The `scripts/probe-comments.ts` diagnostic is kept under `scripts/` (outside `sr
 **Post-deploy verification (2026-06-03) — all 8 gates green:** gate 1 (asset serve + `ic-certificate`) ✅, gate 3 (SPA deep-link fallback via `enable_aliasing`) ✅, gate 4 (login on the UAT origin → fresh per-canister principal → onboarding, confirming the derivationOrigin split) ✅, gate 5 (cross-origin backend round-trip — articles + storage images load) ✅, gate 6 (authed follow/unfollow write round-trips) ✅, gates 7/8 covered by 3+5 + clean console on the 4/6 paths, robots.txt ✅. **Risk #3 materialized and was fixed:** the standard policy's `img-src 'self' data:` blocked all Nuance imagery (`*.raw.icp0.io` thumbnails / covers / avatars); overridden to `img-src 'self' data: https:` (single CSP header, `connect-src` agent endpoint preserved — verified on the live canister). The AuthContext `VITE_DEPLOY_TARGET` change is validated end-to-end: UAT auth works and produces a distinct principal from nuance.xyz, exactly as intended.
 
 **Still open (Risk #5):** the canister has a single controller. A backup controller must be added (`dfx canister update-settings t7yut-2iaaa-aaaah-quu3a-cai --network ic --add-controller <BACKUP_PRINCIPAL>`) from an identity on another device — tracked, not a code change, can land post-merge.
+
+**Update (2026-06-09) — second UAT deploy (PR #12 from the mac mini). Three artifacts changed; the block above is preserved as the 2026-06-03 baseline.**
+
+- **Backup controller added — Risk #5 closed.** `nick-macmini`, the mac mini's local dfx identity (password-protected PEM at `/Users/claude/.config/dfx/identity/nick-macmini/identity.pem.encrypted`), principal `eu7hh-z4lej-2mm2b-pqfmc-ai5fi-shnlu-ikags-lzyxn-snkjy-ia7a5-vae`. Added via `dfx canister update-settings t7yut-2iaaa-aaaah-quu3a-cai --network ic --add-controller …` executed under `nick-mainnet` on the MacBook Air. Verified by `dfx canister info` listing both principals.
+- **Module hash changed (passive WASM upgrade).** From `0x63d122d0149a29f4e48603efdd7d2bce656a6a83bac1e3207897c68e8e225bb6` to `0x04e565b3425fe7510ee16b02adcfe3f01abc9a2725c82a21cb08969241debd62`. The mac mini's dfxvm install pulled dfx 0.32.0 (vs. dfx 0.30.2 used for the initial deploy); its bundled asset canister WASM differs. `dfx deploy` swaps in whatever WASM the local dfx ships with — we didn't choose the upgrade. Side note: dfx 0.32.0 surfaces a deprecation warning recommending migration to `icp-cli` (https://cli.internetcomputer.org); leaving that as a separate, project-wide tooling decision.
+- **Newer asset canister WASM enforces per-principal upload permissions.** Controller status alone no longer grants implicit `Prepare`/`Commit` for asset uploads (it did under the 2026-06-03 WASM). Non-deploying controllers must be explicitly granted via `dfx canister --network ic call <canister> grant_permission '(record { to_principal = principal "<p>"; permission = variant { Prepare } })'` and again for `Commit`. ManagePermissions remains controller-implicit, so a controller can self-grant. Encountered mid-deploy when `nick-macmini`'s first `dfx deploy` returned `Caller does not have Prepare permission`; resolved by self-granting both permissions and re-running.
+
+**Script portability fix (committed in PR #12):** `scripts/deploy-uat.sh` previously hardcoded `/Users/nicholaso/...` as the dfx fallback path. Replaced with `$HOME/...` so the script resolves correctly on either the MacBook Air (user `nicholaso`) or the mac mini (user `claude`). Identity selection remains `DFX_IDENTITY=…` override of the default `nick-mainnet`.

@@ -31,6 +31,10 @@ const MyArticles = lazy(() => import("./routes/MyArticles"));
 // Notifications (PR #10) — lazy; the page only ever loads after a bell click.
 // eslint-disable-next-line react-refresh/only-export-components
 const NotificationsPage = lazy(() => import("./routes/NotificationsPage"));
+// Wallet / Funds Overview (PR-1) — lazy; ICRC-1 + Sonic bindings stay out of
+// the home bundle until the wallet is opened.
+// eslint-disable-next-line react-refresh/only-export-components
+const Wallet = lazy(() => import("./routes/Wallet"));
 
 const router = createBrowserRouter([
   { path: "/", element: <Home tab="popular" /> },
@@ -65,6 +69,14 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<ArticleLoadingShell />}>
         <NotificationsPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/wallet",
+    element: (
+      <Suspense fallback={<ArticleLoadingShell />}>
+        <Wallet />
       </Suspense>
     ),
   },

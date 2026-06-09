@@ -16,17 +16,27 @@ import type {
   Result_2 as ReportResult,
   Result_4 as DeletePostResult,
   Result_6 as GetPostResult,
+  Result_11 as TippingResult,
   SaveCommentModel,
 } from "../candid/PostBucket/PostBucket";
 import type {
   RegisterUserReturn,
   Result as UserResult,
+  Result_1 as SpendTipResult,
   UserListItem,
 } from "../candid/User/User";
 import type { Content, Result as StorageResult } from "../candid/Storage/Storage";
 import type {
   GetUserNotificationsResponse,
 } from "../candid/Notifications/Notifications";
+import type {
+  Account,
+  Result as Icrc1TransferResult,
+} from "../candid/Icrc1/Icrc1";
+import type {
+  Result as SonicQuoteResult,
+  SwapArgs,
+} from "../candid/Sonic/Sonic";
 
 // ActorsContext + hook + types live in this file so ActorsContext.tsx is a
 // pure component file. Satisfies `react-refresh/only-export-components`.
@@ -210,6 +220,56 @@ export type ActorsValue = {
     to: number,
   ) => Promise<GetUserNotificationsResponse>;
   markNotificationsAsRead: (notificationIds: string[]) => Promise<void>;
+  // --- Wallet + Tipping (PR-1, decision #42). Token balances + Sonic price
+  // quotes are anon-safe ICRC-1/DEX queries (they read on whatever agent is
+  // active). Claim/spend/transfer are authed — msg.caller must be the signed-in
+  // principal; consumers guard logged-out clicks to open LoginModal so we never
+  // fire a transfer from the anonymous identity. ---
+  // ICRC-1 balance of `owner` (principal text) at an optional 32-byte
+  // subaccount, on the given ledger. Used for NUA/ICP/ckBTC holdings and the
+  // restricted-NUA balance (owner = USER canister, subaccount = claimInfo).
+  getIcrc1Balance: (
+    ledgerCanisterId: string,
+    owner: string,
+    subaccount?: Uint8Array,
+  ) => Promise<bigint>;
+  // Sonic DEX price quote (anon-safe query) for the "= N NUA" conversion. The
+  // raw Result is returned so the hook can degrade silently on a pool error —
+  // a missing quote hides the conversion line, never blocks the holdings render.
+  getSonicQuote: (
+    poolCanisterId: string,
+    args: SwapArgs,
+  ) => Promise<SonicQuoteResult>;
+  // Claim restricted ("Free") NUA into the caller's User-canister subaccount.
+  // Returns the updated User (fresh claimInfo.lastClaimDate → restarts the
+  // 7-day countdown). Authed.
+  claimRestrictedTokens: () => Promise<UserResult>;
+  // Spend restricted (Free) NUA toward a tip — transfers from the caller's claim
+  // subaccount into the per-post tip subaccount. ARG ORDER IS (bucketCanisterId,
+  // postId, amount): the raw actor's positional order. Do NOT mirror the prod
+  // clap-modal, which calls (postId, bucketId, …) because its store reorders.
+  spendRestrictedTokensForTipping: (
+    bucketCanisterId: string,
+    postId: string,
+    amount: bigint,
+  ) => Promise<SpendTipResult>;
+  // Generic ICRC-1 transfer on the authed agent — the regular-token tip path
+  // (move tokens into a per-post subaccount). amount/fee are e8s bigints.
+  transferIcrc1: (
+    ledgerCanisterId: string,
+    to: Account,
+    amount: bigint,
+    fee: bigint,
+  ) => Promise<Icrc1TransferResult>;
+  // Settle a tip: PostBucket reads the per-post subaccount balance, splits
+  // 90% writer / 10% DAO, writes the Applaud record, and notifies the writer.
+  // senderPrincipal is passed "" so the canister uses msg.caller. Called
+  // fire-and-forget after the transfer lands.
+  checkTippingByTokenSymbol: (
+    bucketCanisterId: string,
+    postId: string,
+    symbol: string,
+  ) => Promise<TippingResult>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);
