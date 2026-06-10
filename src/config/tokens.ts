@@ -26,6 +26,13 @@ export type TokenConfig = {
   fee: bigint;
   /** Ledger decimals — all three Nuance tipping tokens use 8. */
   decimals: number;
+  /**
+   * Decimals shown in the UI for balance displays. Decoupled from ledger
+   * decimals: ckBTC needs 8 because realistic balances are sub-0.0001 and
+   * round to "0.0000" at 4 (PR #13). NUA/ICP look right at 4. Tip-cost
+   * lines use a separate rate-precision rule — see TipModal.
+   */
+  displayDecimals: number;
 };
 
 export const TOKENS: Record<SupportedTokenSymbol, TokenConfig> = {
@@ -35,6 +42,7 @@ export const TOKENS: Record<SupportedTokenSymbol, TokenConfig> = {
     canisterId: "rxdbk-dyaaa-aaaaq-aabtq-cai",
     fee: 100_000n,
     decimals: 8,
+    displayDecimals: 4,
   },
   ICP: {
     symbol: "ICP",
@@ -42,6 +50,7 @@ export const TOKENS: Record<SupportedTokenSymbol, TokenConfig> = {
     canisterId: "ryjl3-tyaaa-aaaaa-aaaba-cai",
     fee: 10_000n,
     decimals: 8,
+    displayDecimals: 4,
   },
   ckBTC: {
     symbol: "ckBTC",
@@ -49,6 +58,7 @@ export const TOKENS: Record<SupportedTokenSymbol, TokenConfig> = {
     canisterId: "mxzaz-hqaaa-aaaar-qaada-cai",
     fee: 10n,
     decimals: 8,
+    displayDecimals: 8,
   },
 };
 

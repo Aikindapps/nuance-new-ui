@@ -83,9 +83,11 @@ export function FreeNuaClaim() {
       </div>
       <div className="flex h-[calc(96*var(--fpx))] items-center justify-between rounded-[calc(16*var(--fpx))] border border-ink-border-10 bg-ink-border-5 px-[calc(40*var(--fpx))] py-[calc(24*var(--fpx))]">
         <p className="text-body font-medium text-ink-80">
-          {counting
-            ? `${formatHMS(remaining)} ${walletCopy.claimCountdown}`
-            : walletCopy.claimReady}
+          {!claim.isVerified
+            ? walletCopy.claimNeedsVerify
+            : counting
+              ? `${formatHMS(remaining)} ${walletCopy.claimCountdown}`
+              : walletCopy.claimReady}
         </p>
         <button
           type="button"

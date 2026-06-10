@@ -1,5 +1,6 @@
 import {
   DISPLAY_TOKEN_ORDER,
+  TOKENS,
   type HoldingRow,
   type SupportedTokenSymbol,
 } from "../../../config/tokens";
@@ -30,10 +31,12 @@ export function CurrencyHoldings() {
     const label = row === "FreeNUA" ? "Free NUA" : row;
     const subtitle =
       row === "FreeNUA" || row === "NUA" ? walletCopy.nuanceToken : undefined;
+    // Free-NUA is a UI-only "whole NUA" view, not a separate token in TOKENS.
+    const displayDecimals = row === "FreeNUA" ? 0 : TOKENS[row].displayDecimals;
     const amount =
       raw === undefined
         ? walletCopy.balanceError
-        : formatAmount(raw, { displayDecimals: row === "FreeNUA" ? 0 : 4 });
+        : formatAmount(raw, { displayDecimals });
 
     // Conversion line only for ICP/ckBTC; null = unavailable → hidden.
     let nuaEquivalent: string | null | undefined;
