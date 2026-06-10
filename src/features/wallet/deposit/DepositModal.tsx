@@ -65,7 +65,11 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
             {TOKEN_SYMBOLS.map((sym) => (
               <div key={sym} className="flex flex-1 flex-col items-center gap-1 py-4">
                 <span className="text-lg font-bold text-ink">
-                  {balances.data ? formatAmount(balances.data[sym]) : walletCopy.balanceError}
+                  {balances.data
+                    ? formatAmount(balances.data[sym], {
+                        displayDecimals: TOKENS[sym].displayDecimals,
+                      })
+                    : walletCopy.balanceError}
                 </span>
                 <span className="text-label text-ink-60">{TOKENS[sym].symbol}</span>
               </div>

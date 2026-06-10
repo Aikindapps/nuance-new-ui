@@ -77,9 +77,10 @@ export function TipModal({
     const decimals = TOKENS[token].decimals;
     const e8s = tokenE8sForNua(prices.data, token, amount * 10 ** decimals);
     if (e8s == null) return null;
-    // Per-token precision: NUA is whole; ICP at 4dp; ckBTC needs full 8dp or a
-    // realistic tip (~33 base units = 0.00000033) rounds to "0.0000" and reads
-    // as free.
+    // Rate-precision, not balance-precision: NUA is always whole (1 applaud =
+    // 1 NUA); ICP at 4dp; ckBTC needs full 8dp or a realistic tip
+    // (~33 base units = 0.00000033) rounds to "0.0000" and reads as free.
+    // Separate from TokenConfig.displayDecimals, which is for balances.
     const costDecimals = token === "NUA" ? 0 : token === "ckBTC" ? 8 : 4;
     return (Math.floor(e8s) / 10 ** decimals).toFixed(costDecimals);
   }, [prices.data, amount, token]);
@@ -157,7 +158,13 @@ export function TipModal({
               <Stat
                 key={s}
                 label={s}
-                value={balances.data ? formatAmount(balances.data[s]) : "—"}
+                value={
+                  balances.data
+                    ? formatAmount(balances.data[s], {
+                        displayDecimals: TOKENS[s].displayDecimals,
+                      })
+                    : "—"
+                }
               />
             ))}
           </div>

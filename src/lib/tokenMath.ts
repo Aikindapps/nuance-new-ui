@@ -15,8 +15,9 @@ export function fromE8s(raw: bigint, decimals = 8): number {
 
 /**
  * Format a base-unit (e8s) bigint for display with a fixed number of decimal
- * places. Figma shows token balances to 4 dp (NUA "64.0000", ICP "0.1020",
- * ckBTC "0.0100"); the Free-NUA card renders whole numbers (`displayDecimals: 0`).
+ * places. The 4-dp default matches the Figma (NUA "64.0000", ICP "0.1020");
+ * callers rendering balances pass the token's `TokenConfig.displayDecimals`
+ * (ckBTC needs 8 — PR #13), and the Free-NUA card passes 0 (whole numbers).
  */
 export function formatAmount(
   raw: bigint,

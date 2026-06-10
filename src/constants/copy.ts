@@ -320,6 +320,10 @@ export const walletCopy = {
   // {time} → HH:MM:SS, {max} → max claimable.
   claimCountdown: "till new free tokens",
   claimReady: "Free NUA available to claim",
+  // Shown in place of claimReady/claimCountdown when the user has not completed
+  // DecideAI proof-of-humanity — without it, the canister rejects the claim
+  // (PR #13, surfaced in PR #12 UAT). Verification lives outside this app.
+  claimNeedsVerify: "Verify your account with Decide ID to claim Free NUA",
   claimLabel: "Claim {max} NUA tokens",
   claiming: "Claiming…",
   claimSuccess: "Free NUA claimed.",
