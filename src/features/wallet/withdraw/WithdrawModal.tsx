@@ -14,7 +14,7 @@ import {
   accountIdBytesFromHex,
   principalToAccountIdentifier,
 } from "../../../lib/accountIdentifier";
-import { tokenIcons } from "../../../images";
+import { BalancesRow } from "../components/BalancesRow";
 import { useTokenBalances } from "../hooks/useTokenBalances";
 import { useNuaPrices, priceBetween } from "../hooks/useNuaEquivalent";
 import { useWithdraw } from "./useWithdraw";
@@ -176,22 +176,7 @@ export function WithdrawModal({ onClose }: { onClose: () => void }) {
           {c.bodyLine2}
         </p>
 
-        {/* Balances (Figma "Currencies" row — icon, amount, symbol) */}
-        <div className="flex flex-wrap items-center justify-center gap-12 py-4">
-          {TOKEN_SYMBOLS.map((sym) => (
-            <div key={sym} className="flex w-32 flex-col items-center gap-2">
-              <img src={tokenIcons[sym]} alt="" className="size-10 rounded-full" />
-              <span className="text-lg font-bold tracking-tight text-ink-80">
-                {balances.data
-                  ? formatAmount(balances.data[sym], {
-                      displayDecimals: TOKENS[sym].displayDecimals,
-                    })
-                  : "—"}
-              </span>
-              <span className="text-body font-medium text-ink-60">{sym}</span>
-            </div>
-          ))}
-        </div>
+        <BalancesRow />
 
         {/* Currency selector */}
         <div className="flex flex-col gap-2">

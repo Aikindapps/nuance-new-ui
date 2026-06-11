@@ -297,13 +297,22 @@ export const walletCopy = {
   depositLabel: "Deposit",
   withdrawLabel: "Withdraw",
   comingSoon: "Coming soon",
-  // Deposit modal (no Figma — adapted from prod's deposit modal). Read-only
-  // address display so funds can be sent in (decision #42 update).
-  depositTitle: "Deposit tokens to this wallet",
-  depositBody:
-    "Send NUA, ICP or ckBTC to the address below from any ICRC-1 wallet. Tokens appear here once the transfer settles.",
-  depositInWallet: "Currently in your wallet",
+  // Deposit modal (Figma §7.2: 1:46991 select page → 1:47902 QR page; upgraded
+  // from the PR #12 read-only address view in PR #14). Still no transfer — the
+  // QR/address only receives. Note: the Figma helper line says "create a new
+  // wallet address", but the address is deterministic per principal; copy kept
+  // verbatim from Figma — flag for Mr Nick if it reads as misleading.
+  depositTitle: "Deposit",
+  depositBodyLine1:
+    "Please enter the correct currency to get the deposit address for your wallet.",
+  depositBodyLine2: "Your current balance is:",
   depositSelectLabel: "Select currency to deposit",
+  depositHelper: "Click on ‘Generate code’ to create a new wallet address",
+  depositGenerate: "Generate code",
+  depositCancel: "Cancel",
+  depositScan: "Scan this code to get the deposit address",
+  depositManual: "or enter this code manually",
+  depositChangeCurrency: "Choose another currency",
   // ICP is addressed by its legacy account identifier; NUA/ckBTC by principal.
   depositAddressPrincipal: "Your deposit address (principal)",
   depositAddressAccountId: "Your ICP deposit address (account ID)",
