@@ -330,6 +330,40 @@ export const walletCopy = {
   claimError: "Couldn’t claim Free NUA. Try again.",
 };
 
+// Withdraw modal (Page 7 §7.2, Figma 1:47170 form / 1:48066 success — PR #14,
+// decision #43). Free (restricted) NUA is not withdrawable — it lives in the
+// User canister's custody subaccount, so only regular ledger balances show.
+export const withdrawCopy = {
+  title: "Withdraw from wallet",
+  bodyLine1:
+    "Please select the right currency and amount that you want to withdraw from your wallet.",
+  bodyLine2: "Your current balance is:",
+  selectLabel: "Select currency to withdraw",
+  receiverLabel: "Receiver",
+  // ICP can also be addressed by the legacy 64-hex account identifier
+  // (exchanges / NNS dapp) — decision #43 accepts both forms for ICP.
+  receiverPlaceholder: "Principal ID",
+  receiverPlaceholderIcp: "Principal ID or account ID",
+  amountLabel: "Select amount",
+  amountPlaceholder: "Amount",
+  maxLabel: "max",
+  errorReceiverInvalid: "That doesn’t look like a valid principal ID.",
+  errorReceiverInvalidIcp:
+    "That doesn’t look like a valid principal ID or account ID.",
+  errorReceiverSelf: "That’s this wallet’s own address.",
+  errorAmount: "Amount exceeds your balance minus the transfer fee.",
+  terms:
+    "I am aware of the general policy and agree to transfer amount of tokens.",
+  cancelLabel: "Cancel",
+  withdrawLabel: "Withdraw",
+  withdrawing: "Withdrawing…",
+  successTitle: "Withdraw successful!",
+  // Success line renders as "<amount> <token> {successBody}".
+  successBody: "has been successfully withdrawn from your wallet.",
+  successButton: "Go to wallet",
+  closeAria: "Close",
+};
+
 // Tip Author / Applaud modal (Page 4 §4.2). No detailed Figma frame — adapted
 // from prod's clap-modal flow. An applaud = 1 NUA; paid in NUA/ICP/ckBTC. The
 // recipient split (writer / publication / DAO) is entirely canister-side.

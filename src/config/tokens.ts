@@ -65,6 +65,16 @@ export const TOKENS: Record<SupportedTokenSymbol, TokenConfig> = {
 export const NUA_LEDGER_CANISTER_ID: string = TOKENS.NUA.canisterId;
 
 /**
+ * Transaction-index canisters for the wallet history (PR #14, decision #43).
+ * ICP and ckBTC each ship an index canister that serves per-account transaction
+ * lists; NUA has none, so NUA history reads the ledger's `get_transactions`
+ * (+ archives) directly. IDs verified against the production frontend
+ * (src/nuance_assets/store/postStore.ts).
+ */
+export const ICP_INDEX_CANISTER_ID = "qhbym-qaaaa-aaaaa-aaafq-cai";
+export const CKBTC_INDEX_CANISTER_ID = "n5wcd-faaaa-aaaar-qaaea-cai";
+
+/**
  * Holdings-grid display order. "FreeNUA" is the restricted-NUA pseudo-row — it
  * shares the NUA ledger but is read from the User canister's per-user subaccount.
  * BNB (in the Figma) is intentionally dropped: it is not a real Nuance token.

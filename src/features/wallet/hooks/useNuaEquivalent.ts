@@ -52,8 +52,9 @@ function decimalsOf(symbol: string): number {
 
 // Cross-rate between two tokens via their shared ICP pricing. Ported verbatim
 // from the production `getPriceBetweenTokens`. Returns null when a required
-// quote is missing. `amount` is in display units (not e8s).
-function priceBetween(
+// quote is missing. `amount` is in display units (not e8s). Exported for the
+// Withdraw modal's "= X NUA | Y ICP | Z ckBTC" calculation line (PR #14).
+export function priceBetween(
   prices: TokenPrice[],
   token0: string,
   token1: string,

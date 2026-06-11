@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from "react";
 import type { HttpAgent } from "@icp-sdk/core/agent";
 import { Principal } from "@icp-sdk/core/principal";
 import {
+  createIcpLedgerActor,
   createIcrc1Actor,
   createNotificationsActor,
   createPostBucketActor,
@@ -10,6 +11,7 @@ import {
   createStorageActor,
   createUserActor,
 } from "../lib/actors";
+import { TOKENS } from "../config/tokens";
 import { createAgent } from "../lib/agent";
 import { useAuth } from "./useAuth";
 import { ActorsContext, type ActorsValue } from "./useActors";
@@ -244,6 +246,17 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       transferIcrc1: async (ledgerCanisterId, to, amount, fee) => {
         const actor = await getIcrc1(ledgerCanisterId);
         return actor.icrc1_transfer({ to, amount, fee });
+      },
+      // Lazy actor: the legacy ledger interface is only needed when a user
+      // actually withdraws ICP to an account-id receiver.
+      transferIcp: async (toAccountId, amount) => {
+        const actor = createIcpLedgerActor(await agentPromise);
+        return actor.transfer({
+          to: toAccountId,
+          amount: { e8s: amount },
+          fee: { e8s: TOKENS.ICP.fee },
+          memo: 0n,
+        });
       },
       checkTippingByTokenSymbol: async (bucketCanisterId, postId, symbol) => {
         const actor = await getBucket(bucketCanisterId);

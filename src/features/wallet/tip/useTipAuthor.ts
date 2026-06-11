@@ -11,30 +11,9 @@ import { toBase256 } from "../../../lib/tokenMath";
 import type { PostKeyProperties } from "../../../candid/PostCore/PostCore";
 import { useNuaPrices, tokenE8sForNua } from "../hooks/useNuaEquivalent";
 import { useFreeNuaBalance } from "../hooks/useFreeNuaBalance";
+import { transferErrText } from "../lib/transferErrText";
 
 export type TipVars = { token: SupportedTokenSymbol; applauds: number };
-
-// Map an ICRC-1 TransferError variant to a readable message.
-function transferErrText(err: unknown): string {
-  const e = err as { __kind__?: string; GenericError?: { message?: string } };
-  switch (e?.__kind__) {
-    case "InsufficientFunds":
-      return "Insufficient balance for this tip.";
-    case "BadFee":
-      return "Ledger fee mismatch. Try again.";
-    case "TooOld":
-    case "CreatedInFuture":
-      return "Transfer timing error. Try again.";
-    case "TemporarilyUnavailable":
-      return "The ledger is temporarily unavailable. Try again.";
-    case "Duplicate":
-      return "This transfer was already submitted.";
-    case "GenericError":
-      return e.GenericError?.message ?? "Transfer failed.";
-    default:
-      return "Transfer failed.";
-  }
-}
 
 // The tip transfer engine (mirrors prod clap-modal's executeTransaction).
 //

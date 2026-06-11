@@ -33,6 +33,7 @@ import type {
   Account,
   Result as Icrc1TransferResult,
 } from "../candid/Icrc1/Icrc1";
+import type { TransferResult as IcpTransferResult } from "../candid/IcpLedger/IcpLedger";
 import type {
   Result as SonicQuoteResult,
   SwapArgs,
@@ -261,6 +262,14 @@ export type ActorsValue = {
     amount: bigint,
     fee: bigint,
   ) => Promise<Icrc1TransferResult>;
+  // Legacy ICP ledger transfer to a 32-byte account identifier (Withdraw,
+  // PR #14, decision #43). Principal receivers go through transferIcrc1 on the
+  // ICP ledger instead — both paths debit the same underlying account. amount
+  // is e8s; the wrapper sets the ledger's fixed 10_000-e8s fee.
+  transferIcp: (
+    toAccountId: Uint8Array,
+    amount: bigint,
+  ) => Promise<IcpTransferResult>;
   // Settle a tip: PostBucket reads the per-post subaccount balance, splits
   // 90% writer / 10% DAO, writes the Applaud record, and notifies the writer.
   // senderPrincipal is passed "" so the canister uses msg.caller. Called
