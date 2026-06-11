@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from "react";
 import type { HttpAgent } from "@icp-sdk/core/agent";
 import { Principal } from "@icp-sdk/core/principal";
 import {
+  createExtV2Actor,
   createIcpLedgerActor,
   createIcrc1Actor,
   createNotificationsActor,
@@ -69,6 +70,16 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       if (cached) return cached;
       const actor = createSonicActor(await agentPromise, poolCanisterId);
       sonicActors.set(poolCanisterId, actor);
+      return actor;
+    };
+    // PR #14 (Article Keys): one ext_v2 NFT canister per premium article —
+    // dynamic ids from PostCore.getAllNftCanisters, cached like buckets.
+    const extActors = new Map<string, ReturnType<typeof createExtV2Actor>>();
+    const getExt = async (nftCanisterId: string) => {
+      const cached = extActors.get(nftCanisterId);
+      if (cached) return cached;
+      const actor = createExtV2Actor(await agentPromise, nftCanisterId);
+      extActors.set(nftCanisterId, actor);
       return actor;
     };
 
@@ -246,6 +257,23 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       transferIcrc1: async (ledgerCanisterId, to, amount, fee) => {
         const actor = await getIcrc1(ledgerCanisterId);
         return actor.icrc1_transfer({ to, amount, fee });
+      },
+      // Article Keys (PR #14, decision #43).
+      getAllNftCanisters: async () => {
+        const actor = await postCorePromise;
+        return actor.getAllNftCanisters();
+      },
+      getOwnedExtTokens: async (nftCanisterId, accountIdHex) => {
+        const actor = await getExt(nftCanisterId);
+        return actor.tokens_ext(accountIdHex);
+      },
+      getExtSupply: async (nftCanisterId) => {
+        const actor = await getExt(nftCanisterId);
+        return actor.marketplaceTransactionsAndTotalSupply();
+      },
+      transferExtToken: async (nftCanisterId, request) => {
+        const actor = await getExt(nftCanisterId);
+        return actor.ext_transfer(request);
       },
       // Lazy actor: the legacy ledger interface is only needed when a user
       // actually withdraws ICP to an account-id receiver.

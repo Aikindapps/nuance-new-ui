@@ -35,6 +35,12 @@ import type {
 } from "../candid/Icrc1/Icrc1";
 import type { TransferResult as IcpTransferResult } from "../candid/IcpLedger/IcpLedger";
 import type {
+  Result as ExtTokensResult,
+  TransactionsAndSupply,
+  TransferRequest as ExtTransferRequest,
+  TransferResponse as ExtTransferResponse,
+} from "../candid/ExtV2/ExtV2";
+import type {
   Result as SonicQuoteResult,
   SwapArgs,
 } from "../candid/Sonic/Sonic";
@@ -262,6 +268,27 @@ export type ActorsValue = {
     amount: bigint,
     fee: bigint,
   ) => Promise<Icrc1TransferResult>;
+  // --- Article Keys (PR #14, decision #43) — ext_v2 NFT access keys for
+  // premium articles. One ext_v2 canister per premium article; the registry
+  // lives on PostCore. All reads are anon-safe queries; the transfer is authed
+  // (the canister checks the caller controls the `from` address). ---
+  // Registry of every premium-article NFT canister: [postId, canisterId] pairs.
+  getAllNftCanisters: () => Promise<Array<[string, string]>>;
+  // The caller's tokens on one ext_v2 canister, by account-id hex. `err` for
+  // an account with no tokens is normal — the hook treats it as "none here".
+  getOwnedExtTokens: (
+    nftCanisterId: string,
+    accountIdHex: string,
+  ) => Promise<ExtTokensResult>;
+  // Marketplace transactions + supply counters for one ext_v2 canister —
+  // drives the "Key #N (of M)" supply denominator.
+  getExtSupply: (nftCanisterId: string) => Promise<TransactionsAndSupply>;
+  // EXT-standard NFT transfer (amount is always 1n for these keys). The token
+  // field is the EXT token identifier — build it with extTokenIdentifier().
+  transferExtToken: (
+    nftCanisterId: string,
+    request: ExtTransferRequest,
+  ) => Promise<ExtTransferResponse>;
   // Legacy ICP ledger transfer to a 32-byte account identifier (Withdraw,
   // PR #14, decision #43). Principal receivers go through transferIcrc1 on the
   // ICP ledger instead — both paths debit the same underlying account. amount

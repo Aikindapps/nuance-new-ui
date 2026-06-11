@@ -339,6 +339,46 @@ export const walletCopy = {
   claimError: "Couldn’t claim Free NUA. Try again.",
 };
 
+// Article keys (Page 7 §7.1, Figma 1:46454 — PR #14, decision #43). Premium
+// articles mint ext_v2 NFT "keys"; this block lists the caller's keys. The
+// resold-key claim input is a decision #26-style inert stub — no canister
+// surface exists for claim-by-code (verified against User.did + ExtV2.did).
+export const articleKeysCopy = {
+  heading: "Article keys",
+  body: "To access premium minted articles, you’ll need a key. Here are the keys you’ve purchased.",
+  // {n} → key count.
+  count: "{n} article keys",
+  countOne: "1 article key",
+  // {n} → zero-padded key number, {total} → supply.
+  keyLabel: "Key #{n} (of {total})",
+  keyLabelNoSupply: "Key #{n}",
+  // Fallback row label when post hydration fails.
+  unknownArticle: "Premium article #{postId}",
+  transferAria: "Transfer this key",
+  loadError: "Couldn’t load your article keys.",
+  resoldLabel: "Got a resold key? Enter the code to claim your access.",
+  resoldPlaceholder: "0000 - 0000 - 0000 - 0000 - 0000",
+  comingSoon: "Coming soon",
+  // Transfer-key modal (prod parity: transfer-nft-modal → ext_transfer).
+  transferTitle: "Transfer article key",
+  transferBody:
+    "Send this key to another wallet. The receiver gets this key’s access to the premium article — this wallet loses it.",
+  transferReceiverLabel: "Receiver",
+  transferReceiverPlaceholder: "Principal ID or account ID",
+  transferErrorReceiver:
+    "That doesn’t look like a valid principal ID or account ID.",
+  transferErrorSelf: "That’s this wallet’s own address.",
+  transferTerms:
+    "I understand this sends a real, irreversible NFT transfer.",
+  transferCancel: "Cancel",
+  transferLabel: "Transfer key",
+  transferring: "Transferring…",
+  transferSuccessTitle: "Key transferred!",
+  transferSuccessBody: "has been transferred to the receiver.",
+  transferSuccessClose: "Done",
+  closeAria: "Close",
+};
+
 // Withdraw modal (Page 7 §7.2, Figma 1:47170 form / 1:48066 success — PR #14,
 // decision #43). Free (restricted) NUA is not withdrawable — it lives in the
 // User canister's custody subaccount, so only regular ledger balances show.
