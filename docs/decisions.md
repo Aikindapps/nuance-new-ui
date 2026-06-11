@@ -6,7 +6,25 @@ Each entry captures: **what was chosen**, **what else was considered**, and **wh
 
 ---
 
-## #42 — Page 7 (Funds) sequencing + PR-1 scope; standalone /wallet; bigint + both-legs tipping
+## #43 — Wallet completion (PR #14): decision #42's deferrals in one PR; prod-parity history sources; ICP withdraw accepts account-id OR principal
+
+**Date:** 2026-06-11
+
+**Status:** Active.
+
+**Decision:** PR #14 completes Page 7 by building all three decision #42 deferrals — Wallet History, Article Keys (ext_v2), and the full Deposit/Withdraw flows — in a single multi-phase PR, then deploys to UAT. Mr Nick set the goal ("complete the wallet screen and deploy it to uat") via an autonomous session directive; sub-decisions are logged here rather than asked one-by-one.
+
+Sub-decisions:
+1. **History = prod-parity client-side aggregation** from the same sources production uses (verified in `~/Projects/aikindapps-Nuance/src/nuance_assets/screens/profile/wallet.tsx` + `store/postStore.ts`): ICP Index canister (`qhbym-qaaaa-aaaaa-aaafq-cai`), NUA ledger `get_transactions` + ICRC-1 archive canisters, ckBTC Index (`n5wcd-faaaa-aaaar-qaaea-cai`), `PostBucket.getMyApplauds` across buckets (deduped against tip-escrow subaccounts), restricted-NUA claim transfers, ext_v2 NFT mint/buy activity, and Subscription canister details. The `NuaTransactionHistory` canister is NOT used — prod doesn't read it for this screen either. Client-side pagination per the Figma numbered pager.
+2. **ICP withdraw accepts BOTH a 64-hex account identifier (legacy `transfer`) and a principal (`icrc1_transfer`).** Prod only accepts account-ids for ICP; the Figma's receiver placeholder says "Principal ID". Supporting both matches the Figma, keeps prod parity, and removes a user foot-gun (pasting a principal for ICP fails in prod). NUA/ckBTC remain principal-only ICRC-1. Self-transfers rejected; max = balance − fee; terms checkbox gates submit (Figma).
+3. **BNB excluded** everywhere (illustrative in Figma; not in prod — Mr Nick, 2026-06-03).
+4. **New candid bindings** generated via `@icp-sdk/bindgen` from the vendor repo's .did files: `IcpIndex`, `CkBtcIndex` (icrc1-index), `Icrc1Archive`, `ExtV2`, `IcpLedger` (legacy transfer), `Subscription`. New declarations get the same `@ts-nocheck` header as the existing generated files (current bindgen omits it; without it `tsc -b` fails on unused generated decls).
+5. **Deposit modal gains the Figma QR code** — first consumer of decision #22's QR service item.
+6. **Article Keys "Got a resold key?" claim-code input:** build only if a canister surface exists (to verify during Phase 3 against the ext_v2 .did); otherwise render per the decision #26 stub convention and log the gap.
+
+**Options considered:** one PR per deferral (rejected — History and Keys share the ext_v2 + index-canister bindings and the wallet-page layout work; three PRs would re-review the same surfaces); skipping History pagination in favor of "Load more" (rejected — Figma explicitly shows a numbered pager, unlike Notifications).
+
+**Trade-offs accepted:** the PR is large (5 phases); mitigated by per-phase commits. History correctness on UAT is only partially verifiable (the throwaway UAT principal has limited transaction variety); shared production code paths and the senior review carry the rest.
 
 **Date:** 2026-06-03
 
