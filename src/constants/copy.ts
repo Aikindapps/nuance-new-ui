@@ -379,6 +379,33 @@ export const articleKeysCopy = {
   closeAria: "Close",
 };
 
+// Wallet history (Page 7 §7.1, Figma 1:46484 — PR #14, decision #43). Rows
+// aggregate seven client-side sources; see useWalletHistory for the list.
+export const historyCopy = {
+  heading: "Your wallet history",
+  body: "Your wallet history, including transactions such as key purchases, applauds, and deposits.",
+  colAmount: "Amount",
+  colDate: "Date",
+  colTarget: "For/from article",
+  colDescription: "Description",
+  empty: "No wallet activity yet.",
+  loadError: "Couldn’t load your wallet history.",
+  loading: "Loading your wallet history…",
+  deposit: "Deposit",
+  withdrawal: "Withdrawal",
+  applaudOne: "1 Applaud",
+  applaudMany: "{n} Applauds",
+  // {n} → zero-padded key number, {total} → supply (same shape as articleKeys).
+  keyLabel: "Key #{n} (of {total})",
+  subscription: "Subscription",
+  claimDescription: "Free NUA drop",
+  claimSource: "Nuance.io",
+  freeNuaToken: "Free NUA",
+  unknownArticle: "Premium article #{postId}",
+  pagePrev: "Previous page",
+  pageNext: "Next page",
+};
+
 // Withdraw modal (Page 7 §7.2, Figma 1:47170 form / 1:48066 success — PR #14,
 // decision #43). Free (restricted) NUA is not withdrawable — it lives in the
 // User canister's custody subaccount, so only regular ledger balances show.

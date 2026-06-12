@@ -6,6 +6,7 @@ import { WalletIntro } from "../features/wallet/sections/WalletIntro";
 import { CurrencyHoldings } from "../features/wallet/sections/CurrencyHoldings";
 import { ArticleKeys } from "../features/wallet/keys/ArticleKeys";
 import { FreeNuaClaim } from "../features/wallet/sections/FreeNuaClaim";
+import { WalletHistory } from "../features/wallet/history/WalletHistory";
 
 // /wallet — Funds Overview (Page 7; PR-1 + the PR #14 completion, decision
 // #43). Standalone, logged-in-only route (decision #42). Section order matches
@@ -32,6 +33,7 @@ export function Wallet() {
         <CurrencyHoldings />
         <ArticleKeys />
         <FreeNuaClaim />
+        <WalletHistory />
       </main>
     </div>
   );

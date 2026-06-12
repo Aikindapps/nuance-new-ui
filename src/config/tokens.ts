@@ -73,6 +73,13 @@ export const NUA_LEDGER_CANISTER_ID: string = TOKENS.NUA.canisterId;
  */
 export const ICP_INDEX_CANISTER_ID = "qhbym-qaaaa-aaaaa-aaafq-cai";
 export const CKBTC_INDEX_CANISTER_ID = "n5wcd-faaaa-aaaar-qaaea-cai";
+/**
+ * The NUA SNS ledger ships its own ICRC index canister (verified against the
+ * vendor repo's sns_canister_ids.json — ledger rxdbk-… pairs with this index).
+ * Production scans the whole NUA ledger client-side instead; using the index
+ * is a deliberate improvement (decision #43).
+ */
+export const NUA_INDEX_CANISTER_ID = "q5mdq-biaaa-aaaaq-aabuq-cai";
 
 /**
  * Holdings-grid display order. "FreeNUA" is the restricted-NUA pseudo-row — it

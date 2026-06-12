@@ -34,6 +34,13 @@ import type {
   Result as Icrc1TransferResult,
 } from "../candid/Icrc1/Icrc1";
 import type { TransferResult as IcpTransferResult } from "../candid/IcpLedger/IcpLedger";
+import type { GetAccountIdentifierTransactionsResult } from "../candid/IcpIndex/IcpIndex";
+import type { GetTransactionsResult as IcrcIndexTransactionsResult } from "../candid/CkBtcIndex/CkBtcIndex";
+import type { Applaud } from "../candid/PostBucket/PostBucket";
+import type {
+  Result as WriterSubscriptionResult,
+  Result_1 as ReaderSubscriptionResult,
+} from "../candid/Subscription/Subscription";
 import type {
   Result as ExtTokensResult,
   TransactionsAndSupply,
@@ -268,6 +275,33 @@ export type ActorsValue = {
     amount: bigint,
     fee: bigint,
   ) => Promise<Icrc1TransferResult>;
+  // --- Wallet History (PR #14, decision #43) — per-source reads merged
+  // client-side (prod parity, see useWalletHistory). Index reads are anon-safe
+  // queries on public ledger data; applaud/subscription reads are authed
+  // (msg.caller). ---
+  // ICP transactions for an account-id hex, newest first, via the ICP index
+  // canister.
+  getIcpAccountTransactions: (
+    accountIdHex: string,
+    maxResults: number,
+  ) => Promise<GetAccountIdentifierTransactionsResult>;
+  // ICRC token transactions for an owner(+subaccount), newest first, via the
+  // token's index canister (ckBTC index / NUA SNS index — same interface).
+  getIcrcAccountTransactions: (
+    indexCanisterId: string,
+    owner: string,
+    maxResults: number,
+    subaccount?: Uint8Array,
+  ) => Promise<IcrcIndexTransactionsResult>;
+  // Registry of all PostBucket canisters: [canisterId, isActive-ish] pairs —
+  // only the first element is consumed.
+  getBucketCanisters: () => Promise<Array<[string, string]>>;
+  // The caller's applauds (sent and received) on one bucket canister.
+  getMyApplauds: (bucketCanisterId: string) => Promise<Array<Applaud>>;
+  // The caller's subscription history, both directions (reader payments and
+  // writer earnings).
+  getReaderSubscriptionDetails: () => Promise<ReaderSubscriptionResult>;
+  getWriterSubscriptionDetails: () => Promise<WriterSubscriptionResult>;
   // --- Article Keys (PR #14, decision #43) — ext_v2 NFT access keys for
   // premium articles. One ext_v2 canister per premium article; the registry
   // lives on PostCore. All reads are anon-safe queries; the transfer is authed

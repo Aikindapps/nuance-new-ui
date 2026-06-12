@@ -3,13 +3,16 @@ import type { HttpAgent } from "@icp-sdk/core/agent";
 import { Principal } from "@icp-sdk/core/principal";
 import {
   createExtV2Actor,
+  createIcpIndexActor,
   createIcpLedgerActor,
+  createIcrcIndexActor,
   createIcrc1Actor,
   createNotificationsActor,
   createPostBucketActor,
   createPostCoreActor,
   createSonicActor,
   createStorageActor,
+  createSubscriptionActor,
   createUserActor,
 } from "../lib/actors";
 import { TOKENS } from "../config/tokens";
@@ -257,6 +260,43 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       transferIcrc1: async (ledgerCanisterId, to, amount, fee) => {
         const actor = await getIcrc1(ledgerCanisterId);
         return actor.icrc1_transfer({ to, amount, fee });
+      },
+      // Wallet History (PR #14, decision #43). Index actors are lazy — they
+      // only materialize when the history section actually queries them.
+      getIcpAccountTransactions: async (accountIdHex, maxResults) => {
+        const actor = createIcpIndexActor(await agentPromise);
+        return actor.get_account_identifier_transactions({
+          account_identifier: accountIdHex,
+          max_results: BigInt(maxResults),
+        });
+      },
+      getIcrcAccountTransactions: async (
+        indexCanisterId,
+        owner,
+        maxResults,
+        subaccount,
+      ) => {
+        const actor = createIcrcIndexActor(await agentPromise, indexCanisterId);
+        return actor.get_account_transactions({
+          account: { owner: Principal.fromText(owner), subaccount },
+          max_results: BigInt(maxResults),
+        });
+      },
+      getBucketCanisters: async () => {
+        const actor = await postCorePromise;
+        return actor.getBucketCanisters();
+      },
+      getMyApplauds: async (bucketCanisterId) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.getMyApplauds();
+      },
+      getReaderSubscriptionDetails: async () => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.getReaderSubscriptionDetails();
+      },
+      getWriterSubscriptionDetails: async () => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.getWriterSubscriptionDetails(null);
       },
       // Article Keys (PR #14, decision #43).
       getAllNftCanisters: async () => {
