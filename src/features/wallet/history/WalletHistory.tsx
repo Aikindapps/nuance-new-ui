@@ -56,9 +56,11 @@ export function WalletHistory() {
     clampedPage * PAGE_SIZE,
   );
 
-  const colAmount = "w-[calc(120*var(--fpx))] shrink-0";
-  const colDate = "w-[calc(94*var(--fpx))] shrink-0";
-  const colTarget = "w-[calc(288*var(--fpx))] shrink-0 min-w-0";
+  // Amount widened 120 → 160 vs the Figma column (and nowrap) so 8-dp ckBTC
+  // amounts don't wrap; Target gives back the 40px (visual pass 2026-06-12).
+  const colAmount = "w-[calc(160*var(--fpx))] shrink-0 whitespace-nowrap";
+  const colDate = "w-[calc(94*var(--fpx))] shrink-0 whitespace-nowrap";
+  const colTarget = "w-[calc(248*var(--fpx))] shrink-0 min-w-0";
 
   return (
     <section className="flex flex-col gap-[calc(24*var(--fpx))]">

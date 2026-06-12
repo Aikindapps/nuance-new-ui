@@ -18,12 +18,21 @@ export function fromE8s(raw: bigint, decimals = 8): number {
  * places. The 4-dp default matches the Figma (NUA "64.0000", ICP "0.1020");
  * callers rendering balances pass the token's `TokenConfig.displayDecimals`
  * (ckBTC needs 8 — PR #13), and the Free-NUA card passes 0 (whole numbers).
+ *
+ * Above 4 decimal places, trailing zeros are trimmed back down to 4: ckBTC
+ * "0.00012345" keeps its precision, but "0.01000000" renders "0.0100" — the
+ * extra zeros cramped the holdings card and history column (visual pass,
+ * 2026-06-12). NUA/ICP at 4 dp are unaffected (Figma's fixed-width zeros stay).
  */
 export function formatAmount(
   raw: bigint,
   { decimals = 8, displayDecimals = 4 }: { decimals?: number; displayDecimals?: number } = {},
 ): string {
-  return fromE8s(raw, decimals).toFixed(displayDecimals);
+  const fixed = fromE8s(raw, decimals).toFixed(displayDecimals);
+  if (displayDecimals <= 4) return fixed;
+  const [whole, frac] = fixed.split(".");
+  const trimmed = frac.replace(/0+$/, "").padEnd(4, "0");
+  return `${whole}.${trimmed}`;
 }
 
 /**
