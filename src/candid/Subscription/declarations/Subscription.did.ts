@@ -12,6 +12,10 @@ import { IDL } from '@icp-sdk/core/candid';
 export interface Icrc28TrustedOriginsResponse {
   'trusted_origins' : Array<string>,
 }
+export type PaymentMethod = {
+    'Fiat' : { 'stripeSubscriptionId' : string, 'usdAmountCents' : string }
+  } |
+  { 'Token' : null };
 export interface PaymentRequest {
   'subscriptionEventId' : string,
   'subaccount' : Uint8Array,
@@ -28,19 +32,23 @@ export interface ReaderSubscriptionDetails {
 }
 export type Result = { 'ok' : WriterSubscriptionDetails } |
   { 'err' : string };
-export type Result_1 = { 'ok' : ReaderSubscriptionDetails } |
+export type Result_1 = { 'ok' : null } |
   { 'err' : string };
-export type Result_2 = { 'ok' : bigint } |
+export type Result_2 = { 'ok' : ReaderSubscriptionDetails } |
   { 'err' : string };
-export type Result_3 = { 'ok' : PaymentRequest } |
+export type Result_3 = { 'ok' : string } |
   { 'err' : string };
-export type Result_4 = { 'ok' : null } |
+export type Result_4 = { 'ok' : bigint } |
+  { 'err' : string };
+export type Result_5 = { 'ok' : PaymentRequest } |
   { 'err' : string };
 export interface SubscriptionEvent {
   'startTime' : bigint,
   'subscriptionEventId' : string,
+  'paymentMethod' : [] | [PaymentMethod],
   'endTime' : bigint,
   'subscriptionTimeInterval' : SubscriptionTimeInterval,
+  'stripeCancelAtPeriodEnd' : [] | [boolean],
   'writerPrincipalId' : string,
   'paymentFee' : string,
   'isWriterSubscriptionActive' : boolean,
@@ -59,32 +67,51 @@ export interface UpdateSubscriptionDetailsModel {
   'publicationInformation' : [] | [[Principal, string]],
 }
 export interface WriterSubscriptionDetails {
+  'stripeAccountId' : [] | [string],
   'writerSubscriptions' : Array<SubscriptionEvent>,
   'weeklyFee' : [] | [string],
   'paymentReceiverPrincipalId' : string,
   'writerPrincipalId' : string,
   'lifeTimeFee' : [] | [string],
+  'stripePricing' : Array<[SubscriptionTimeInterval, string, string]>,
   'isSubscriptionActive' : boolean,
   'annuallyFee' : [] | [string],
+  'stripeIsActive' : boolean,
   'monthlyFee' : [] | [string],
 }
 export interface _SERVICE {
   'acceptCycles' : ActorMethod<[], undefined>,
+  'authorizeForProxy' : ActorMethod<[string], undefined>,
+  'authorizeForProxyAsEditor' : ActorMethod<[string, string], Result_1>,
   'availableCycles' : ActorMethod<[], bigint>,
+  'cancelStripeSubscription' : ActorMethod<
+    [string, string, string, string],
+    Result_1
+  >,
   'checkMyExpiredSubscriptionsNotifications' : ActorMethod<[], undefined>,
-  'completeSubscriptionEvent' : ActorMethod<[string], Result_1>,
+  'checkProxyAuthorization' : ActorMethod<[string, string], boolean>,
+  'completeSubscriptionEvent' : ActorMethod<[string], Result_2>,
+  'consumeProxyAuthorization' : ActorMethod<[string], undefined>,
   'createPaymentRequestAsReader' : ActorMethod<
     [string, SubscriptionTimeInterval, bigint],
-    Result_3
+    Result_5
   >,
-  'disperseTokensForSuccessfulSubscription' : ActorMethod<[string], Result_4>,
+  'deactivateStripeAccount' : ActorMethod<[string], Result>,
+  'disperseTokensForSuccessfulSubscription' : ActorMethod<[string], Result_1>,
   'expiredNotificationsHeartbeatExternal' : ActorMethod<[], undefined>,
+  'getAuthorActivePaidSubscriberPrincipalIds' : ActorMethod<
+    [string],
+    Array<string>
+  >,
   'getCanisterVersion' : ActorMethod<[], string>,
   'getLatestTimerCall' : ActorMethod<[], [string, string]>,
   'getMaxMemorySize' : ActorMethod<[], bigint>,
   'getMemorySize' : ActorMethod<[], bigint>,
-  'getPaymentRequestBySubscriptionEventId' : ActorMethod<[string], Result_3>,
-  'getReaderSubscriptionDetails' : ActorMethod<[], Result_1>,
+  'getPaymentRequestBySubscriptionEventId' : ActorMethod<[string], Result_5>,
+  'getReaderSubscriptionDetails' : ActorMethod<[], Result_2>,
+  'getStripeAccountId' : ActorMethod<[string], [] | [string]>,
+  'getStripeCustomerId' : ActorMethod<[string], [] | [string]>,
+  'getTrustedProxyPrincipal' : ActorMethod<[], string>,
   'getWriterSubscriptionDetails' : ActorMethod<[[] | [string]], Result>,
   'getWriterSubscriptionDetailsByPrincipalId' : ActorMethod<[string], Result>,
   'icrc10_supported_standards' : ActorMethod<[], Array<SupportedStandard>>,
@@ -99,14 +126,46 @@ export interface _SERVICE {
     undefined
   >,
   'sendStopSubscriptionNotification' : ActorMethod<[string, string], undefined>,
-  'setMaxMemorySize' : ActorMethod<[bigint], Result_2>,
-  'stopSubscription' : ActorMethod<[string], Result_1>,
+  'setMaxMemorySize' : ActorMethod<[bigint], Result_4>,
+  'setStripeAccountActive' : ActorMethod<[string, boolean], Result>,
+  'setStripeSubscriptionCancelState' : ActorMethod<
+    [string, string, string, boolean, bigint],
+    Result_1
+  >,
+  'setTrustedProxyPrincipal' : ActorMethod<[string], Result_3>,
+  'stopSubscription' : ActorMethod<[string], Result_2>,
+  'syncStripeSubscription' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      SubscriptionTimeInterval,
+      string,
+      string,
+      bigint,
+      string,
+    ],
+    Result_1
+  >,
+  'updateStripeAccount' : ActorMethod<[string, string], Result>,
+  'updateStripePriceTier' : ActorMethod<
+    [string, SubscriptionTimeInterval, string, string],
+    Result
+  >,
   'updateSubscriptionDetails' : ActorMethod<
     [UpdateSubscriptionDetailsModel],
     Result
   >,
 }
 export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
+  const Result_1 = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
+  const PaymentMethod = IDL.Variant({
+    'Fiat' : IDL.Record({
+      'stripeSubscriptionId' : IDL.Text,
+      'usdAmountCents' : IDL.Text,
+    }),
+    'Token' : IDL.Null,
+  });
   const SubscriptionTimeInterval = IDL.Variant({
     'LifeTime' : IDL.Null,
     'Weekly' : IDL.Null,
@@ -116,21 +175,28 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
   const SubscriptionEvent = IDL.Record({
     'startTime' : IDL.Int,
     'subscriptionEventId' : IDL.Text,
+    'paymentMethod' : IDL.Opt(PaymentMethod),
     'endTime' : IDL.Int,
     'subscriptionTimeInterval' : SubscriptionTimeInterval,
+    'stripeCancelAtPeriodEnd' : IDL.Opt(IDL.Bool),
     'writerPrincipalId' : IDL.Text,
     'paymentFee' : IDL.Text,
     'isWriterSubscriptionActive' : IDL.Bool,
     'readerPrincipalId' : IDL.Text,
   });
   const WriterSubscriptionDetails = IDL.Record({
+    'stripeAccountId' : IDL.Opt(IDL.Text),
     'writerSubscriptions' : IDL.Vec(SubscriptionEvent),
     'weeklyFee' : IDL.Opt(IDL.Text),
     'paymentReceiverPrincipalId' : IDL.Text,
     'writerPrincipalId' : IDL.Text,
     'lifeTimeFee' : IDL.Opt(IDL.Text),
+    'stripePricing' : IDL.Vec(
+      IDL.Tuple(SubscriptionTimeInterval, IDL.Text, IDL.Text)
+    ),
     'isSubscriptionActive' : IDL.Bool,
     'annuallyFee' : IDL.Opt(IDL.Text),
+    'stripeIsActive' : IDL.Bool,
     'monthlyFee' : IDL.Opt(IDL.Text),
   });
   const ReaderSubscriptionDetails = IDL.Record({
@@ -138,7 +204,7 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
     'readerNotStoppedSubscriptionsWriters' : IDL.Vec(WriterSubscriptionDetails),
     'readerPrincipalId' : IDL.Text,
   });
-  const Result_1 = IDL.Variant({
+  const Result_2 = IDL.Variant({
     'ok' : ReaderSubscriptionDetails,
     'err' : IDL.Text,
   });
@@ -151,8 +217,7 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
     'paymentFee' : IDL.Text,
     'readerPrincipalId' : IDL.Text,
   });
-  const Result_3 = IDL.Variant({ 'ok' : PaymentRequest, 'err' : IDL.Text });
-  const Result_4 = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
+  const Result_5 = IDL.Variant({ 'ok' : PaymentRequest, 'err' : IDL.Text });
   const Result = IDL.Variant({
     'ok' : WriterSubscriptionDetails,
     'err' : IDL.Text,
@@ -161,7 +226,8 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
   const Icrc28TrustedOriginsResponse = IDL.Record({
     'trusted_origins' : IDL.Vec(IDL.Text),
   });
-  const Result_2 = IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text });
+  const Result_4 = IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text });
+  const Result_3 = IDL.Variant({ 'ok' : IDL.Text, 'err' : IDL.Text });
   const UpdateSubscriptionDetailsModel = IDL.Record({
     'weeklyFee' : IDL.Opt(IDL.Nat),
     'lifeTimeFee' : IDL.Opt(IDL.Nat),
@@ -172,30 +238,60 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
   
   return IDL.Service({
     'acceptCycles' : IDL.Func([], [], []),
-    'availableCycles' : IDL.Func([], [IDL.Nat], ['query']),
-    'checkMyExpiredSubscriptionsNotifications' : IDL.Func([], [], []),
-    'completeSubscriptionEvent' : IDL.Func([IDL.Text], [Result_1], []),
-    'createPaymentRequestAsReader' : IDL.Func(
-        [IDL.Text, SubscriptionTimeInterval, IDL.Nat],
-        [Result_3],
+    'authorizeForProxy' : IDL.Func([IDL.Text], [], []),
+    'authorizeForProxyAsEditor' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [Result_1],
         [],
       ),
+    'availableCycles' : IDL.Func([], [IDL.Nat], ['query']),
+    'cancelStripeSubscription' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [Result_1],
+        [],
+      ),
+    'checkMyExpiredSubscriptionsNotifications' : IDL.Func([], [], []),
+    'checkProxyAuthorization' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Bool],
+        ['query'],
+      ),
+    'completeSubscriptionEvent' : IDL.Func([IDL.Text], [Result_2], []),
+    'consumeProxyAuthorization' : IDL.Func([IDL.Text], [], []),
+    'createPaymentRequestAsReader' : IDL.Func(
+        [IDL.Text, SubscriptionTimeInterval, IDL.Nat],
+        [Result_5],
+        [],
+      ),
+    'deactivateStripeAccount' : IDL.Func([IDL.Text], [Result], []),
     'disperseTokensForSuccessfulSubscription' : IDL.Func(
         [IDL.Text],
-        [Result_4],
+        [Result_1],
         [],
       ),
     'expiredNotificationsHeartbeatExternal' : IDL.Func([], [], []),
+    'getAuthorActivePaidSubscriberPrincipalIds' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
     'getCanisterVersion' : IDL.Func([], [IDL.Text], ['query']),
     'getLatestTimerCall' : IDL.Func([], [IDL.Text, IDL.Text], ['query']),
     'getMaxMemorySize' : IDL.Func([], [IDL.Nat], ['query']),
     'getMemorySize' : IDL.Func([], [IDL.Nat], ['query']),
     'getPaymentRequestBySubscriptionEventId' : IDL.Func(
         [IDL.Text],
-        [Result_3],
+        [Result_5],
         ['query'],
       ),
-    'getReaderSubscriptionDetails' : IDL.Func([], [Result_1], ['query']),
+    'getReaderSubscriptionDetails' : IDL.Func([], [Result_2], ['query']),
+    'getStripeAccountId' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
+    'getStripeCustomerId' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(IDL.Text)],
+        ['query'],
+      ),
+    'getTrustedProxyPrincipal' : IDL.Func([], [IDL.Text], ['query']),
     'getWriterSubscriptionDetails' : IDL.Func(
         [IDL.Opt(IDL.Text)],
         [Result],
@@ -227,8 +323,35 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
     'pendingTokensHeartbeatExternal' : IDL.Func([], [], []),
     'sendNewSubscriptionNotifications' : IDL.Func([SubscriptionEvent], [], []),
     'sendStopSubscriptionNotification' : IDL.Func([IDL.Text, IDL.Text], [], []),
-    'setMaxMemorySize' : IDL.Func([IDL.Nat], [Result_2], []),
-    'stopSubscription' : IDL.Func([IDL.Text], [Result_1], []),
+    'setMaxMemorySize' : IDL.Func([IDL.Nat], [Result_4], []),
+    'setStripeAccountActive' : IDL.Func([IDL.Text, IDL.Bool], [Result], []),
+    'setStripeSubscriptionCancelState' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Bool, IDL.Int],
+        [Result_1],
+        [],
+      ),
+    'setTrustedProxyPrincipal' : IDL.Func([IDL.Text], [Result_3], []),
+    'stopSubscription' : IDL.Func([IDL.Text], [Result_2], []),
+    'syncStripeSubscription' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          SubscriptionTimeInterval,
+          IDL.Text,
+          IDL.Text,
+          IDL.Int,
+          IDL.Text,
+        ],
+        [Result_1],
+        [],
+      ),
+    'updateStripeAccount' : IDL.Func([IDL.Text, IDL.Text], [Result], []),
+    'updateStripePriceTier' : IDL.Func(
+        [IDL.Text, SubscriptionTimeInterval, IDL.Text, IDL.Text],
+        [Result],
+        [],
+      ),
     'updateSubscriptionDetails' : IDL.Func(
         [UpdateSubscriptionDetailsModel],
         [Result],

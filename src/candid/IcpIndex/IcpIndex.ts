@@ -118,6 +118,7 @@ export interface Transaction {
     memo: bigint;
     icrc1_memo?: Uint8Array;
     operation: Operation;
+    timestamp?: TimeStamp;
     created_at_time?: TimeStamp;
 }
 export interface GetAccountTransactionsArgs {
@@ -242,17 +243,20 @@ function from_candid_record_n11(value: {
     memo: bigint;
     icrc1_memo: [] | [Uint8Array];
     operation: _Operation;
+    timestamp: [] | [_TimeStamp];
     created_at_time: [] | [_TimeStamp];
 }): {
     memo: bigint;
     icrc1_memo?: Uint8Array;
     operation: Operation;
+    timestamp?: TimeStamp;
     created_at_time?: TimeStamp;
 } {
     return {
         memo: value.memo,
         icrc1_memo: record_opt_to_undefined(from_candid_opt_n12(value.icrc1_memo)),
         operation: from_candid_Operation_n13(value.operation),
+        timestamp: record_opt_to_undefined(from_candid_opt_n16(value.timestamp)),
         created_at_time: record_opt_to_undefined(from_candid_opt_n16(value.created_at_time))
     };
 }

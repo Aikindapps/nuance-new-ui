@@ -124,6 +124,9 @@ export function useWalletHistory() {
             id: `applaud-${a.applaudId}`,
             timestampMs: parseInt(a.date, 10) || 0,
             sign: a.sender === principalText ? "-" : "+",
+            // Gross tip amount for both directions (prod parity) — the
+            // receiver's net after the canister's split is
+            // `receivedTokenAmount`; deliberately not used (review nit 7).
             amount: trimE8s(a.tokenAmount),
             token: a.currency,
             target: post
@@ -238,13 +241,15 @@ export function useWalletHistory() {
           if (op.__kind__ !== "Transfer") return [];
           const isDeposit = op.Transfer.to === myAccountId;
           const counterparty = isDeposit ? op.Transfer.from : op.Transfer.to;
+          // Block timestamp first (authoritative, always set on the live
+          // index); created_at_time is sender-supplied and frequently null —
+          // this PR's own icrc1_transfer withdrawals don't set it (review M1).
+          const ts = t.transaction.timestamp ?? t.transaction.created_at_time;
           return [
             {
               row: {
                 id: `icp-${t.id}`,
-                timestampMs: t.transaction.created_at_time
-                  ? Number(t.transaction.created_at_time.timestamp_nanos / 1_000_000n)
-                  : 0,
+                timestampMs: ts ? Number(ts.timestamp_nanos / 1_000_000n) : 0,
                 sign: isDeposit ? ("+" as const) : ("-" as const),
                 amount: trimE8s(op.Transfer.amount.e8s),
                 token: "ICP",
@@ -339,27 +344,32 @@ export function useWalletHistory() {
           actors.getWriterSubscriptionDetails(),
         ]);
         const events: Array<{ out: boolean; counterparty: string; feeE8s: bigint; timeMs: number; id: string }> = [];
+        // Stripe-paid events carry no token movement (paymentFee is 0; the
+        // USD amount lives in paymentMethod.Fiat) — skipped: this table shows
+        // wallet token flows (review m5).
         if (reader.__kind__ === "ok") {
-          reader.ok.readerSubscriptions.forEach((e) =>
+          reader.ok.readerSubscriptions.forEach((e) => {
+            if (e.paymentMethod?.__kind__ === "Fiat") return;
             events.push({
               out: true,
               counterparty: e.writerPrincipalId,
               feeE8s: BigInt(e.paymentFee || "0"),
               timeMs: Number(e.startTime),
               id: e.subscriptionEventId,
-            }),
-          );
+            });
+          });
         }
         if (writer.__kind__ === "ok") {
-          writer.ok.writerSubscriptions.forEach((e) =>
+          writer.ok.writerSubscriptions.forEach((e) => {
+            if (e.paymentMethod?.__kind__ === "Fiat") return;
             events.push({
               out: false,
               counterparty: e.readerPrincipalId,
               feeE8s: BigInt(e.paymentFee || "0"),
               timeMs: Number(e.startTime),
               id: e.subscriptionEventId,
-            }),
-          );
+            });
+          });
         }
         if (events.length === 0) return [];
         const users = await actors

@@ -115,7 +115,10 @@ export function WalletHistory() {
       {!history.isPending && !history.isError && rows.length > 0 && (
         <>
           {totalPages > 1 && (
-            <nav className="flex items-center justify-center gap-2">
+            <nav
+              aria-label={c.pagerAria}
+              className="flex items-center justify-center gap-2"
+            >
               <button
                 type="button"
                 aria-label={c.pagePrev}

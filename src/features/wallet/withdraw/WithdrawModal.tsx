@@ -191,6 +191,9 @@ export function WithdrawModal({ onClose }: { onClose: () => void }) {
                   aria-pressed={active}
                   onClick={() => {
                     setToken(sym);
+                    // An amount typed for one token silently re-denominates in
+                    // another (5 NUA → 5 ckBTC) — clear it (review m4).
+                    setAmountText("");
                     setError(null);
                   }}
                   className={`flex-1 rounded-card border px-4 py-2 text-body font-medium transition-colors ${
@@ -260,8 +263,14 @@ export function WithdrawModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={() =>
+                // Full ledger precision, trailing zeros trimmed. toFixed at
+                // displayDecimals would ROUND — for a balance like 0.12345678
+                // that rounds the max UP past the real max and strands dust
+                // below it (review m3).
                 setAmountText(
-                  fromE8s(maxE8s, cfg.decimals).toFixed(cfg.displayDecimals),
+                  fromE8s(maxE8s, cfg.decimals)
+                    .toFixed(cfg.decimals)
+                    .replace(/\.?0+$/, "") || "0",
                 )
               }
               className="absolute right-4 top-1/2 -translate-y-1/2 text-label font-medium text-ink-60 hover:text-brand-purple"

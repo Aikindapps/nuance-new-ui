@@ -39,7 +39,7 @@ import type { GetTransactionsResult as IcrcIndexTransactionsResult } from "../ca
 import type { Applaud } from "../candid/PostBucket/PostBucket";
 import type {
   Result as WriterSubscriptionResult,
-  Result_1 as ReaderSubscriptionResult,
+  Result_2 as ReaderSubscriptionResult,
 } from "../candid/Subscription/Subscription";
 import type {
   Result as ExtTokensResult,

@@ -93,6 +93,7 @@ export interface Transaction {
   'memo' : bigint,
   'icrc1_memo' : [] | [Uint8Array],
   'operation' : Operation,
+  'timestamp' : [] | [TimeStamp],
   'created_at_time' : [] | [TimeStamp],
 }
 export interface TransactionWithId {
@@ -152,6 +153,7 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
     'memo' : IDL.Nat64,
     'icrc1_memo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
     'operation' : Operation,
+    'timestamp' : IDL.Opt(TimeStamp),
     'created_at_time' : IDL.Opt(TimeStamp),
   });
   const TransactionWithId = IDL.Record({

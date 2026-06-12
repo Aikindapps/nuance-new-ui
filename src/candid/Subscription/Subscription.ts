@@ -51,14 +51,45 @@ function candid_none<T>(): [] {
 function record_opt_to_undefined<T>(arg: T | null): T | undefined {
     return arg == null ? undefined : arg;
 }
-export type Result_4 = {
+export type Result_2 = {
+    __kind__: "ok";
+    ok: ReaderSubscriptionDetails;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type PaymentMethod = {
+    __kind__: "Fiat";
+    Fiat: {
+        stripeSubscriptionId: string;
+        usdAmountCents: string;
+    };
+} | {
+    __kind__: "Token";
+    Token: null;
+};
+export interface Icrc28TrustedOriginsResponse {
+    trusted_origins: Array<string>;
+}
+export interface SupportedStandard {
+    url: string;
+    name: string;
+}
+export type Result_5 = {
+    __kind__: "ok";
+    ok: PaymentRequest;
+} | {
+    __kind__: "err";
+    err: string;
+};
+export type Result_1 = {
     __kind__: "ok";
     ok: null;
 } | {
     __kind__: "err";
     err: string;
 };
-export type Result_2 = {
+export type Result_4 = {
     __kind__: "ok";
     ok: bigint;
 } | {
@@ -74,50 +105,23 @@ export type Result = {
 };
 export type Result_3 = {
     __kind__: "ok";
-    ok: PaymentRequest;
+    ok: string;
 } | {
     __kind__: "err";
     err: string;
 };
-export interface Icrc28TrustedOriginsResponse {
-    trusted_origins: Array<string>;
-}
 export interface SubscriptionEvent {
     startTime: bigint;
     subscriptionEventId: string;
+    paymentMethod?: PaymentMethod;
     endTime: bigint;
     subscriptionTimeInterval: SubscriptionTimeInterval;
+    stripeCancelAtPeriodEnd?: boolean;
     writerPrincipalId: string;
     paymentFee: string;
     isWriterSubscriptionActive: boolean;
     readerPrincipalId: string;
 }
-export interface ReaderSubscriptionDetails {
-    readerSubscriptions: Array<SubscriptionEvent>;
-    readerNotStoppedSubscriptionsWriters: Array<WriterSubscriptionDetails>;
-    readerPrincipalId: string;
-}
-export interface SupportedStandard {
-    url: string;
-    name: string;
-}
-export interface WriterSubscriptionDetails {
-    writerSubscriptions: Array<SubscriptionEvent>;
-    weeklyFee?: string;
-    paymentReceiverPrincipalId: string;
-    writerPrincipalId: string;
-    lifeTimeFee?: string;
-    isSubscriptionActive: boolean;
-    annuallyFee?: string;
-    monthlyFee?: string;
-}
-export type Result_1 = {
-    __kind__: "ok";
-    ok: ReaderSubscriptionDetails;
-} | {
-    __kind__: "err";
-    err: string;
-};
 export interface PaymentRequest {
     subscriptionEventId: string;
     subaccount: Uint8Array;
@@ -126,6 +130,24 @@ export interface PaymentRequest {
     expirationDate: bigint;
     paymentFee: string;
     readerPrincipalId: string;
+}
+export interface ReaderSubscriptionDetails {
+    readerSubscriptions: Array<SubscriptionEvent>;
+    readerNotStoppedSubscriptionsWriters: Array<WriterSubscriptionDetails>;
+    readerPrincipalId: string;
+}
+export interface WriterSubscriptionDetails {
+    stripeAccountId?: string;
+    writerSubscriptions: Array<SubscriptionEvent>;
+    weeklyFee?: string;
+    paymentReceiverPrincipalId: string;
+    writerPrincipalId: string;
+    lifeTimeFee?: string;
+    stripePricing: Array<[SubscriptionTimeInterval, string, string]>;
+    isSubscriptionActive: boolean;
+    annuallyFee?: string;
+    stripeIsActive: boolean;
+    monthlyFee?: string;
 }
 export interface UpdateSubscriptionDetailsModel {
     weeklyFee?: bigint;
@@ -142,18 +164,28 @@ export enum SubscriptionTimeInterval {
 }
 export interface SubscriptionInterface {
     acceptCycles(): Promise<void>;
+    authorizeForProxy(arg0: string): Promise<void>;
+    authorizeForProxyAsEditor(arg0: string, arg1: string): Promise<Result_1>;
     availableCycles(): Promise<bigint>;
+    cancelStripeSubscription(arg0: string, arg1: string, arg2: string, arg3: string): Promise<Result_1>;
     checkMyExpiredSubscriptionsNotifications(): Promise<void>;
-    completeSubscriptionEvent(arg0: string): Promise<Result_1>;
-    createPaymentRequestAsReader(arg0: string, arg1: SubscriptionTimeInterval, arg2: bigint): Promise<Result_3>;
-    disperseTokensForSuccessfulSubscription(arg0: string): Promise<Result_4>;
+    checkProxyAuthorization(arg0: string, arg1: string): Promise<boolean>;
+    completeSubscriptionEvent(arg0: string): Promise<Result_2>;
+    consumeProxyAuthorization(arg0: string): Promise<void>;
+    createPaymentRequestAsReader(arg0: string, arg1: SubscriptionTimeInterval, arg2: bigint): Promise<Result_5>;
+    deactivateStripeAccount(arg0: string): Promise<Result>;
+    disperseTokensForSuccessfulSubscription(arg0: string): Promise<Result_1>;
     expiredNotificationsHeartbeatExternal(): Promise<void>;
+    getAuthorActivePaidSubscriberPrincipalIds(arg0: string): Promise<Array<string>>;
     getCanisterVersion(): Promise<string>;
     getLatestTimerCall(): Promise<[string, string]>;
     getMaxMemorySize(): Promise<bigint>;
     getMemorySize(): Promise<bigint>;
-    getPaymentRequestBySubscriptionEventId(arg0: string): Promise<Result_3>;
-    getReaderSubscriptionDetails(): Promise<Result_1>;
+    getPaymentRequestBySubscriptionEventId(arg0: string): Promise<Result_5>;
+    getReaderSubscriptionDetails(): Promise<Result_2>;
+    getStripeAccountId(arg0: string): Promise<string | null>;
+    getStripeCustomerId(arg0: string): Promise<string | null>;
+    getTrustedProxyPrincipal(): Promise<string>;
     getWriterSubscriptionDetails(arg0: string | null): Promise<Result>;
     getWriterSubscriptionDetailsByPrincipalId(arg0: string): Promise<Result>;
     icrc10_supported_standards(): Promise<Array<SupportedStandard>>;
@@ -165,39 +197,73 @@ export interface SubscriptionInterface {
     pendingTokensHeartbeatExternal(): Promise<void>;
     sendNewSubscriptionNotifications(arg0: SubscriptionEvent): Promise<void>;
     sendStopSubscriptionNotification(arg0: string, arg1: string): Promise<void>;
-    setMaxMemorySize(arg0: bigint): Promise<Result_2>;
-    stopSubscription(arg0: string): Promise<Result_1>;
+    setMaxMemorySize(arg0: bigint): Promise<Result_4>;
+    setStripeAccountActive(arg0: string, arg1: boolean): Promise<Result>;
+    setStripeSubscriptionCancelState(arg0: string, arg1: string, arg2: string, arg3: boolean, arg4: bigint): Promise<Result_1>;
+    setTrustedProxyPrincipal(arg0: string): Promise<Result_3>;
+    stopSubscription(arg0: string): Promise<Result_2>;
+    syncStripeSubscription(arg0: string, arg1: string, arg2: string, arg3: SubscriptionTimeInterval, arg4: string, arg5: string, arg6: bigint, arg7: string): Promise<Result_1>;
+    updateStripeAccount(arg0: string, arg1: string): Promise<Result>;
+    updateStripePriceTier(arg0: string, arg1: SubscriptionTimeInterval, arg2: string, arg3: string): Promise<Result>;
     updateSubscriptionDetails(arg0: UpdateSubscriptionDetailsModel): Promise<Result>;
 }
-import type { PaymentRequest as _PaymentRequest, ReaderSubscriptionDetails as _ReaderSubscriptionDetails, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, SubscriptionEvent as _SubscriptionEvent, SubscriptionTimeInterval as _SubscriptionTimeInterval, UpdateSubscriptionDetailsModel as _UpdateSubscriptionDetailsModel, WriterSubscriptionDetails as _WriterSubscriptionDetails } from "./declarations/Subscription.did";
+import type { PaymentMethod as _PaymentMethod, PaymentRequest as _PaymentRequest, ReaderSubscriptionDetails as _ReaderSubscriptionDetails, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, SubscriptionEvent as _SubscriptionEvent, SubscriptionTimeInterval as _SubscriptionTimeInterval, UpdateSubscriptionDetailsModel as _UpdateSubscriptionDetailsModel, WriterSubscriptionDetails as _WriterSubscriptionDetails } from "./declarations/Subscription.did";
 export class Subscription implements SubscriptionInterface {
     constructor(private actor: ActorSubclass<_SERVICE>){}
     async acceptCycles(): Promise<void> {
         const result = await this.actor.acceptCycles();
         return result;
     }
+    async authorizeForProxy(arg0: string): Promise<void> {
+        const result = await this.actor.authorizeForProxy(arg0);
+        return result;
+    }
+    async authorizeForProxyAsEditor(arg0: string, arg1: string): Promise<Result_1> {
+        const result = await this.actor.authorizeForProxyAsEditor(arg0, arg1);
+        return from_candid_Result_1_n1(result);
+    }
     async availableCycles(): Promise<bigint> {
         const result = await this.actor.availableCycles();
         return result;
+    }
+    async cancelStripeSubscription(arg0: string, arg1: string, arg2: string, arg3: string): Promise<Result_1> {
+        const result = await this.actor.cancelStripeSubscription(arg0, arg1, arg2, arg3);
+        return from_candid_Result_1_n1(result);
     }
     async checkMyExpiredSubscriptionsNotifications(): Promise<void> {
         const result = await this.actor.checkMyExpiredSubscriptionsNotifications();
         return result;
     }
-    async completeSubscriptionEvent(arg0: string): Promise<Result_1> {
+    async checkProxyAuthorization(arg0: string, arg1: string): Promise<boolean> {
+        const result = await this.actor.checkProxyAuthorization(arg0, arg1);
+        return result;
+    }
+    async completeSubscriptionEvent(arg0: string): Promise<Result_2> {
         const result = await this.actor.completeSubscriptionEvent(arg0);
-        return from_candid_Result_1_n1(result);
+        return from_candid_Result_2_n3(result);
     }
-    async createPaymentRequestAsReader(arg0: string, arg1: SubscriptionTimeInterval, arg2: bigint): Promise<Result_3> {
-        const result = await this.actor.createPaymentRequestAsReader(arg0, to_candid_SubscriptionTimeInterval_n14(arg1), arg2);
-        return from_candid_Result_3_n16(result);
+    async consumeProxyAuthorization(arg0: string): Promise<void> {
+        const result = await this.actor.consumeProxyAuthorization(arg0);
+        return result;
     }
-    async disperseTokensForSuccessfulSubscription(arg0: string): Promise<Result_4> {
+    async createPaymentRequestAsReader(arg0: string, arg1: SubscriptionTimeInterval, arg2: bigint): Promise<Result_5> {
+        const result = await this.actor.createPaymentRequestAsReader(arg0, to_candid_SubscriptionTimeInterval_n22(arg1), arg2);
+        return from_candid_Result_5_n24(result);
+    }
+    async deactivateStripeAccount(arg0: string): Promise<Result> {
+        const result = await this.actor.deactivateStripeAccount(arg0);
+        return from_candid_Result_n28(result);
+    }
+    async disperseTokensForSuccessfulSubscription(arg0: string): Promise<Result_1> {
         const result = await this.actor.disperseTokensForSuccessfulSubscription(arg0);
-        return from_candid_Result_4_n20(result);
+        return from_candid_Result_1_n1(result);
     }
     async expiredNotificationsHeartbeatExternal(): Promise<void> {
         const result = await this.actor.expiredNotificationsHeartbeatExternal();
+        return result;
+    }
+    async getAuthorActivePaidSubscriberPrincipalIds(arg0: string): Promise<Array<string>> {
+        const result = await this.actor.getAuthorActivePaidSubscriberPrincipalIds(arg0);
         return result;
     }
     async getCanisterVersion(): Promise<string> {
@@ -219,21 +285,33 @@ export class Subscription implements SubscriptionInterface {
         const result = await this.actor.getMemorySize();
         return result;
     }
-    async getPaymentRequestBySubscriptionEventId(arg0: string): Promise<Result_3> {
+    async getPaymentRequestBySubscriptionEventId(arg0: string): Promise<Result_5> {
         const result = await this.actor.getPaymentRequestBySubscriptionEventId(arg0);
-        return from_candid_Result_3_n16(result);
+        return from_candid_Result_5_n24(result);
     }
-    async getReaderSubscriptionDetails(): Promise<Result_1> {
+    async getReaderSubscriptionDetails(): Promise<Result_2> {
         const result = await this.actor.getReaderSubscriptionDetails();
-        return from_candid_Result_1_n1(result);
+        return from_candid_Result_2_n3(result);
+    }
+    async getStripeAccountId(arg0: string): Promise<string | null> {
+        const result = await this.actor.getStripeAccountId(arg0);
+        return from_candid_opt_n19(result);
+    }
+    async getStripeCustomerId(arg0: string): Promise<string | null> {
+        const result = await this.actor.getStripeCustomerId(arg0);
+        return from_candid_opt_n19(result);
+    }
+    async getTrustedProxyPrincipal(): Promise<string> {
+        const result = await this.actor.getTrustedProxyPrincipal();
+        return result;
     }
     async getWriterSubscriptionDetails(arg0: string | null): Promise<Result> {
-        const result = await this.actor.getWriterSubscriptionDetails(to_candid_opt_n22(arg0));
-        return from_candid_Result_n23(result);
+        const result = await this.actor.getWriterSubscriptionDetails(to_candid_opt_n30(arg0));
+        return from_candid_Result_n28(result);
     }
     async getWriterSubscriptionDetailsByPrincipalId(arg0: string): Promise<Result> {
         const result = await this.actor.getWriterSubscriptionDetailsByPrincipalId(arg0);
-        return from_candid_Result_n23(result);
+        return from_candid_Result_n28(result);
     }
     async icrc10_supported_standards(): Promise<Array<SupportedStandard>> {
         const result = await this.actor.icrc10_supported_standards();
@@ -264,90 +342,135 @@ export class Subscription implements SubscriptionInterface {
         return result;
     }
     async sendNewSubscriptionNotifications(arg0: SubscriptionEvent): Promise<void> {
-        const result = await this.actor.sendNewSubscriptionNotifications(to_candid_SubscriptionEvent_n25(arg0));
+        const result = await this.actor.sendNewSubscriptionNotifications(to_candid_SubscriptionEvent_n31(arg0));
         return result;
     }
     async sendStopSubscriptionNotification(arg0: string, arg1: string): Promise<void> {
         const result = await this.actor.sendStopSubscriptionNotification(arg0, arg1);
         return result;
     }
-    async setMaxMemorySize(arg0: bigint): Promise<Result_2> {
+    async setMaxMemorySize(arg0: bigint): Promise<Result_4> {
         const result = await this.actor.setMaxMemorySize(arg0);
-        return from_candid_Result_2_n27(result);
+        return from_candid_Result_4_n35(result);
     }
-    async stopSubscription(arg0: string): Promise<Result_1> {
-        const result = await this.actor.stopSubscription(arg0);
+    async setStripeAccountActive(arg0: string, arg1: boolean): Promise<Result> {
+        const result = await this.actor.setStripeAccountActive(arg0, arg1);
+        return from_candid_Result_n28(result);
+    }
+    async setStripeSubscriptionCancelState(arg0: string, arg1: string, arg2: string, arg3: boolean, arg4: bigint): Promise<Result_1> {
+        const result = await this.actor.setStripeSubscriptionCancelState(arg0, arg1, arg2, arg3, arg4);
         return from_candid_Result_1_n1(result);
     }
+    async setTrustedProxyPrincipal(arg0: string): Promise<Result_3> {
+        const result = await this.actor.setTrustedProxyPrincipal(arg0);
+        return from_candid_Result_3_n37(result);
+    }
+    async stopSubscription(arg0: string): Promise<Result_2> {
+        const result = await this.actor.stopSubscription(arg0);
+        return from_candid_Result_2_n3(result);
+    }
+    async syncStripeSubscription(arg0: string, arg1: string, arg2: string, arg3: SubscriptionTimeInterval, arg4: string, arg5: string, arg6: bigint, arg7: string): Promise<Result_1> {
+        const result = await this.actor.syncStripeSubscription(arg0, arg1, arg2, to_candid_SubscriptionTimeInterval_n22(arg3), arg4, arg5, arg6, arg7);
+        return from_candid_Result_1_n1(result);
+    }
+    async updateStripeAccount(arg0: string, arg1: string): Promise<Result> {
+        const result = await this.actor.updateStripeAccount(arg0, arg1);
+        return from_candid_Result_n28(result);
+    }
+    async updateStripePriceTier(arg0: string, arg1: SubscriptionTimeInterval, arg2: string, arg3: string): Promise<Result> {
+        const result = await this.actor.updateStripePriceTier(arg0, to_candid_SubscriptionTimeInterval_n22(arg1), arg2, arg3);
+        return from_candid_Result_n28(result);
+    }
     async updateSubscriptionDetails(arg0: UpdateSubscriptionDetailsModel): Promise<Result> {
-        const result = await this.actor.updateSubscriptionDetails(to_candid_UpdateSubscriptionDetailsModel_n29(arg0));
-        return from_candid_Result_n23(result);
+        const result = await this.actor.updateSubscriptionDetails(to_candid_UpdateSubscriptionDetailsModel_n39(arg0));
+        return from_candid_Result_n28(result);
     }
 }
-function from_candid_PaymentRequest_n18(value: _PaymentRequest): PaymentRequest {
-    return from_candid_record_n19(value);
+function from_candid_PaymentMethod_n11(value: _PaymentMethod): PaymentMethod {
+    return from_candid_variant_n12(value);
 }
-function from_candid_ReaderSubscriptionDetails_n3(value: _ReaderSubscriptionDetails): ReaderSubscriptionDetails {
-    return from_candid_record_n4(value);
+function from_candid_PaymentRequest_n26(value: _PaymentRequest): PaymentRequest {
+    return from_candid_record_n27(value);
+}
+function from_candid_ReaderSubscriptionDetails_n5(value: _ReaderSubscriptionDetails): ReaderSubscriptionDetails {
+    return from_candid_record_n6(value);
 }
 function from_candid_Result_1_n1(value: _Result_1): Result_1 {
     return from_candid_variant_n2(value);
 }
-function from_candid_Result_2_n27(value: _Result_2): Result_2 {
-    return from_candid_variant_n28(value);
+function from_candid_Result_2_n3(value: _Result_2): Result_2 {
+    return from_candid_variant_n4(value);
 }
-function from_candid_Result_3_n16(value: _Result_3): Result_3 {
-    return from_candid_variant_n17(value);
+function from_candid_Result_3_n37(value: _Result_3): Result_3 {
+    return from_candid_variant_n38(value);
 }
-function from_candid_Result_4_n20(value: _Result_4): Result_4 {
-    return from_candid_variant_n21(value);
+function from_candid_Result_4_n35(value: _Result_4): Result_4 {
+    return from_candid_variant_n36(value);
 }
-function from_candid_Result_n23(value: _Result): Result {
-    return from_candid_variant_n24(value);
+function from_candid_Result_5_n24(value: _Result_5): Result_5 {
+    return from_candid_variant_n25(value);
 }
-function from_candid_SubscriptionEvent_n6(value: _SubscriptionEvent): SubscriptionEvent {
-    return from_candid_record_n7(value);
+function from_candid_Result_n28(value: _Result): Result {
+    return from_candid_variant_n29(value);
 }
-function from_candid_SubscriptionTimeInterval_n8(value: _SubscriptionTimeInterval): SubscriptionTimeInterval {
-    return from_candid_variant_n9(value);
+function from_candid_SubscriptionEvent_n8(value: _SubscriptionEvent): SubscriptionEvent {
+    return from_candid_record_n9(value);
 }
-function from_candid_WriterSubscriptionDetails_n11(value: _WriterSubscriptionDetails): WriterSubscriptionDetails {
-    return from_candid_record_n12(value);
+function from_candid_SubscriptionTimeInterval_n13(value: _SubscriptionTimeInterval): SubscriptionTimeInterval {
+    return from_candid_variant_n14(value);
 }
-function from_candid_opt_n13(value: [] | [string]): string | null {
+function from_candid_WriterSubscriptionDetails_n17(value: _WriterSubscriptionDetails): WriterSubscriptionDetails {
+    return from_candid_record_n18(value);
+}
+function from_candid_opt_n10(value: [] | [_PaymentMethod]): PaymentMethod | null {
+    return value.length === 0 ? null : from_candid_PaymentMethod_n11(value[0]);
+}
+function from_candid_opt_n15(value: [] | [boolean]): boolean | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_record_n12(value: {
+function from_candid_opt_n19(value: [] | [string]): string | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_record_n18(value: {
+    stripeAccountId: [] | [string];
     writerSubscriptions: Array<_SubscriptionEvent>;
     weeklyFee: [] | [string];
     paymentReceiverPrincipalId: string;
     writerPrincipalId: string;
     lifeTimeFee: [] | [string];
+    stripePricing: Array<[_SubscriptionTimeInterval, string, string]>;
     isSubscriptionActive: boolean;
     annuallyFee: [] | [string];
+    stripeIsActive: boolean;
     monthlyFee: [] | [string];
 }): {
+    stripeAccountId?: string;
     writerSubscriptions: Array<SubscriptionEvent>;
     weeklyFee?: string;
     paymentReceiverPrincipalId: string;
     writerPrincipalId: string;
     lifeTimeFee?: string;
+    stripePricing: Array<[SubscriptionTimeInterval, string, string]>;
     isSubscriptionActive: boolean;
     annuallyFee?: string;
+    stripeIsActive: boolean;
     monthlyFee?: string;
 } {
     return {
-        writerSubscriptions: from_candid_vec_n5(value.writerSubscriptions),
-        weeklyFee: record_opt_to_undefined(from_candid_opt_n13(value.weeklyFee)),
+        stripeAccountId: record_opt_to_undefined(from_candid_opt_n19(value.stripeAccountId)),
+        writerSubscriptions: from_candid_vec_n7(value.writerSubscriptions),
+        weeklyFee: record_opt_to_undefined(from_candid_opt_n19(value.weeklyFee)),
         paymentReceiverPrincipalId: value.paymentReceiverPrincipalId,
         writerPrincipalId: value.writerPrincipalId,
-        lifeTimeFee: record_opt_to_undefined(from_candid_opt_n13(value.lifeTimeFee)),
+        lifeTimeFee: record_opt_to_undefined(from_candid_opt_n19(value.lifeTimeFee)),
+        stripePricing: from_candid_vec_n20(value.stripePricing),
         isSubscriptionActive: value.isSubscriptionActive,
-        annuallyFee: record_opt_to_undefined(from_candid_opt_n13(value.annuallyFee)),
-        monthlyFee: record_opt_to_undefined(from_candid_opt_n13(value.monthlyFee))
+        annuallyFee: record_opt_to_undefined(from_candid_opt_n19(value.annuallyFee)),
+        stripeIsActive: value.stripeIsActive,
+        monthlyFee: record_opt_to_undefined(from_candid_opt_n19(value.monthlyFee))
     };
 }
-function from_candid_record_n19(value: {
+function from_candid_record_n27(value: {
     subscriptionEventId: string;
     subaccount: Uint8Array;
     subscriptionTimeInterval: _SubscriptionTimeInterval;
@@ -367,14 +490,14 @@ function from_candid_record_n19(value: {
     return {
         subscriptionEventId: value.subscriptionEventId,
         subaccount: value.subaccount,
-        subscriptionTimeInterval: from_candid_SubscriptionTimeInterval_n8(value.subscriptionTimeInterval),
+        subscriptionTimeInterval: from_candid_SubscriptionTimeInterval_n13(value.subscriptionTimeInterval),
         writerPrincipalId: value.writerPrincipalId,
         expirationDate: value.expirationDate,
         paymentFee: value.paymentFee,
         readerPrincipalId: value.readerPrincipalId
     };
 }
-function from_candid_record_n4(value: {
+function from_candid_record_n6(value: {
     readerSubscriptions: Array<_SubscriptionEvent>;
     readerNotStoppedSubscriptionsWriters: Array<_WriterSubscriptionDetails>;
     readerPrincipalId: string;
@@ -384,16 +507,18 @@ function from_candid_record_n4(value: {
     readerPrincipalId: string;
 } {
     return {
-        readerSubscriptions: from_candid_vec_n5(value.readerSubscriptions),
-        readerNotStoppedSubscriptionsWriters: from_candid_vec_n10(value.readerNotStoppedSubscriptionsWriters),
+        readerSubscriptions: from_candid_vec_n7(value.readerSubscriptions),
+        readerNotStoppedSubscriptionsWriters: from_candid_vec_n16(value.readerNotStoppedSubscriptionsWriters),
         readerPrincipalId: value.readerPrincipalId
     };
 }
-function from_candid_record_n7(value: {
+function from_candid_record_n9(value: {
     startTime: bigint;
     subscriptionEventId: string;
+    paymentMethod: [] | [_PaymentMethod];
     endTime: bigint;
     subscriptionTimeInterval: _SubscriptionTimeInterval;
+    stripeCancelAtPeriodEnd: [] | [boolean];
     writerPrincipalId: string;
     paymentFee: string;
     isWriterSubscriptionActive: boolean;
@@ -401,8 +526,10 @@ function from_candid_record_n7(value: {
 }): {
     startTime: bigint;
     subscriptionEventId: string;
+    paymentMethod?: PaymentMethod;
     endTime: bigint;
     subscriptionTimeInterval: SubscriptionTimeInterval;
+    stripeCancelAtPeriodEnd?: boolean;
     writerPrincipalId: string;
     paymentFee: string;
     isWriterSubscriptionActive: boolean;
@@ -411,15 +538,79 @@ function from_candid_record_n7(value: {
     return {
         startTime: value.startTime,
         subscriptionEventId: value.subscriptionEventId,
+        paymentMethod: record_opt_to_undefined(from_candid_opt_n10(value.paymentMethod)),
         endTime: value.endTime,
-        subscriptionTimeInterval: from_candid_SubscriptionTimeInterval_n8(value.subscriptionTimeInterval),
+        subscriptionTimeInterval: from_candid_SubscriptionTimeInterval_n13(value.subscriptionTimeInterval),
+        stripeCancelAtPeriodEnd: record_opt_to_undefined(from_candid_opt_n15(value.stripeCancelAtPeriodEnd)),
         writerPrincipalId: value.writerPrincipalId,
         paymentFee: value.paymentFee,
         isWriterSubscriptionActive: value.isWriterSubscriptionActive,
         readerPrincipalId: value.readerPrincipalId
     };
 }
-function from_candid_variant_n17(value: {
+function from_candid_tuple_n21(value: [_SubscriptionTimeInterval, string, string]): [SubscriptionTimeInterval, string, string] {
+    return [
+        from_candid_SubscriptionTimeInterval_n13(value[0]),
+        value[1],
+        value[2]
+    ];
+}
+function from_candid_variant_n12(value: {
+    Fiat: {
+        stripeSubscriptionId: string;
+        usdAmountCents: string;
+    };
+} | {
+    Token: null;
+}): {
+    __kind__: "Fiat";
+    Fiat: {
+        stripeSubscriptionId: string;
+        usdAmountCents: string;
+    };
+} | {
+    __kind__: "Token";
+    Token: null;
+} {
+    return "Fiat" in value ? {
+        __kind__: "Fiat",
+        Fiat: value.Fiat
+    } : "Token" in value ? {
+        __kind__: "Token",
+        Token: value.Token
+    } : value;
+}
+function from_candid_variant_n14(value: {
+    LifeTime: null;
+} | {
+    Weekly: null;
+} | {
+    Monthly: null;
+} | {
+    Annually: null;
+}): SubscriptionTimeInterval {
+    return "LifeTime" in value ? SubscriptionTimeInterval.LifeTime : "Weekly" in value ? SubscriptionTimeInterval.Weekly : "Monthly" in value ? SubscriptionTimeInterval.Monthly : "Annually" in value ? SubscriptionTimeInterval.Annually : value;
+}
+function from_candid_variant_n2(value: {
+    ok: null;
+} | {
+    err: string;
+}): {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+} {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : "err" in value ? {
+        __kind__: "err",
+        err: value.err
+    } : value;
+}
+function from_candid_variant_n25(value: {
     ok: _PaymentRequest;
 } | {
     err: string;
@@ -432,51 +623,13 @@ function from_candid_variant_n17(value: {
 } {
     return "ok" in value ? {
         __kind__: "ok",
-        ok: from_candid_PaymentRequest_n18(value.ok)
+        ok: from_candid_PaymentRequest_n26(value.ok)
     } : "err" in value ? {
         __kind__: "err",
         err: value.err
     } : value;
 }
-function from_candid_variant_n2(value: {
-    ok: _ReaderSubscriptionDetails;
-} | {
-    err: string;
-}): {
-    __kind__: "ok";
-    ok: ReaderSubscriptionDetails;
-} | {
-    __kind__: "err";
-    err: string;
-} {
-    return "ok" in value ? {
-        __kind__: "ok",
-        ok: from_candid_ReaderSubscriptionDetails_n3(value.ok)
-    } : "err" in value ? {
-        __kind__: "err",
-        err: value.err
-    } : value;
-}
-function from_candid_variant_n21(value: {
-    ok: null;
-} | {
-    err: string;
-}): {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "err";
-    err: string;
-} {
-    return "ok" in value ? {
-        __kind__: "ok",
-        ok: value.ok
-    } : "err" in value ? {
-        __kind__: "err",
-        err: value.err
-    } : value;
-}
-function from_candid_variant_n24(value: {
+function from_candid_variant_n29(value: {
     ok: _WriterSubscriptionDetails;
 } | {
     err: string;
@@ -489,13 +642,13 @@ function from_candid_variant_n24(value: {
 } {
     return "ok" in value ? {
         __kind__: "ok",
-        ok: from_candid_WriterSubscriptionDetails_n11(value.ok)
+        ok: from_candid_WriterSubscriptionDetails_n17(value.ok)
     } : "err" in value ? {
         __kind__: "err",
         err: value.err
     } : value;
 }
-function from_candid_variant_n28(value: {
+function from_candid_variant_n36(value: {
     ok: bigint;
 } | {
     err: string;
@@ -514,40 +667,75 @@ function from_candid_variant_n28(value: {
         err: value.err
     } : value;
 }
-function from_candid_variant_n9(value: {
-    LifeTime: null;
+function from_candid_variant_n38(value: {
+    ok: string;
 } | {
-    Weekly: null;
+    err: string;
+}): {
+    __kind__: "ok";
+    ok: string;
 } | {
-    Monthly: null;
+    __kind__: "err";
+    err: string;
+} {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : "err" in value ? {
+        __kind__: "err",
+        err: value.err
+    } : value;
+}
+function from_candid_variant_n4(value: {
+    ok: _ReaderSubscriptionDetails;
 } | {
-    Annually: null;
-}): SubscriptionTimeInterval {
-    return "LifeTime" in value ? SubscriptionTimeInterval.LifeTime : "Weekly" in value ? SubscriptionTimeInterval.Weekly : "Monthly" in value ? SubscriptionTimeInterval.Monthly : "Annually" in value ? SubscriptionTimeInterval.Annually : value;
+    err: string;
+}): {
+    __kind__: "ok";
+    ok: ReaderSubscriptionDetails;
+} | {
+    __kind__: "err";
+    err: string;
+} {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: from_candid_ReaderSubscriptionDetails_n5(value.ok)
+    } : "err" in value ? {
+        __kind__: "err",
+        err: value.err
+    } : value;
 }
-function from_candid_vec_n10(value: Array<_WriterSubscriptionDetails>): Array<WriterSubscriptionDetails> {
-    return value.map((x)=>from_candid_WriterSubscriptionDetails_n11(x));
+function from_candid_vec_n16(value: Array<_WriterSubscriptionDetails>): Array<WriterSubscriptionDetails> {
+    return value.map((x)=>from_candid_WriterSubscriptionDetails_n17(x));
 }
-function from_candid_vec_n5(value: Array<_SubscriptionEvent>): Array<SubscriptionEvent> {
-    return value.map((x)=>from_candid_SubscriptionEvent_n6(x));
+function from_candid_vec_n20(value: Array<[_SubscriptionTimeInterval, string, string]>): Array<[SubscriptionTimeInterval, string, string]> {
+    return value.map((x)=>from_candid_tuple_n21(x));
 }
-function to_candid_SubscriptionEvent_n25(value: SubscriptionEvent): _SubscriptionEvent {
-    return to_candid_record_n26(value);
+function from_candid_vec_n7(value: Array<_SubscriptionEvent>): Array<SubscriptionEvent> {
+    return value.map((x)=>from_candid_SubscriptionEvent_n8(x));
 }
-function to_candid_SubscriptionTimeInterval_n14(value: SubscriptionTimeInterval): _SubscriptionTimeInterval {
-    return to_candid_variant_n15(value);
+function to_candid_PaymentMethod_n33(value: PaymentMethod): _PaymentMethod {
+    return to_candid_variant_n34(value);
 }
-function to_candid_UpdateSubscriptionDetailsModel_n29(value: UpdateSubscriptionDetailsModel): _UpdateSubscriptionDetailsModel {
-    return to_candid_record_n30(value);
+function to_candid_SubscriptionEvent_n31(value: SubscriptionEvent): _SubscriptionEvent {
+    return to_candid_record_n32(value);
 }
-function to_candid_opt_n22(value: string | null): [] | [string] {
+function to_candid_SubscriptionTimeInterval_n22(value: SubscriptionTimeInterval): _SubscriptionTimeInterval {
+    return to_candid_variant_n23(value);
+}
+function to_candid_UpdateSubscriptionDetailsModel_n39(value: UpdateSubscriptionDetailsModel): _UpdateSubscriptionDetailsModel {
+    return to_candid_record_n40(value);
+}
+function to_candid_opt_n30(value: string | null): [] | [string] {
     return value === null ? candid_none() : candid_some(value);
 }
-function to_candid_record_n26(value: {
+function to_candid_record_n32(value: {
     startTime: bigint;
     subscriptionEventId: string;
+    paymentMethod?: PaymentMethod;
     endTime: bigint;
     subscriptionTimeInterval: SubscriptionTimeInterval;
+    stripeCancelAtPeriodEnd?: boolean;
     writerPrincipalId: string;
     paymentFee: string;
     isWriterSubscriptionActive: boolean;
@@ -555,8 +743,10 @@ function to_candid_record_n26(value: {
 }): {
     startTime: bigint;
     subscriptionEventId: string;
+    paymentMethod: [] | [_PaymentMethod];
     endTime: bigint;
     subscriptionTimeInterval: _SubscriptionTimeInterval;
+    stripeCancelAtPeriodEnd: [] | [boolean];
     writerPrincipalId: string;
     paymentFee: string;
     isWriterSubscriptionActive: boolean;
@@ -565,15 +755,17 @@ function to_candid_record_n26(value: {
     return {
         startTime: value.startTime,
         subscriptionEventId: value.subscriptionEventId,
+        paymentMethod: value.paymentMethod ? candid_some(to_candid_PaymentMethod_n33(value.paymentMethod)) : candid_none(),
         endTime: value.endTime,
-        subscriptionTimeInterval: to_candid_SubscriptionTimeInterval_n14(value.subscriptionTimeInterval),
+        subscriptionTimeInterval: to_candid_SubscriptionTimeInterval_n22(value.subscriptionTimeInterval),
+        stripeCancelAtPeriodEnd: value.stripeCancelAtPeriodEnd ? candid_some(value.stripeCancelAtPeriodEnd) : candid_none(),
         writerPrincipalId: value.writerPrincipalId,
         paymentFee: value.paymentFee,
         isWriterSubscriptionActive: value.isWriterSubscriptionActive,
         readerPrincipalId: value.readerPrincipalId
     };
 }
-function to_candid_record_n30(value: {
+function to_candid_record_n40(value: {
     weeklyFee?: bigint;
     lifeTimeFee?: bigint;
     annuallyFee?: bigint;
@@ -594,7 +786,7 @@ function to_candid_record_n30(value: {
         publicationInformation: value.publicationInformation ? candid_some(value.publicationInformation) : candid_none()
     };
 }
-function to_candid_variant_n15(value: SubscriptionTimeInterval): {
+function to_candid_variant_n23(value: SubscriptionTimeInterval): {
     LifeTime: null;
 } | {
     Weekly: null;
@@ -611,6 +803,29 @@ function to_candid_variant_n15(value: SubscriptionTimeInterval): {
         Monthly: null
     } : value == SubscriptionTimeInterval.Annually ? {
         Annually: null
+    } : value;
+}
+function to_candid_variant_n34(value: {
+    __kind__: "Fiat";
+    Fiat: {
+        stripeSubscriptionId: string;
+        usdAmountCents: string;
+    };
+} | {
+    __kind__: "Token";
+    Token: null;
+}): {
+    Fiat: {
+        stripeSubscriptionId: string;
+        usdAmountCents: string;
+    };
+} | {
+    Token: null;
+} {
+    return value.__kind__ === "Fiat" ? {
+        Fiat: value.Fiat
+    } : value.__kind__ === "Token" ? {
+        Token: value.Token
     } : value;
 }
 export interface CreateActorOptions {

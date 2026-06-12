@@ -403,6 +403,7 @@ export const historyCopy = {
   unknownArticle: "Premium article #{postId}",
   pagePrev: "Previous page",
   pageNext: "Next page",
+  pagerAria: "Wallet history pages",
 };
 
 // Withdraw modal (Page 7 §7.2, Figma 1:47170 form / 1:48066 success — PR #14,

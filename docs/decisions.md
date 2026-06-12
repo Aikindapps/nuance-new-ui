@@ -26,6 +26,10 @@ Sub-decisions:
 
 **Trade-offs accepted:** the PR is large (5 phases); mitigated by per-phase commits. History correctness on UAT is only partially verifiable (the throwaway UAT principal has limited transaction variety); shared production code paths and the senior review carry the rest.
 
+---
+
+## #42 — Page 7 (Funds) sequencing + PR-1 scope; standalone /wallet; bigint + both-legs tipping
+
 **Date:** 2026-06-03
 
 **Status:** Active.
