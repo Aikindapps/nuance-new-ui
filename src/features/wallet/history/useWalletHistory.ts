@@ -119,7 +119,10 @@ export function useWalletHistory() {
           }
           escrow.add(a.bucketCanisterId);
           const post = postById.get(a.postId);
-          const n = Number(a.numberOfApplauds);
+          // numberOfApplauds is e8s-scaled NUA-equivalent (PostBucket stores
+          // `nuaEquivalent` in base units; prod divides by 10^8 to render the
+          // count — wallet.tsx:827). A 5-NUA tip = 5 applauds.
+          const n = Math.round(fromE8s(a.numberOfApplauds));
           return {
             id: `applaud-${a.applaudId}`,
             timestampMs: parseInt(a.date, 10) || 0,
