@@ -310,15 +310,14 @@ export function useWalletHistory() {
         if (res.__kind__ !== "Ok") return [];
         return res.Ok.transactions.flatMap((t) => {
           const tr = t.transaction.transfer;
-          // Outbound restricted spends already appear as applaud rows.
-          if (!tr || tr.from.owner.toText() !== USER_CANISTER_ID) {
-            if (tr) return [];
-          }
-          const toUser =
-            tr &&
-            tr.to.owner.toText() === USER_CANISTER_ID &&
-            !!tr.to.subaccount;
-          if (!toUser) return [];
+          // Keep only transfers INTO the claim subaccount (= Free NUA drops).
+          // Outbound restricted spends already appear as applaud rows. The
+          // index was queried for exactly this account, so a transfer whose
+          // `to` is a User-canister subaccount is a deposit into it.
+          if (!tr) return [];
+          const intoClaim =
+            tr.to.owner.toText() === USER_CANISTER_ID && !!tr.to.subaccount;
+          if (!intoClaim) return [];
           return [
             {
               id: `claim-${t.id}`,

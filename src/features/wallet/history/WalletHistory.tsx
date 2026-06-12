@@ -69,42 +69,51 @@ export function WalletHistory() {
         </p>
       </div>
 
-      {/* Header row */}
-      <div className="flex gap-[calc(40*var(--fpx))] border-b border-ink-border-5 pb-2 text-body text-ink-60">
-        <span className={colAmount}>{c.colAmount}</span>
-        <span className={colDate}>{c.colDate}</span>
-        <span className={colTarget}>{c.colTarget}</span>
-        <span className="min-w-0 flex-1">{c.colDescription}</span>
+      {/* Figma has no mobile wallet variant — the 4-column table keeps its
+          desktop column widths and scrolls horizontally under ~640px (the
+          project's horizontal-rail mobile pattern). */}
+      <div className="scrollbar-hide flex flex-col gap-[calc(24*var(--fpx))] overflow-x-auto">
+        <div className="min-w-[560px]">
+          {/* Header row */}
+          <div className="flex gap-[calc(40*var(--fpx))] border-b border-ink-border-5 pb-2 text-body text-ink-60">
+            <span className={colAmount}>{c.colAmount}</span>
+            <span className={colDate}>{c.colDate}</span>
+            <span className={colTarget}>{c.colTarget}</span>
+            <span className="min-w-0 flex-1">{c.colDescription}</span>
+          </div>
+
+          {history.isError ? (
+            <p className="pt-4 text-body text-ink-60">{c.loadError}</p>
+          ) : history.isPending ? (
+            <p className="pt-4 text-body text-ink-60">{c.loading}</p>
+          ) : rows.length === 0 ? (
+            <p className="pt-4 text-body text-ink-60">{c.empty}</p>
+          ) : (
+            pageRows.map((row) => (
+              <div
+                key={row.id}
+                className="flex items-center gap-[calc(40*var(--fpx))] border-b border-ink-border-5 pb-2 pt-[calc(18*var(--fpx))]"
+              >
+                <span className={`${colAmount} text-body font-medium text-ink`}>
+                  {row.sign} {row.amount} {row.token}
+                </span>
+                <span className={`${colDate} text-body text-ink`}>
+                  {formatRowDate(row.timestampMs)}
+                </span>
+                <span className={`${colTarget} flex`}>
+                  <TargetCell target={row.target} />
+                </span>
+                <span className="min-w-0 flex-1 truncate text-body text-ink">
+                  {row.description}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
-      {history.isError ? (
-        <p className="text-body text-ink-60">{c.loadError}</p>
-      ) : history.isPending ? (
-        <p className="text-body text-ink-60">{c.loading}</p>
-      ) : rows.length === 0 ? (
-        <p className="text-body text-ink-60">{c.empty}</p>
-      ) : (
+      {!history.isPending && !history.isError && rows.length > 0 && (
         <>
-          {pageRows.map((row) => (
-            <div
-              key={row.id}
-              className="flex items-center gap-[calc(40*var(--fpx))] border-b border-ink-border-5 pb-2 pt-0.5"
-            >
-              <span className={`${colAmount} text-body font-medium text-ink`}>
-                {row.sign} {row.amount} {row.token}
-              </span>
-              <span className={`${colDate} text-body text-ink`}>
-                {formatRowDate(row.timestampMs)}
-              </span>
-              <span className={`${colTarget} flex`}>
-                <TargetCell target={row.target} />
-              </span>
-              <span className="min-w-0 flex-1 truncate text-body text-ink">
-                {row.description}
-              </span>
-            </div>
-          ))}
-
           {totalPages > 1 && (
             <nav className="flex items-center justify-center gap-2">
               <button

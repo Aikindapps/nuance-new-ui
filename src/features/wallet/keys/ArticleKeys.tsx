@@ -59,7 +59,7 @@ export function ArticleKeys() {
                 : c.count.replace("{n}", String(count))}
         </p>
 
-        {(keys.data ?? []).map((k) => (
+        {(keys.data ?? []).map((k, i, all) => (
           <Fragment key={`${k.nftCanisterId}-${k.tokenIndex}`}>
             <div className="flex items-center justify-between gap-[calc(16*var(--fpx))]">
               {k.url ? (
@@ -86,7 +86,8 @@ export function ArticleKeys() {
                 <IconShare className="size-[calc(24*var(--fpx))]" />
               </button>
             </div>
-            <div className="h-px w-full bg-ink-border-5 last:hidden" />
+            {/* Divider between rows only (Figma: no divider after the last key) */}
+            {i < all.length - 1 && <div className="h-px w-full bg-ink-border-5" />}
           </Fragment>
         ))}
 

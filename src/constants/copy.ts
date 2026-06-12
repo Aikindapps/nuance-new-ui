@@ -296,7 +296,6 @@ export const walletCopy = {
     "Here you can manage your Nuance wallet. With the amount of tokens you can buy NFT keys that give you access to certain Nuance articles or applaud authors on their work.",
   depositLabel: "Deposit",
   withdrawLabel: "Withdraw",
-  comingSoon: "Coming soon",
   // Deposit modal (Figma §7.2: 1:46991 select page → 1:47902 QR page; upgraded
   // from the PR #12 read-only address view in PR #14). Still no transfer — the
   // QR/address only receives. Note: the Figma helper line says "create a new
