@@ -124,20 +124,20 @@ export function ReadArticle() {
   const locked =
     (post.isPremium || post.isMembersOnly) && post.content.trim() === "";
 
-  // Breadcrumb: Overview / {publication or author} / {category}. The middle
-  // crumb links to the publication/author page (route not built yet — a
-  // dead link for now, consistent with the home cards' author links).
-  // The §4.9 publication follow popover is anchored to the byline link
-  // in ArticleMasthead, not here (Mr Nick, 2026-05-21).
-  const crumbs: Crumb[] = [{ label: "Overview", to: "/" }];
-  if (post.handle) {
+  // Breadcrumb: publication posts show "Publication / Writer"; standalone
+  // writer posts show just "Writer". Routes are not yet wired — dead links
+  // are accepted here, consistent with author links elsewhere (Mr Nick, 2026-05-21).
+  const writerHandle = (post.creatorHandle || post.handle).toLowerCase();
+  const writerLabel = author?.displayName || writerHandle;
+  const crumbs: Crumb[] = [];
+  if (post.isPublication) {
+    const pubHandle = post.handle.toLowerCase();
     crumbs.push({
-      label:
-        publication?.displayName || author?.displayName || post.handle,
-      to: `/${post.handle.toLowerCase()}`,
+      label: publication?.displayName || post.handle,
+      to: `/publication/${pubHandle}`,
     });
   }
-  if (post.category) crumbs.push({ label: post.category });
+  crumbs.push({ label: writerLabel, to: `/${writerHandle}` });
 
   return (
     <ArticleShell>
