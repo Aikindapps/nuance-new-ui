@@ -296,14 +296,22 @@ export const walletCopy = {
     "Here you can manage your Nuance wallet. With the amount of tokens you can buy NFT keys that give you access to certain Nuance articles or applaud authors on their work.",
   depositLabel: "Deposit",
   withdrawLabel: "Withdraw",
-  comingSoon: "Coming soon",
-  // Deposit modal (no Figma — adapted from prod's deposit modal). Read-only
-  // address display so funds can be sent in (decision #42 update).
-  depositTitle: "Deposit tokens to this wallet",
-  depositBody:
-    "Send NUA, ICP or ckBTC to the address below from any ICRC-1 wallet. Tokens appear here once the transfer settles.",
-  depositInWallet: "Currently in your wallet",
+  // Deposit modal (Figma §7.2: 1:46991 select page → 1:47902 QR page; upgraded
+  // from the PR #12 read-only address view in PR #14). Still no transfer — the
+  // QR/address only receives. Note: the Figma helper line says "create a new
+  // wallet address", but the address is deterministic per principal; copy kept
+  // verbatim from Figma — flag for Mr Nick if it reads as misleading.
+  depositTitle: "Deposit",
+  depositBodyLine1:
+    "Please enter the correct currency to get the deposit address for your wallet.",
+  depositBodyLine2: "Your current balance is:",
   depositSelectLabel: "Select currency to deposit",
+  depositHelper: "Click on ‘Generate code’ to create a new wallet address",
+  depositGenerate: "Generate code",
+  depositCancel: "Cancel",
+  depositScan: "Scan this code to get the deposit address",
+  depositManual: "or enter this code manually",
+  depositChangeCurrency: "Choose another currency",
   // ICP is addressed by its legacy account identifier; NUA/ckBTC by principal.
   depositAddressPrincipal: "Your deposit address (principal)",
   depositAddressAccountId: "Your ICP deposit address (account ID)",
@@ -328,6 +336,108 @@ export const walletCopy = {
   claiming: "Claiming…",
   claimSuccess: "Free NUA claimed.",
   claimError: "Couldn’t claim Free NUA. Try again.",
+};
+
+// Article keys (Page 7 §7.1, Figma 1:46454 — PR #14, decision #43). Premium
+// articles mint ext_v2 NFT "keys"; this block lists the caller's keys. The
+// resold-key claim input is a decision #26-style inert stub — no canister
+// surface exists for claim-by-code (verified against User.did + ExtV2.did).
+export const articleKeysCopy = {
+  heading: "Article keys",
+  body: "To access premium minted articles, you’ll need a key. Here are the keys you’ve purchased.",
+  // {n} → key count.
+  count: "{n} article keys",
+  countOne: "1 article key",
+  // {n} → zero-padded key number, {total} → supply.
+  keyLabel: "Key #{n} (of {total})",
+  keyLabelNoSupply: "Key #{n}",
+  // Fallback row label when post hydration fails.
+  unknownArticle: "Premium article #{postId}",
+  transferAria: "Transfer this key",
+  loadError: "Couldn’t load your article keys.",
+  resoldLabel: "Got a resold key? Enter the code to claim your access.",
+  resoldPlaceholder: "0000 - 0000 - 0000 - 0000 - 0000",
+  comingSoon: "Coming soon",
+  // Transfer-key modal (prod parity: transfer-nft-modal → ext_transfer).
+  transferTitle: "Transfer article key",
+  transferBody:
+    "Send this key to another wallet. The receiver gets this key’s access to the premium article — this wallet loses it.",
+  transferReceiverLabel: "Receiver",
+  transferReceiverPlaceholder: "Principal ID or account ID",
+  transferErrorReceiver:
+    "That doesn’t look like a valid principal ID or account ID.",
+  transferErrorSelf: "That’s this wallet’s own address.",
+  transferTerms:
+    "I understand this sends a real, irreversible NFT transfer.",
+  transferCancel: "Cancel",
+  transferLabel: "Transfer key",
+  transferring: "Transferring…",
+  transferSuccessTitle: "Key transferred!",
+  transferSuccessBody: "has been transferred to the receiver.",
+  transferSuccessClose: "Done",
+  closeAria: "Close",
+};
+
+// Wallet history (Page 7 §7.1, Figma 1:46484 — PR #14, decision #43). Rows
+// aggregate seven client-side sources; see useWalletHistory for the list.
+export const historyCopy = {
+  heading: "Your wallet history",
+  body: "Your wallet history, including transactions such as key purchases, applauds, and deposits.",
+  colAmount: "Amount",
+  colDate: "Date",
+  colTarget: "For/from article",
+  colDescription: "Description",
+  empty: "No wallet activity yet.",
+  loadError: "Couldn’t load your wallet history.",
+  loading: "Loading your wallet history…",
+  deposit: "Deposit",
+  withdrawal: "Withdrawal",
+  applaudOne: "1 Applaud",
+  applaudMany: "{n} Applauds",
+  // {n} → zero-padded key number, {total} → supply (same shape as articleKeys).
+  keyLabel: "Key #{n} (of {total})",
+  subscription: "Subscription",
+  claimDescription: "Free NUA drop",
+  claimSource: "Nuance.io",
+  freeNuaToken: "Free NUA",
+  unknownArticle: "Premium article #{postId}",
+  pagePrev: "Previous page",
+  pageNext: "Next page",
+  pagerAria: "Wallet history pages",
+};
+
+// Withdraw modal (Page 7 §7.2, Figma 1:47170 form / 1:48066 success — PR #14,
+// decision #43). Free (restricted) NUA is not withdrawable — it lives in the
+// User canister's custody subaccount, so only regular ledger balances show.
+export const withdrawCopy = {
+  title: "Withdraw from wallet",
+  bodyLine1:
+    "Please select the right currency and amount that you want to withdraw from your wallet.",
+  bodyLine2: "Your current balance is:",
+  selectLabel: "Select currency to withdraw",
+  receiverLabel: "Receiver",
+  // ICP can also be addressed by the legacy 64-hex account identifier
+  // (exchanges / NNS dapp) — decision #43 accepts both forms for ICP.
+  receiverPlaceholder: "Principal ID",
+  receiverPlaceholderIcp: "Principal ID or account ID",
+  amountLabel: "Select amount",
+  amountPlaceholder: "Amount",
+  maxLabel: "max",
+  errorReceiverInvalid: "That doesn’t look like a valid principal ID.",
+  errorReceiverInvalidIcp:
+    "That doesn’t look like a valid principal ID or account ID.",
+  errorReceiverSelf: "That’s this wallet’s own address.",
+  errorAmount: "Amount exceeds your balance minus the transfer fee.",
+  terms:
+    "I am aware of the general policy and agree to transfer amount of tokens.",
+  cancelLabel: "Cancel",
+  withdrawLabel: "Withdraw",
+  withdrawing: "Withdrawing…",
+  successTitle: "Withdraw successful!",
+  // Success line renders as "<amount> <token> {successBody}".
+  successBody: "has been successfully withdrawn from your wallet.",
+  successButton: "Go to wallet",
+  closeAria: "Close",
 };
 
 // Tip Author / Applaud modal (Page 4 §4.2). No detailed Figma frame — adapted

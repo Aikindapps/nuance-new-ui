@@ -33,6 +33,20 @@ import type {
   Account,
   Result as Icrc1TransferResult,
 } from "../candid/Icrc1/Icrc1";
+import type { TransferResult as IcpTransferResult } from "../candid/IcpLedger/IcpLedger";
+import type { GetAccountIdentifierTransactionsResult } from "../candid/IcpIndex/IcpIndex";
+import type { GetTransactionsResult as IcrcIndexTransactionsResult } from "../candid/CkBtcIndex/CkBtcIndex";
+import type { Applaud } from "../candid/PostBucket/PostBucket";
+import type {
+  Result as WriterSubscriptionResult,
+  Result_2 as ReaderSubscriptionResult,
+} from "../candid/Subscription/Subscription";
+import type {
+  Result as ExtTokensResult,
+  TransactionsAndSupply,
+  TransferRequest as ExtTransferRequest,
+  TransferResponse as ExtTransferResponse,
+} from "../candid/ExtV2/ExtV2";
 import type {
   Result as SonicQuoteResult,
   SwapArgs,
@@ -261,6 +275,62 @@ export type ActorsValue = {
     amount: bigint,
     fee: bigint,
   ) => Promise<Icrc1TransferResult>;
+  // --- Wallet History (PR #14, decision #43) — per-source reads merged
+  // client-side (prod parity, see useWalletHistory). Index reads are anon-safe
+  // queries on public ledger data; applaud/subscription reads are authed
+  // (msg.caller). ---
+  // ICP transactions for an account-id hex, newest first, via the ICP index
+  // canister.
+  getIcpAccountTransactions: (
+    accountIdHex: string,
+    maxResults: number,
+  ) => Promise<GetAccountIdentifierTransactionsResult>;
+  // ICRC token transactions for an owner(+subaccount), newest first, via the
+  // token's index canister (ckBTC index / NUA SNS index — same interface).
+  getIcrcAccountTransactions: (
+    indexCanisterId: string,
+    owner: string,
+    maxResults: number,
+    subaccount?: Uint8Array,
+  ) => Promise<IcrcIndexTransactionsResult>;
+  // Registry of all PostBucket canisters: [canisterId, isActive-ish] pairs —
+  // only the first element is consumed.
+  getBucketCanisters: () => Promise<Array<[string, string]>>;
+  // The caller's applauds (sent and received) on one bucket canister.
+  getMyApplauds: (bucketCanisterId: string) => Promise<Array<Applaud>>;
+  // The caller's subscription history, both directions (reader payments and
+  // writer earnings).
+  getReaderSubscriptionDetails: () => Promise<ReaderSubscriptionResult>;
+  getWriterSubscriptionDetails: () => Promise<WriterSubscriptionResult>;
+  // --- Article Keys (PR #14, decision #43) — ext_v2 NFT access keys for
+  // premium articles. One ext_v2 canister per premium article; the registry
+  // lives on PostCore. All reads are anon-safe queries; the transfer is authed
+  // (the canister checks the caller controls the `from` address). ---
+  // Registry of every premium-article NFT canister: [postId, canisterId] pairs.
+  getAllNftCanisters: () => Promise<Array<[string, string]>>;
+  // The caller's tokens on one ext_v2 canister, by account-id hex. `err` for
+  // an account with no tokens is normal — the hook treats it as "none here".
+  getOwnedExtTokens: (
+    nftCanisterId: string,
+    accountIdHex: string,
+  ) => Promise<ExtTokensResult>;
+  // Marketplace transactions + supply counters for one ext_v2 canister —
+  // drives the "Key #N (of M)" supply denominator.
+  getExtSupply: (nftCanisterId: string) => Promise<TransactionsAndSupply>;
+  // EXT-standard NFT transfer (amount is always 1n for these keys). The token
+  // field is the EXT token identifier — build it with extTokenIdentifier().
+  transferExtToken: (
+    nftCanisterId: string,
+    request: ExtTransferRequest,
+  ) => Promise<ExtTransferResponse>;
+  // Legacy ICP ledger transfer to a 32-byte account identifier (Withdraw,
+  // PR #14, decision #43). Principal receivers go through transferIcrc1 on the
+  // ICP ledger instead — both paths debit the same underlying account. amount
+  // is e8s; the wrapper sets the ledger's fixed 10_000-e8s fee.
+  transferIcp: (
+    toAccountId: Uint8Array,
+    amount: bigint,
+  ) => Promise<IcpTransferResult>;
   // Settle a tip: PostBucket reads the per-post subaccount balance, splits
   // 90% writer / 10% DAO, writes the Applaud record, and notifies the writer.
   // senderPrincipal is passed "" so the canister uses msg.caller. Called

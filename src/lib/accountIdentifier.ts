@@ -42,6 +42,26 @@ const DOMAIN_SEPARATOR = Uint8Array.from([
   ...new TextEncoder().encode("account-id"),
 ]);
 
+/**
+ * Parse a 64-hex account identifier into its 32 bytes. Returns null when the
+ * string isn't 64 hex chars or its 4-byte CRC32 prefix doesn't match the
+ * SHA-224 payload — the same checksum the ledger itself enforces, so a typo'd
+ * address fails here instead of as a ledger trap. (Prod only checks
+ * isHex && length === 64; the checksum is a deliberate tightening.)
+ */
+export function accountIdBytesFromHex(hex: string): Uint8Array | null {
+  if (!/^[0-9a-fA-F]{64}$/.test(hex)) return null;
+  const bytes = new Uint8Array(32);
+  for (let i = 0; i < 32; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  const checksum = crc32(bytes.slice(4));
+  for (let i = 0; i < 4; i++) {
+    if (bytes[i] !== checksum[i]) return null;
+  }
+  return bytes;
+}
+
 export function principalToAccountIdentifier(
   principalText: string,
   subaccount?: Uint8Array,

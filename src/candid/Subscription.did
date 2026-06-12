@@ -5,6 +5,13 @@ type WriterSubscriptionDetails =
    lifeTimeFee: opt text;
    monthlyFee: opt text;
    paymentReceiverPrincipalId: text;
+   stripeAccountId: opt text;
+   stripeIsActive: bool;
+   stripePricing: vec record {
+                        SubscriptionTimeInterval;
+                        text;
+                        text;
+                      };
    weeklyFee: opt text;
    writerPrincipalId: text;
    writerSubscriptions: vec SubscriptionEvent;
@@ -37,31 +44,38 @@ type SubscriptionEvent =
    endTime: int;
    isWriterSubscriptionActive: bool;
    paymentFee: text;
+   paymentMethod: opt PaymentMethod;
    readerPrincipalId: text;
    startTime: int;
+   stripeCancelAtPeriodEnd: opt bool;
    subscriptionEventId: text;
    subscriptionTimeInterval: SubscriptionTimeInterval;
    writerPrincipalId: text;
  };
-type Result_4 = 
- variant {
-   err: text;
-   ok;
- };
-type Result_3 = 
+type Result_5 = 
  variant {
    err: text;
    ok: PaymentRequest;
  };
-type Result_2 = 
+type Result_4 = 
  variant {
    err: text;
    ok: nat;
  };
-type Result_1 = 
+type Result_3 = 
+ variant {
+   err: text;
+   ok: text;
+ };
+type Result_2 = 
  variant {
    err: text;
    ok: ReaderSubscriptionDetails;
+ };
+type Result_1 = 
+ variant {
+   err: text;
+   ok;
  };
 type Result = 
  variant {
@@ -84,22 +98,40 @@ type PaymentRequest =
    subscriptionTimeInterval: SubscriptionTimeInterval;
    writerPrincipalId: text;
  };
+type PaymentMethod = 
+ variant {
+   Fiat: record {
+           stripeSubscriptionId: text;
+           usdAmountCents: text;
+         };
+   Token;
+ };
 type Icrc28TrustedOriginsResponse = record {trusted_origins: vec text;};
 service : {
   acceptCycles: () -> ();
+  authorizeForProxy: (text) -> ();
+  authorizeForProxyAsEditor: (text, text) -> (Result_1);
   availableCycles: () -> (nat) query;
+  cancelStripeSubscription: (text, text, text, text) -> (Result_1);
   checkMyExpiredSubscriptionsNotifications: () -> ();
-  completeSubscriptionEvent: (text) -> (Result_1);
+  checkProxyAuthorization: (text, text) -> (bool) query;
+  completeSubscriptionEvent: (text) -> (Result_2);
+  consumeProxyAuthorization: (text) -> ();
   createPaymentRequestAsReader: (text, SubscriptionTimeInterval, nat) ->
-   (Result_3);
-  disperseTokensForSuccessfulSubscription: (text) -> (Result_4);
+   (Result_5);
+  deactivateStripeAccount: (text) -> (Result);
+  disperseTokensForSuccessfulSubscription: (text) -> (Result_1);
   expiredNotificationsHeartbeatExternal: () -> ();
+  getAuthorActivePaidSubscriberPrincipalIds: (text) -> (vec text) query;
   getCanisterVersion: () -> (text) query;
   getLatestTimerCall: () -> (text, text) query;
   getMaxMemorySize: () -> (nat) query;
   getMemorySize: () -> (nat) query;
-  getPaymentRequestBySubscriptionEventId: (text) -> (Result_3) query;
-  getReaderSubscriptionDetails: () -> (Result_1) query;
+  getPaymentRequestBySubscriptionEventId: (text) -> (Result_5) query;
+  getReaderSubscriptionDetails: () -> (Result_2) query;
+  getStripeAccountId: (text) -> (opt text) query;
+  getStripeCustomerId: (text) -> (opt text) query;
+  getTrustedProxyPrincipal: () -> (text) query;
   getWriterSubscriptionDetails: (opt text) -> (Result) composite_query;
   getWriterSubscriptionDetailsByPrincipalId: (text) -> (Result) query;
   icrc10_supported_standards: () -> (vec SupportedStandard) query;
@@ -111,7 +143,16 @@ service : {
   pendingTokensHeartbeatExternal: () -> ();
   sendNewSubscriptionNotifications: (SubscriptionEvent) -> ();
   sendStopSubscriptionNotification: (text, text) -> ();
-  setMaxMemorySize: (nat) -> (Result_2);
-  stopSubscription: (text) -> (Result_1);
+  setMaxMemorySize: (nat) -> (Result_4);
+  setStripeAccountActive: (text, bool) -> (Result);
+  setStripeSubscriptionCancelState: (text, text, text, bool, int) ->
+   (Result_1);
+  setTrustedProxyPrincipal: (text) -> (Result_3);
+  stopSubscription: (text) -> (Result_2);
+  syncStripeSubscription: (text, text, text, SubscriptionTimeInterval, 
+   text, text, int, text) -> (Result_1);
+  updateStripeAccount: (text, text) -> (Result);
+  updateStripePriceTier: (text, SubscriptionTimeInterval, text, text) ->
+   (Result);
   updateSubscriptionDetails: (UpdateSubscriptionDetailsModel) -> (Result);
 }
