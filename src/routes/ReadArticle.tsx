@@ -124,16 +124,16 @@ export function ReadArticle() {
   const locked =
     (post.isPremium || post.isMembersOnly) && post.content.trim() === "";
 
-  // Breadcrumb: publication posts show "Publication / Writer"; standalone
-  // writer posts show just "Writer". Routes are not yet wired — dead links
-  // are accepted here, consistent with author links elsewhere (Mr Nick, 2026-05-21).
+  // Breadcrumb: publication posts show "@pubHandle / @writerHandle"; standalone
+  // posts show just "@writerHandle". Labels use the @handle (navigation), not
+  // the display name. Links are unchanged from NIC-26.
   const writerHandle = (post.creatorHandle || post.handle).toLowerCase();
-  const writerLabel = author?.displayName || writerHandle;
+  const writerLabel = `@${author?.handle || writerHandle}`;
   const crumbs: Crumb[] = [];
   if (post.isPublication) {
     const pubHandle = post.handle.toLowerCase();
     crumbs.push({
-      label: publication?.displayName || post.handle,
+      label: `@${publication?.handle || pubHandle}`,
       to: `/publication/${pubHandle}`,
     });
   }
