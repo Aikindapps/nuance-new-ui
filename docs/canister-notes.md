@@ -76,9 +76,9 @@ The standard list→hydrate pipeline (for any feed screen):
 
 `PostKeyProperties` payloads are small; ICP query responses cap at ~2MB. Fetching a few hundred keyProps in one call is cheap (basis for the decision #28 fetch-once-paginate-client-side approach for unioned sources).
 
-## Wallet History / Article Keys (from PR #14; not yet in `docs/decisions.md`)
+## Wallet History / Article Keys (PR #14 — decision #43)
 
-These facts come from the PR #14 wallet-completion build record and are not reconstructable here — verify against the vendor `src/nuance_assets/` and the live bindings before relying on them:
+Shipped in PR #14 (`7bc6d31`) and logged as **decision #43**. Implementing code lives in `src/features/wallet/{keys,history}/` and `src/config/tokens.ts`. The one live caveat is the stale **vendor** `IcpIndex` / `ExtV2` declarations (the live `IcpIndex` has a `timestamp` field the vendor `.did` lacks) — regenerate against the live canisters when touching these paths:
 - **Article Keys are ext_v2 NFTs.** There is no owner index. To list a user's keys you must sweep **every** ext_v2 canister returned by `PostCore.getAllNftCanisters` and call `tokens_ext` on each (prod parity). Key transfer is `ext_transfer`; EXT token-identifier encoding is needed to address a token. There is **no canister surface to claim a key by resale code** — that input is necessarily an inert stub.
 - **Wallet History is a client-side merge of 7 sources** (no single history endpoint): applauds across buckets, ext_v2 key buys/sells, ICP via its index canister, **NUA via the SNS index canister `q5mdq-biaaa-aaaaq-aabuq-cai`** (the rebuild reads the SNS index deliberately instead of prod's full-ledger scan), ckBTC via its index, Free-NUA claim deposits, and subscriptions. Ledger rows are deduped against tip-escrow / NFT-seller / canister counterparties. The vendor's `IcpIndex` and `ExtV2` declarations are stale (the live `IcpIndex` has a `timestamp` field the vendor `.did` lacks); re-pull / regenerate against the live canisters.
 - The `Subscription` canister rows carry `paymentMethod`; Stripe-paid rows are skipped (no on-chain counterpart).
