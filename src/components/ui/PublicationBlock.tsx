@@ -1,4 +1,5 @@
 import type { UserListItem } from "../../candid/User/User";
+import { Link } from "react-router-dom";
 import { formatCount } from "../../lib/formatCount";
 import { Avatar } from "./Avatar";
 
@@ -6,8 +7,8 @@ export function PublicationBlock({ publication }: { publication: UserListItem })
   const followersLabel = formatCount(publication.followersCount);
 
   return (
-    <a
-      href={`/publication/${publication.handle.toLowerCase()}`}
+    <Link
+      to={`/publication/${publication.handle.toLowerCase()}`}
       className="flex h-full gap-4 rounded-card border border-ink-border/20 bg-white p-6 shadow-purple-glow transition-shadow hover:shadow-purple-glow-hover md:p-8 lg:p-10"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-3 lg:gap-4">
@@ -30,6 +31,6 @@ export function PublicationBlock({ publication }: { publication: UserListItem })
         textClass="text-[length:calc(32*var(--fpx))] md:text-[length:calc(40*var(--fpx))] lg:text-[length:calc(48*var(--fpx))]"
         rounded="card"
       />
-    </a>
+    </Link>
   );
 }

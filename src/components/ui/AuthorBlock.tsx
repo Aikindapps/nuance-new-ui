@@ -1,4 +1,5 @@
 import type { UserListItem } from "../../candid/User/User";
+import { Link } from "react-router-dom";
 import { formatCount } from "../../lib/formatCount";
 import { Avatar } from "./Avatar";
 import { IconVerified } from "./icons/IconVerified";
@@ -7,8 +8,8 @@ export function AuthorBlock({ author }: { author: UserListItem }) {
   const followersLabel = formatCount(author.followersCount);
 
   return (
-    <a
-      href={`/${author.handle.toLowerCase()}`}
+    <Link
+      to={`/${author.handle.toLowerCase()}`}
       className="flex h-full w-[calc(220*var(--fpx))] shrink-0 flex-col items-center gap-4 rounded-card border border-ink-border/20 bg-white p-6 shadow-purple-glow transition-shadow hover:shadow-purple-glow-hover md:w-[calc(240*var(--fpx))] md:p-7 lg:w-[calc(248*var(--fpx))] lg:p-8"
     >
       <Avatar
@@ -36,6 +37,6 @@ export function AuthorBlock({ author }: { author: UserListItem }) {
           {author.bio}
         </p>
       )}
-    </a>
+    </Link>
   );
 }

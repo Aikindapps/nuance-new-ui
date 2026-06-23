@@ -1,4 +1,5 @@
 import type { Article } from "../../../features/home/types";
+import { Link } from "react-router-dom";
 import { Avatar } from "../Avatar";
 import { IconVerified } from "../icons/IconVerified";
 
@@ -33,8 +34,8 @@ export function AuthorLine({
         {publication && (
           <span className="flex items-center gap-1.5">
             <span>In</span>
-            <a
-              href={`/publication/${publication.handle.toLowerCase()}`}
+            <Link
+              to={`/publication/${publication.handle.toLowerCase()}`}
               className={
                 large
                   ? "underline underline-offset-2 hover:no-underline"
@@ -42,17 +43,17 @@ export function AuthorLine({
               }
             >
               {publication.name}
-            </a>
+            </Link>
           </span>
         )}
         <span className="flex items-center gap-1.5">
           <span>by</span>
-          <a
-            href={`/${author.handle.replace("@", "").toLowerCase()}`}
+          <Link
+            to={`/${author.handle.replace("@", "").toLowerCase()}`}
             className="hover:underline"
           >
             {author.handle}
-          </a>
+          </Link>
           {author.isVerified && <IconVerified className="size-6" />}
         </span>
       </p>
