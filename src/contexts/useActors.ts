@@ -8,6 +8,7 @@ import type {
   Result_4 as SavePostResult,
   Result_5 as PostKeyPropertiesResult,
   TagModel,
+  UserPostCounts,
 } from "../candid/PostCore/PostCore";
 import type {
   PostBucketType__1,
@@ -23,6 +24,7 @@ import type {
   RegisterUserReturn,
   Result as UserResult,
   Result_1 as SpendTipResult,
+  Result_7 as UserListItemResult,
   UserListItem,
 } from "../candid/User/User";
 import type { Content, Result as StorageResult } from "../candid/Storage/Storage";
@@ -331,6 +333,23 @@ export type ActorsValue = {
     toAccountId: Uint8Array,
     amount: bigint,
   ) => Promise<IcpTransferResult>;
+  // --- Writer/Publication profile (NIC-42) — anon-safe queries. ---
+  // Returns the UserListItem for a given handle. Result_7 carries both
+  // __kind__:"ok"|"err" — `err` means not-found; treat as null (don't throw).
+  getUserListItemByHandle: (handle: string) => Promise<UserListItemResult>;
+  // All published + draft PostKeyProperties for a writer handle — no range
+  // argument; client-paginates newest-first.
+  getUserPosts: (handle: string) => Promise<PostKeyProperties[]>;
+  // Range-paginated published posts for a publication handle. Returns a bare
+  // PostKeyProperties[] (no .posts wrapper, unlike getPopular*/getLatestPosts).
+  getPublicationPosts: (
+    from: number,
+    to: number,
+    handle: string,
+  ) => Promise<PostKeyProperties[]>;
+  // Published/draft/total counts for a handle. publishedCount + totalPostCount
+  // are candid nat-as-text strings.
+  getUserPostCounts: (handle: string) => Promise<UserPostCounts>;
   // Settle a tip: PostBucket reads the per-post subaccount balance, splits
   // 90% writer / 10% DAO, writes the Applaud record, and notifies the writer.
   // senderPrincipal is passed "" so the canister uses msg.caller. Called

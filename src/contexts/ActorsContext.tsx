@@ -330,6 +330,23 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getBucket(bucketCanisterId);
         return actor.checkTippingByTokenSymbol(postId, symbol, "");
       },
+      // Writer/Publication profile (NIC-42). All anon-safe queries.
+      getUserListItemByHandle: async (handle) => {
+        const actor = await userPromise;
+        return actor.getUserListItemByHandle(handle);
+      },
+      getUserPosts: async (handle) => {
+        const actor = await postCorePromise;
+        return actor.getUserPosts(handle);
+      },
+      getPublicationPosts: async (from, to, handle) => {
+        const actor = await postCorePromise;
+        return actor.getPublicationPosts(from, to, handle);
+      },
+      getUserPostCounts: async (handle) => {
+        const actor = await postCorePromise;
+        return actor.getUserPostCounts(handle);
+      },
     };
   }, [identity]);
 

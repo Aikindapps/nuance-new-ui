@@ -16,7 +16,7 @@ export type Article = {
     avatarSrc: string;
     isVerified: boolean;
   };
-  publication: { name: string; slug: string } | null;
+  publication: { name: string; handle: string } | null;
   publishedOn: string;
   claps: number;
   hasNft: boolean;

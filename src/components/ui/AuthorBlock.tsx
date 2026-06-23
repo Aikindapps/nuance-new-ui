@@ -8,7 +8,7 @@ export function AuthorBlock({ author }: { author: UserListItem }) {
 
   return (
     <a
-      href={`/${author.handle}`}
+      href={`/${author.handle.toLowerCase()}`}
       className="flex h-full w-[calc(220*var(--fpx))] shrink-0 flex-col items-center gap-4 rounded-card border border-ink-border/20 bg-white p-6 shadow-purple-glow transition-shadow hover:shadow-purple-glow-hover md:w-[calc(240*var(--fpx))] md:p-7 lg:w-[calc(248*var(--fpx))] lg:p-8"
     >
       <Avatar

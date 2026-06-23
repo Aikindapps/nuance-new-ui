@@ -440,6 +440,44 @@ export const withdrawCopy = {
   closeAria: "Close",
 };
 
+// Writer profile (NIC-42, /:handle).
+export const writerProfileCopy = {
+  metaTitleSuffix: "— Nuance",
+  followersLabel: "followers",
+  followingLabel: "following",
+  followButtonLabel: "Follow author",
+  feedLabel: "Articles by this writer",
+  // {handle} → the writer's @handle
+  emptyFeed: "@{handle} hasn't published anything yet.",
+  notFoundHeading: "Writer not found",
+  notFoundBody: "That @handle doesn't exist or is no longer on Nuance.",
+  errorHeading: "Something went wrong",
+  errorBody: "We couldn't load this writer's profile. Please try again.",
+};
+
+// Publication home (NIC-42, /publication/:h).
+export const publicationCopy = {
+  metaTitleSuffix: "— Nuance",
+  allTab: "All",
+  followersLabel: "followers",
+  articlesLabel: "articles",
+  followButtonLabel: "Follow publication",
+  feedLabel: "Articles from this publication",
+  // {name} → the publication's display name
+  emptyFeed: "{name} hasn't published anything yet.",
+  notFoundHeading: "Publication not found",
+  notFoundBody: "That publication doesn't exist or is no longer on Nuance.",
+  errorHeading: "Something went wrong",
+  errorBody: "We couldn't load this publication. Please try again.",
+};
+
+// 404 catch-all (* route) and shared not-found pattern (NIC-42).
+export const notFoundCopy = {
+  heading: "Page not found",
+  body: "The page you're looking for doesn't exist.",
+  homeLabel: "Go to home",
+};
+
 // Tip Author / Applaud modal (Page 4 §4.2). No detailed Figma frame — adapted
 // from prod's clap-modal flow. An applaud = 1 NUA; paid in NUA/ICP/ckBTC. The
 // recipient split (writer / publication / DAO) is entirely canister-side.

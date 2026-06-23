@@ -7,7 +7,7 @@ export function PublicationBlock({ publication }: { publication: UserListItem })
 
   return (
     <a
-      href={`/publication/${publication.handle}`}
+      href={`/publication/${publication.handle.toLowerCase()}`}
       className="flex h-full gap-4 rounded-card border border-ink-border/20 bg-white p-6 shadow-purple-glow transition-shadow hover:shadow-purple-glow-hover md:p-8 lg:p-10"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-3 lg:gap-4">

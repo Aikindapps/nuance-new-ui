@@ -34,7 +34,7 @@ export function AuthorLine({
           <span className="flex items-center gap-1.5">
             <span>In</span>
             <a
-              href={`/publication/${publication.slug}`}
+              href={`/publication/${publication.handle.toLowerCase()}`}
               className={
                 large
                   ? "underline underline-offset-2 hover:no-underline"
@@ -48,7 +48,7 @@ export function AuthorLine({
         <span className="flex items-center gap-1.5">
           <span>by</span>
           <a
-            href={`/${author.handle.replace("@", "")}`}
+            href={`/${author.handle.replace("@", "").toLowerCase()}`}
             className="hover:underline"
           >
             {author.handle}

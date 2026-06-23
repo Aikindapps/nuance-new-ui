@@ -11,6 +11,9 @@ import { ToastProvider } from "./services/toast";
 import { OnboardingGate } from "./features/onboarding/OnboardingGate";
 import { muiTheme } from "./theme";
 import { Home } from "./routes/Home";
+import { WriterProfile } from "./routes/WriterProfile";
+import { PublicationHome } from "./routes/PublicationHome";
+import { NotFound } from "./routes/NotFound";
 import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingShell";
 
 // Article route ships as its own chunk — DOMPurify + Crimson Text + every
@@ -90,6 +93,14 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
+  // NIC-42: Writer profile, Publication home, 404 catch-all.
+  // Non-lazy — these reuse home-bundle components (ArticleFeed, Avatar,
+  // FollowButton) and pull in no heavy deps, so a separate chunk buys nothing.
+  // React Router v7 ranks static routes above dynamic ones, so /new, /wallet,
+  // /following, /write, /my-articles, /notifications never reach /:handle.
+  { path: "/:handle", element: <WriterProfile /> },
+  { path: "/publication/:h", element: <PublicationHome /> },
+  { path: "*", element: <NotFound /> },
 ]);
 
 const queryClient = new QueryClient({

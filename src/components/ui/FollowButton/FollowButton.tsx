@@ -30,9 +30,14 @@ import {
 
 type Props = {
   targetHandle: string;
+  // Overrides the not-following visible text and the follow-case aria-label.
+  // "Following" / "Unfollow" hover and pending states stay unchanged.
+  // Omitting `label` preserves today's "Follow" behaviour so existing
+  // consumers (ArticleAuthorBlock, PublicationPopover) are untouched.
+  label?: string;
 };
 
-export function FollowButton({ targetHandle }: Props) {
+export function FollowButton({ targetHandle, label }: Props) {
   const state = useIsFollowing(targetHandle);
   const { isAuthenticated } = useAuth();
   const { data: me } = useMyProfile();
@@ -49,13 +54,14 @@ export function FollowButton({ targetHandle }: Props) {
   const isPending = followMutation.isPending || unfollowMutation.isPending;
   const isFollowing = state === "following";
 
-  let label: string;
+  const followText = label ?? "Follow";
+  let buttonLabel: string;
   if (isPending) {
-    label = isFollowing ? "Unfollowing…" : "Following…";
+    buttonLabel = isFollowing ? "Unfollowing…" : "Following…";
   } else if (isFollowing) {
-    label = hovered ? "Unfollow" : "Following";
+    buttonLabel = hovered ? "Unfollow" : "Following";
   } else {
-    label = "Follow";
+    buttonLabel = followText;
   }
 
   const onClick = () => {
@@ -87,10 +93,10 @@ export function FollowButton({ targetHandle }: Props) {
       disabled={isPending}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      aria-label={`${isFollowing ? "Unfollow" : "Follow"} @${targetHandle}`}
+      aria-label={isFollowing ? `Unfollow @${targetHandle}` : `${followText} @${targetHandle}`}
       className="bg-brand-gradient-button min-w-[calc(108*var(--fpx))] shrink-0 rounded-card px-6 py-2.5 text-body font-medium text-white shadow-[var(--shadow-purple-glow-medium)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {label}
+      {buttonLabel}
     </button>
   );
 }

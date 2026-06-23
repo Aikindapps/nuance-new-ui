@@ -112,7 +112,7 @@ export async function hydrateArticles(
           isVerified: author?.isVerified ?? false,
         },
         publication: pubHandle
-          ? { name: pub?.displayName || pubHandle, slug: pubHandle }
+          ? { name: pub?.displayName || pubHandle, handle: pubHandle }
           : null,
         publishedOn: formatPublishedDate(post.publishedDate, post.created),
         claps: Number(kp.claps) || 0,
