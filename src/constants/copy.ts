@@ -471,7 +471,7 @@ export const publicationCopy = {
   errorBody: "We couldn't load this publication. Please try again.",
 };
 
-// Manage Articles screen (NIC-40) — access-control spine.
+// Manage Articles screen (NIC-40) — access-control spine + 6.1 body (NIC-63).
 export const manageArticlesCopy = {
   metaTitleSuffix: "— Nuance",
   title: "Articles",
@@ -483,6 +483,55 @@ export const manageArticlesCopy = {
   comingSoonHeading: "Article management is on the way",
   comingSoonBody:
     "The article list and publish controls for this publication are being built.",
+
+  // Header actions (Increment 2 will wire these up).
+  newArticle: "+ New article",
+  filterStatus: "Filter status",
+  sort: "Sort",
+
+  // Table column headers.
+  colLive: "Live",
+  colTitle: "Title",
+  colAuthor: "Author",
+  colCategory: "Category",
+  colPublished: "Published",
+  colModified: "Modified",
+  colStats: "Stats",
+
+  // Toggle aria-labels (screen-reader context for the switch role).
+  toggleAriaPublish: "Publish article",
+  toggleAriaUnpublish: "Unpublish article",
+
+  // NFT badge (display-only; non-interactive).
+  nftBadge: "NFT",
+
+  // Stats cell (disabled; NIC-57 will expand this).
+  statsComingSoonAriaLabel: "Article stats — coming soon",
+
+  // Empty state.
+  emptyHeading: "No articles yet",
+  emptyBody: "Create your first article to see it here.",
+
+  // List-level error state.
+  listErrorHeading: "Couldn't load articles",
+  listErrorBody:
+    "There was a problem fetching this publication's articles. Please try again.",
+  retryLabel: "Try again",
+
+  // Pagination.
+  loadMore: "Load more",
+  loadingMore: "Loading…",
+
+  // Skeleton / loading labels.
+  loadingArticles: "Loading articles…",
+
+  // Empty-cell fallback (em dash).
+  emptyCell: "—",
+
+  // Success / error toasts for the publish toggle.
+  toastPublished: "Article published.",
+  toastUnpublished: "Article unpublished.",
+  toastToggleError: "Failed to update publish status.",
 };
 
 // 404 catch-all (* route) and shared not-found pattern (NIC-42).

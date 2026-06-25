@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import Skeleton from "@mui/material/Skeleton";
 import { CenteredMessage, PageShell } from "../components/ui/CenteredMessage";
 import { usePublicationMembership } from "../features/publication/hooks/usePublicationMembership";
+import { ManageArticlesList } from "../features/publication/sections/ManageArticlesList";
 import { manageArticlesCopy } from "../constants/copy";
 
 // Normalise a handle param: strip a leading "@" and lowercase.
@@ -50,22 +51,19 @@ function ManageArticlesInner({ handle }: { handle: string }) {
     );
   }
 
-  // Authenticated member — interim placeholder (table/toggle land in a later increment).
+  // Authenticated member — 6.1 article list + publish toggle (NIC-63).
   return (
     <PageShell>
       <title>
         {manageArticlesCopy.title} {manageArticlesCopy.metaTitleSuffix}
       </title>
       <main>
-        <div className="mx-auto max-w-[calc(1312*var(--fpx))] px-4 md:px-8 lg:px-14">
+        <div className="mx-auto max-w-[calc(1312*var(--fpx))] px-4 lg:px-14">
           <h1 className="mt-8 text-[length:calc(36*var(--fpx))] font-bold text-ink">
             {manageArticlesCopy.title}
           </h1>
-          <div className="mt-8">
-            <CenteredMessage
-              heading={manageArticlesCopy.comingSoonHeading}
-              body={manageArticlesCopy.comingSoonBody}
-            />
+          <div className="mt-8 pb-24">
+            <ManageArticlesList handle={handle} />
           </div>
         </div>
       </main>
