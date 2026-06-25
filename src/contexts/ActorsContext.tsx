@@ -345,6 +345,14 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await postCorePromise;
         return actor.getPublicationPosts(from, to, handle);
       },
+      isEditorPublic: async (handle, principal) => {
+        const actor = await postCorePromise;
+        return actor.isEditorPublic(handle, principal);
+      },
+      isWriterPublic: async (handle, principal) => {
+        const actor = await postCorePromise;
+        return actor.isWriterPublic(handle, principal);
+      },
       getUserPostCounts: async (handle) => {
         const actor = await postCorePromise;
         return actor.getUserPostCounts(handle);

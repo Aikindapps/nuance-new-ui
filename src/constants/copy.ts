@@ -471,6 +471,20 @@ export const publicationCopy = {
   errorBody: "We couldn't load this publication. Please try again.",
 };
 
+// Manage Articles screen (NIC-40) — access-control spine.
+export const manageArticlesCopy = {
+  metaTitleSuffix: "— Nuance",
+  title: "Articles",
+  notAuthorizedHeading: "Access restricted",
+  notAuthorizedBody:
+    "You need to be an editor or writer of this publication to manage its articles.",
+  errorHeading: "Something went wrong",
+  errorBody: "We couldn't verify your access to this publication. Please try again.",
+  comingSoonHeading: "Article management is on the way",
+  comingSoonBody:
+    "The article list and publish controls for this publication are being built.",
+};
+
 // 404 catch-all (* route) and shared not-found pattern (NIC-42).
 export const notFoundCopy = {
   heading: "Page not found",

@@ -53,6 +53,7 @@ import type {
   Result as SonicQuoteResult,
   SwapArgs,
 } from "../candid/Sonic/Sonic";
+import type { Principal } from "@icp-sdk/core/principal";
 
 // ActorsContext + hook + types live in this file so ActorsContext.tsx is a
 // pure component file. Satisfies `react-refresh/only-export-components`.
@@ -353,6 +354,11 @@ export type ActorsValue = {
     to: number,
     handle: string,
   ) => Promise<PostKeyProperties[]>;
+  // --- Manage Articles (NIC-40) — publication role checks. Anon-safe
+  // PostCore queries; the principal is passed explicitly so they are
+  // caller-independent. Drive the member-only route gate.
+  isEditorPublic: (handle: string, principal: Principal) => Promise<boolean>;
+  isWriterPublic: (handle: string, principal: Principal) => Promise<boolean>;
   // Published/draft/total counts for a handle. publishedCount + totalPostCount
   // are candid nat-as-text strings.
   getUserPostCounts: (handle: string) => Promise<UserPostCounts>;

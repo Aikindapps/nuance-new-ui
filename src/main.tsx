@@ -13,6 +13,7 @@ import { muiTheme } from "./theme";
 import { Home } from "./routes/Home";
 import { WriterProfile } from "./routes/WriterProfile";
 import { PublicationHome } from "./routes/PublicationHome";
+import { ManageArticles } from "./routes/ManageArticles";
 import { SearchResults, SearchRedirect } from "./routes/SearchResults";
 import { NotFound } from "./routes/NotFound";
 import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingShell";
@@ -105,6 +106,7 @@ const router = createBrowserRouter([
   // React Router v7 ranks static routes above dynamic ones, so /new, /wallet,
   // /following, /write, /my-articles, /notifications never reach /:handle.
   { path: "/:handle", element: <WriterProfile /> },
+  { path: "/publication/:handle/manage/articles", element: <ManageArticles /> },
   { path: "/publication/:h", element: <PublicationHome /> },
   { path: "*", element: <NotFound /> },
 ]);
