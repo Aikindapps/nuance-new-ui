@@ -6,6 +6,7 @@ import { useAuth } from "../../contexts/useAuth";
 import { useModal } from "../../services/modal";
 import { LoginModal, LOGIN_MODAL_TITLE_ID } from "../LoginModal/LoginModal";
 import { headerCopy } from "../../constants/copy";
+import { useHeaderSearch } from "./useHeaderSearch";
 
 export function Header() {
   const { isAuthenticated } = useAuth();
@@ -28,13 +29,7 @@ export function Header() {
 
       <div className="ml-auto flex items-center gap-2 md:gap-3 lg:gap-4">
         {/* Search — icon-only on mobile, input md+ */}
-        <button
-          type="button"
-          aria-label={headerCopy.searchAriaLabel}
-          className="flex size-10 items-center justify-center text-white md:hidden"
-        >
-          <IconSearch className="size-5" />
-        </button>
+        <MobileSearchIcon />
         <SearchInput className="hidden md:flex md:w-48 lg:w-[calc(320*var(--fpx))] xl:w-[calc(405*var(--fpx))]" />
 
         {isAuthenticated ? (
@@ -73,17 +68,34 @@ export function Header() {
   );
 }
 
+function MobileSearchIcon() {
+  const { onMobileIconClick } = useHeaderSearch();
+  return (
+    <button
+      type="button"
+      aria-label={headerCopy.searchAriaLabel}
+      className="flex size-10 items-center justify-center text-white md:hidden"
+      onClick={onMobileIconClick}
+    >
+      <IconSearch className="size-5" />
+    </button>
+  );
+}
+
 function SearchInput({ className = "" }: { className?: string }) {
+  const { value, setValue, onSubmit } = useHeaderSearch();
   return (
     <form
       role="search"
       className={`h-10 items-center gap-2 rounded-card border border-white-20 bg-white-10 px-3 lg:h-12 lg:px-4 ${className}`}
-      onSubmit={(e) => e.preventDefault()}
+      onSubmit={onSubmit}
     >
       <input
         type="search"
         placeholder={headerCopy.searchPlaceholder}
         aria-label={headerCopy.searchInputAriaLabel}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
         className="min-w-0 flex-1 bg-transparent text-body italic text-white placeholder:text-white-80 focus:outline-none"
       />
       <button

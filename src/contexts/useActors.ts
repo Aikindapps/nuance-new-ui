@@ -333,6 +333,12 @@ export type ActorsValue = {
     toAccountId: Uint8Array,
     amount: bigint,
   ) => Promise<IcpTransferResult>;
+  // --- Search (NIC-41) — anon-safe queries. ---
+  // Full-text search via PostRelations. Returns matching post IDs.
+  searchPost: (query: string) => Promise<Array<string>>;
+  // Fetch PostKeyProperties for a batch of post IDs from PostCore.
+  // Named differently from the PostBucket-scoped getPostsByPostIds (3-arg).
+  getPostKeyPropertiesByIds: (postIds: string[]) => Promise<Array<PostKeyProperties>>;
   // --- Writer/Publication profile (NIC-42) — anon-safe queries. ---
   // Returns the UserListItem for a given handle. Result_7 carries both
   // __kind__:"ok"|"err" — `err` means not-found; treat as null (don't throw).

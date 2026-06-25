@@ -502,3 +502,22 @@ export const tipModalCopy = {
   successClose: "Done",
   closeAria: "Close",
 };
+
+// NIC-41 Search Phase 1.
+export const searchCopy = {
+  metaTitleSuffix: "| Nuance",
+  // {q} → the search query
+  resultsTitle: "Results for {q}",
+  // {q} → the search query
+  noResults: 'No results found for \u201c{q}\u201d.',
+  errorHeading: "Something went wrong",
+  errorBody: "We couldn't complete your search. Please try again.",
+  emptyPromptHeading: "Search Nuance",
+  emptyPromptBody:
+    "Search for articles, writers, publications and topics.",
+  articlesTab: "Articles",
+  writersTab: "Writers",
+  publicationsTab: "Publications",
+  topicsTab: "Topics",
+  feedLabel: "Search results",
+};

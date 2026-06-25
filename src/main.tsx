@@ -13,6 +13,7 @@ import { muiTheme } from "./theme";
 import { Home } from "./routes/Home";
 import { WriterProfile } from "./routes/WriterProfile";
 import { PublicationHome } from "./routes/PublicationHome";
+import { SearchResults, SearchRedirect } from "./routes/SearchResults";
 import { NotFound } from "./routes/NotFound";
 import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingShell";
 
@@ -93,6 +94,11 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
+  // NIC-41: Search results (Phase 1). Non-lazy — reuses ArticleFeed/Tab/
+  // PageShell from the home bundle; no heavy deps. Must appear before
+  // /:handle so /search/articles and /search rank above the dynamic segment.
+  { path: "/search/articles", element: <SearchResults /> },
+  { path: "/search", element: <SearchRedirect /> },
   // NIC-42: Writer profile, Publication home, 404 catch-all.
   // Non-lazy — these reuse home-bundle components (ArticleFeed, Avatar,
   // FollowButton) and pull in no heavy deps, so a separate chunk buys nothing.

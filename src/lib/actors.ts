@@ -1,6 +1,7 @@
 import type { HttpAgent } from "@icp-sdk/core/agent";
 import { createActor as createPostCore } from "../candid/PostCore/PostCore";
 import { createActor as createPostBucket } from "../candid/PostBucket/PostBucket";
+import { createActor as createPostRelations } from "../candid/PostRelations/PostRelations";
 import { createActor as createUser } from "../candid/User/User";
 import { createActor as createStorage } from "../candid/Storage/Storage";
 import { createActor as createNotifications } from "../candid/Notifications/Notifications";
@@ -72,4 +73,8 @@ export function createExtV2Actor(agent: HttpAgent, nftCanisterId: string) {
 
 export function createSubscriptionActor(agent: HttpAgent) {
   return createSubscription(canisterIds.Subscription.ic, { agent });
+}
+
+export function createPostRelationsActor(agent: HttpAgent) {
+  return createPostRelations(canisterIds.PostRelations.ic, { agent });
 }

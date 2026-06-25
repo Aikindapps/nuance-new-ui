@@ -10,6 +10,7 @@ import {
   createNotificationsActor,
   createPostBucketActor,
   createPostCoreActor,
+  createPostRelationsActor,
   createSonicActor,
   createStorageActor,
   createSubscriptionActor,
@@ -44,6 +45,7 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
     // when identity changes, so stale agents/actors GC away.
     const agentPromise: Promise<HttpAgent> = createAgent(identity);
     const postCorePromise = agentPromise.then(createPostCoreActor);
+    const postRelationsPromise = agentPromise.then(createPostRelationsActor);
     const userPromise = agentPromise.then(createUserActor);
     const storagePromise = agentPromise.then(createStorageActor);
     const notificationsPromise = agentPromise.then(createNotificationsActor);
@@ -346,6 +348,17 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       getUserPostCounts: async (handle) => {
         const actor = await postCorePromise;
         return actor.getUserPostCounts(handle);
+      },
+      // NIC-41 Search Phase 1: PostRelations full-text search + PostCore
+      // key-props fetch. searchPost is named differently from the PostBucket
+      // method getPostsByPostIds (3-arg, bucket-scoped) to avoid collision.
+      searchPost: async (query) => {
+        const actor = await postRelationsPromise;
+        return actor.searchPost(query);
+      },
+      getPostKeyPropertiesByIds: async (postIds) => {
+        const actor = await postCorePromise;
+        return actor.getPostsByPostIds(postIds);
       },
     };
   }, [identity]);

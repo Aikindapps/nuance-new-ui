@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useHeaderSearch } from "./useHeaderSearch";
 import { LogoNuance } from "./icons/LogoNuance";
 import { IconSearch } from "./icons/IconSearch";
 import { IconBell } from "./icons/IconBell";
@@ -36,13 +37,7 @@ export function HeaderLoggedIn() {
 
       <div className="flex flex-1 justify-center px-4">
         <SearchBar className="hidden w-full max-w-[calc(740*var(--fpx))] md:flex" />
-        <button
-          type="button"
-          aria-label={headerCopy.searchAriaLabel}
-          className="flex size-10 items-center justify-center text-brand-purple md:hidden"
-        >
-          <IconSearch className="size-5" />
-        </button>
+        <MobileSearchIcon />
       </div>
 
       <div className="flex shrink-0 items-center gap-2 md:gap-3 lg:gap-4">
@@ -103,17 +98,34 @@ export function HeaderLoggedIn() {
   );
 }
 
+function MobileSearchIcon() {
+  const { onMobileIconClick } = useHeaderSearch();
+  return (
+    <button
+      type="button"
+      aria-label={headerCopy.searchAriaLabel}
+      className="flex size-10 items-center justify-center text-brand-purple md:hidden"
+      onClick={onMobileIconClick}
+    >
+      <IconSearch className="size-5" />
+    </button>
+  );
+}
+
 function SearchBar({ className = "" }: { className?: string }) {
+  const { value, setValue, onSubmit } = useHeaderSearch();
   return (
     <form
       role="search"
       className={`h-10 items-center gap-2 rounded-card border border-ink-border/10 bg-ink-border/5 px-3 lg:h-12 lg:px-4 ${className}`}
-      onSubmit={(e) => e.preventDefault()}
+      onSubmit={onSubmit}
     >
       <input
         type="search"
         placeholder={headerCopy.searchPlaceholder}
         aria-label={headerCopy.searchInputAriaLabel}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
         className="min-w-0 flex-1 bg-transparent text-body italic text-ink-80 placeholder:text-ink-80 focus:outline-none"
       />
       <button
