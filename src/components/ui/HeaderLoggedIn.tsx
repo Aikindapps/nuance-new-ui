@@ -8,6 +8,7 @@ import { UserMenu } from "./UserMenu";
 import { headerCopy } from "../../constants/copy";
 import { NotificationsFoldout } from "../../features/notifications/NotificationsFoldout";
 import { useUnreadCount } from "../../features/notifications/hooks/useUnreadCount";
+import { MobileNavDrawer } from "./MobileNavDrawer";
 
 // Figma 1:50116 — the logged-in Header is materially different from
 // HomeLoggedOut's purple-band Header: white background, ink-border/20
@@ -19,82 +20,105 @@ import { useUnreadCount } from "../../features/notifications/hooks/useUnreadCoun
 //
 // Mobile is invented (Figma has no mobile variant): search collapses to an
 // icon button; the Start-writing button hides; bell + avatar stay visible.
+// NIC-66: seam moved from md:768 to lg:1024 for nav/search/right-cluster.
+// Hamburger added (top-left, lg:hidden); drawer wired to navOpen state.
 
 export function HeaderLoggedIn() {
   const bellRef = useRef<HTMLButtonElement>(null);
   const [foldoutOpen, setFoldoutOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const unreadCount = useUnreadCount();
 
   return (
-    <header className="flex h-16 w-full items-center border-b border-ink-border/20 bg-white px-4 md:h-20 md:px-8 lg:h-[calc(88*var(--fpx))] lg:px-12">
-      <Link
-        to="/"
-        aria-label={headerCopy.homeAriaLabel}
-        className="shrink-0 text-brand-purple"
-      >
-        <LogoNuance className="h-9 w-auto lg:h-[calc(51*var(--fpx))]" />
-      </Link>
-
-      <div className="flex flex-1 justify-center px-4">
-        <SearchBar className="hidden w-full max-w-[calc(740*var(--fpx))] md:flex" />
-        <MobileSearchIcon />
-      </div>
-
-      <div className="flex shrink-0 items-center gap-2 md:gap-3 lg:gap-4">
-        <Link
-          to="/write"
-          className="hidden h-10 items-center justify-center rounded-card border border-brand-purple bg-white px-4 text-body font-medium text-brand-purple transition-colors hover:bg-brand-purple-5 md:flex lg:h-12 lg:px-6"
+    <>
+      <header className="flex h-16 w-full items-center border-b border-ink-border/20 bg-white px-4 md:h-20 md:px-8 lg:h-[calc(88*var(--fpx))] lg:px-12">
+        {/* Hamburger — mobile/tablet only, FIRST child (top-left) */}
+        <button
+          type="button"
+          aria-label={headerCopy.openMenuAriaLabel}
+          aria-expanded={navOpen}
+          aria-controls="mobile-nav-drawer"
+          aria-haspopup="dialog"
+          onClick={() => setNavOpen(true)}
+          className="mr-2 flex size-10 items-center justify-center text-brand-purple lg:hidden"
         >
-          {headerCopy.startWriting}
+          <MenuIcon />
+        </button>
+
+        <Link
+          to="/"
+          aria-label={headerCopy.homeAriaLabel}
+          className="shrink-0 text-brand-purple"
+        >
+          <LogoNuance className="h-9 w-auto lg:h-[calc(51*var(--fpx))]" />
         </Link>
 
-        {/* Mobile (<md): bell is a Link → /notifications. No foldout — the
-            355px panel doesn't fit a phone viewport, and full-page navigation
-            is the natural pattern there. */}
-        <Link
-          to="/notifications"
-          aria-label={headerCopy.notificationsAriaLabel}
-          className="relative flex size-10 items-center justify-center rounded-card text-brand-purple transition-colors hover:bg-brand-purple-5 md:hidden"
-        >
-          <IconBell className="size-5" />
-          {unreadCount > 0 && (
-            <span
-              aria-hidden
-              className="absolute right-2 top-2 size-2 rounded-full bg-notification"
-            />
-          )}
-        </Link>
+        <div className="flex flex-1 justify-center px-4">
+          <SearchBar className="hidden w-full max-w-[calc(740*var(--fpx))] lg:flex" />
+          <MobileSearchIcon />
+        </div>
 
-        {/* Desktop (md+): bell toggles the anchored foldout. */}
-        <div className="relative hidden md:block">
-          <button
-            ref={bellRef}
-            type="button"
-            aria-label={headerCopy.notificationsAriaLabel}
-            aria-expanded={foldoutOpen}
-            aria-haspopup="true"
-            onClick={() => setFoldoutOpen((o) => !o)}
-            className="relative flex size-10 items-center justify-center rounded-card text-brand-purple transition-colors hover:bg-brand-purple-5 lg:size-12"
+        <div className="flex shrink-0 items-center gap-2 md:gap-3 lg:gap-4">
+          <Link
+            to="/write"
+            className="hidden h-10 items-center justify-center rounded-card border border-brand-purple bg-white px-4 text-body font-medium text-brand-purple transition-colors hover:bg-brand-purple-5 lg:flex lg:h-12 lg:px-6"
           >
-            <IconBell className="size-5 lg:size-6" />
+            {headerCopy.startWriting}
+          </Link>
+
+          {/* Mobile/tablet (<lg): bell is a Link → /notifications. No foldout —
+              the 355px panel doesn't fit a phone viewport, and full-page
+              navigation is the natural pattern there. */}
+          <Link
+            to="/notifications"
+            aria-label={headerCopy.notificationsAriaLabel}
+            className="relative flex size-10 items-center justify-center rounded-card text-brand-purple transition-colors hover:bg-brand-purple-5 lg:hidden"
+          >
+            <IconBell className="size-5" />
             {unreadCount > 0 && (
               <span
                 aria-hidden
-                className="absolute right-2 top-2 size-2 rounded-full bg-notification lg:right-[calc(10*var(--fpx))] lg:top-[calc(10*var(--fpx))]"
+                className="absolute right-2 top-2 size-2 rounded-full bg-notification"
               />
             )}
-          </button>
-          {foldoutOpen && (
-            <NotificationsFoldout
-              anchorRef={bellRef}
-              onClose={() => setFoldoutOpen(false)}
-            />
-          )}
-        </div>
+          </Link>
 
-        <UserMenu />
-      </div>
-    </header>
+          {/* Desktop (lg+): bell toggles the anchored foldout. */}
+          <div className="relative hidden lg:block">
+            <button
+              ref={bellRef}
+              type="button"
+              aria-label={headerCopy.notificationsAriaLabel}
+              aria-expanded={foldoutOpen}
+              aria-haspopup="true"
+              onClick={() => setFoldoutOpen((o) => !o)}
+              className="relative flex size-10 items-center justify-center rounded-card text-brand-purple transition-colors hover:bg-brand-purple-5 lg:size-12"
+            >
+              <IconBell className="size-5 lg:size-6" />
+              {unreadCount > 0 && (
+                <span
+                  aria-hidden
+                  className="absolute right-2 top-2 size-2 rounded-full bg-notification lg:right-[calc(10*var(--fpx))] lg:top-[calc(10*var(--fpx))]"
+                />
+              )}
+            </button>
+            {foldoutOpen && (
+              <NotificationsFoldout
+                anchorRef={bellRef}
+                onClose={() => setFoldoutOpen(false)}
+              />
+            )}
+          </div>
+
+          {/* UserMenu — desktop only; account relocates into drawer on mobile */}
+          <div className="hidden lg:flex">
+            <UserMenu />
+          </div>
+        </div>
+      </header>
+
+      <MobileNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
+    </>
   );
 }
 
@@ -104,7 +128,7 @@ function MobileSearchIcon() {
     <button
       type="button"
       aria-label={headerCopy.searchAriaLabel}
-      className="flex size-10 items-center justify-center text-brand-purple md:hidden"
+      className="flex size-10 items-center justify-center text-brand-purple lg:hidden"
       onClick={onMobileIconClick}
     >
       <IconSearch className="size-5" />
@@ -136,5 +160,25 @@ function SearchBar({ className = "" }: { className?: string }) {
         <IconSearch className="size-5 lg:size-6" />
       </button>
     </form>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <line x1="4" y1="7" x2="20" y2="7" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="17" x2="20" y2="17" />
+    </svg>
   );
 }

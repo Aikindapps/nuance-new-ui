@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { LogoNuance } from "./icons/LogoNuance";
 import { IconSearch } from "./icons/IconSearch";
@@ -7,64 +8,75 @@ import { useModal } from "../../services/modal";
 import { LoginModal, LOGIN_MODAL_TITLE_ID } from "../LoginModal/LoginModal";
 import { headerCopy } from "../../constants/copy";
 import { useHeaderSearch } from "./useHeaderSearch";
+import { MobileNavDrawer } from "./MobileNavDrawer";
 
 export function Header() {
   const { isAuthenticated } = useAuth();
   const modal = useModal();
+  const [navOpen, setNavOpen] = useState(false);
+
   const openLogin = () =>
     modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });
 
   return (
-    <header className="flex h-16 w-full items-center border-b border-white-20 px-4 md:h-20 md:px-8 lg:h-[calc(88*var(--fpx))] lg:px-12">
-      <Link to="/" aria-label={headerCopy.homeAriaLabel} className="shrink-0 text-white">
-        <LogoNuance className="h-9 w-auto lg:h-[calc(51*var(--fpx))]" />
-      </Link>
-
-      {/* Primary nav — hidden on mobile, shown md+ */}
-      <nav className="ml-6 hidden items-center gap-6 font-bold text-white md:flex lg:ml-10 lg:gap-10">
-        <Link to="/" className="text-body hover:underline lg:text-lg">
-          {headerCopy.navDiscover}
-        </Link>
-      </nav>
-
-      <div className="ml-auto flex items-center gap-2 md:gap-3 lg:gap-4">
-        {/* Search — icon-only on mobile, input md+ */}
-        <MobileSearchIcon />
-        <SearchInput className="hidden md:flex md:w-48 lg:w-[calc(320*var(--fpx))] xl:w-[calc(405*var(--fpx))]" />
-
-        {isAuthenticated ? (
-          <UserMenu />
-        ) : (
-          <>
-            {/* Login — hidden on mobile */}
-            <button
-              type="button"
-              onClick={openLogin}
-              className="hidden h-10 items-center justify-center rounded-card border border-white px-4 text-body font-medium text-white transition-colors hover:bg-white-10 md:flex lg:h-12 lg:px-6"
-            >
-              {headerCopy.login}
-            </button>
-
-            <button
-              type="button"
-              onClick={openLogin}
-              className="flex h-10 items-center justify-center rounded-card bg-white px-3 text-sm font-medium text-brand-purple transition-opacity hover:opacity-90 md:px-4 md:text-body lg:h-12 lg:px-6"
-            >
-              {headerCopy.getStarted}
-            </button>
-          </>
-        )}
-
-        {/* Hamburger — mobile only */}
+    <>
+      <header className="flex h-16 w-full items-center border-b border-white-20 px-4 md:h-20 md:px-8 lg:h-[calc(88*var(--fpx))] lg:px-12">
+        {/* Hamburger — mobile/tablet only, FIRST child (top-left) */}
         <button
           type="button"
           aria-label={headerCopy.openMenuAriaLabel}
-          className="flex size-10 items-center justify-center text-white md:hidden"
+          aria-expanded={navOpen}
+          aria-controls="mobile-nav-drawer"
+          aria-haspopup="dialog"
+          onClick={() => setNavOpen(true)}
+          className="mr-2 flex size-10 items-center justify-center text-white lg:hidden"
         >
           <MenuIcon />
         </button>
-      </div>
-    </header>
+
+        <Link to="/" aria-label={headerCopy.homeAriaLabel} className="shrink-0 text-white">
+          <LogoNuance className="h-9 w-auto lg:h-[calc(51*var(--fpx))]" />
+        </Link>
+
+        {/* Primary nav — hidden on mobile/tablet, shown lg+ */}
+        <nav className="ml-6 hidden items-center gap-6 font-bold text-white lg:flex lg:ml-10 lg:gap-10">
+          <Link to="/" className="text-body hover:underline lg:text-lg">
+            {headerCopy.navDiscover}
+          </Link>
+        </nav>
+
+        <div className="ml-auto flex items-center gap-2 md:gap-3 lg:gap-4">
+          {/* Search — icon-only on mobile/tablet, input lg+ */}
+          <MobileSearchIcon />
+          <SearchInput className="hidden lg:flex lg:w-[calc(320*var(--fpx))] xl:w-[calc(405*var(--fpx))]" />
+
+          {isAuthenticated ? (
+            <UserMenu />
+          ) : (
+            <>
+              {/* Login — hidden on mobile/tablet */}
+              <button
+                type="button"
+                onClick={openLogin}
+                className="hidden h-10 items-center justify-center rounded-card border border-white px-4 text-body font-medium text-white transition-colors hover:bg-white-10 lg:flex lg:h-12 lg:px-6"
+              >
+                {headerCopy.login}
+              </button>
+
+              <button
+                type="button"
+                onClick={openLogin}
+                className="flex h-10 items-center justify-center rounded-card bg-white px-3 text-sm font-medium text-brand-purple transition-opacity hover:opacity-90 md:px-4 md:text-body lg:h-12 lg:px-6"
+              >
+                {headerCopy.getStarted}
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
+      <MobileNavDrawer open={navOpen} onClose={() => setNavOpen(false)} />
+    </>
   );
 }
 
@@ -74,7 +86,7 @@ function MobileSearchIcon() {
     <button
       type="button"
       aria-label={headerCopy.searchAriaLabel}
-      className="flex size-10 items-center justify-center text-white md:hidden"
+      className="flex size-10 items-center justify-center text-white lg:hidden"
       onClick={onMobileIconClick}
     >
       <IconSearch className="size-5" />

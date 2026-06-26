@@ -92,6 +92,27 @@ export const headerCopy = {
   logout: "Logout",
 };
 
+// Mobile nav drawer (NIC-66). Reuses many headerCopy strings; new strings
+// live here to avoid cluttering headerCopy.
+export const navDrawerCopy = {
+  closeMenuAriaLabel: "Close menu",
+  navAboutNuance: "About Nuance",
+  aboutUrl: "https://wiki.nuance.xyz",
+  navHome: "Home",
+  navPopular: "Popular",
+  navFollowing: "Following",
+  navNew: "New",
+  navWallet: "Wallet",
+  // Re-exported from headerCopy shape for convenience in the drawer component.
+  navDiscover: "Discover",
+  getStarted: "Get started",
+  login: "Login",
+  startWriting: "Start writing",
+  myArticles: "My articles",
+  notifications: "Notifications",
+  logout: "Logout",
+};
+
 // Notifications (PR #10, Figma 1:51584). The foldout + /notifications route
 // share copy. The header line is depicted in the Figma; the empty state /
 // view-all / route copy are invented here (the Figma is a draft and omits
