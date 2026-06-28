@@ -4,12 +4,14 @@
 // Internally reads useAuth() to branch LO vs LI, so the correct variant is
 // shown regardless of which header triggered the open.
 //
-// MUI Drawer gives us focus-trap, body-scroll-lock, ESC-close, backdrop
-// scrim, and a left-anchored slide (~225 ms) for free — no new deps needed.
+// MUI SwipeableDrawer gives us focus-trap, body-scroll-lock, ESC-close,
+// backdrop scrim, left-anchored slide (~225 ms), and swipe-to-close for free
+// — no new deps needed.  disableSwipeToOpen prevents accidental opens from
+// edge-swipe elsewhere on the page.
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import Drawer from "@mui/material/Drawer";
+import SwipeableDrawer from "@mui/material/SwipeableDrawer";
 import Skeleton from "@mui/material/Skeleton";
 import { useAuth } from "../../contexts/useAuth";
 import { useMyProfile } from "../../lib/useMyProfile";
@@ -295,20 +297,87 @@ export function MobileNavDrawer({ open, onClose }: Props) {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
 
-  // Close on route change (satisfies exhaustive-deps: location is the dep).
+  // Track the current location key synchronously (layout effect) so the
+  // [open] passive cleanup can tell whether a route change caused the close.
+  const locationKeyRef = useRef(location.key);
+  useLayoutEffect(() => {
+    locationKeyRef.current = location.key;
+  }, [location.key]);
+
+  useEffect(() => {
+    // Nothing to set up while the drawer is closed.
+    if (!open) return;
+
+    // Push a sentinel history entry so Android hardware Back closes the drawer
+    // instead of leaving the page.  Spread existing state so any router state
+    // already on the entry is preserved.
+    window.history.pushState({ ...window.history.state, __navDrawer: true }, "");
+
+    // Flag set inside the handler so the cleanup can distinguish the three
+    // ways the drawer can close (see below).
+    const closedByPop = { current: false };
+
+    const handlePopState = () => {
+      // If the pop landed us on ANOTHER drawer sentinel (can happen when a
+      // programmatic history.back() from a prior close fires after a rapid
+      // reopen), this is not a genuine user "back-out" — ignore it and let
+      // the drawer stay open.  A subsequent real Back from that sentinel will
+      // land on a non-sentinel entry and close normally.
+      if (window.history.state?.__navDrawer) return;
+      closedByPop.current = true;
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      // Remove listener BEFORE any history.back() call so the back() we may
+      // issue below is not re-caught by our own handler.
+      window.removeEventListener("popstate", handlePopState);
+
+      if (closedByPop.current) {
+        // (a) Hardware Back — the sentinel was already popped by the browser;
+        //     nothing more to do.
+        return;
+      }
+
+      if (locationKeyRef.current !== location.key) {
+        // (c) Route change — the NavLink onClick={onClose} state update and
+        //     react-router's navigate() commit in one render (React 18
+        //     automatic batching), so the layout effect above updates
+        //     locationKeyRef before this passive cleanup reads it →
+        //     routeChanged=true.  React-router already moved the history
+        //     pointer; popping the sentinel ourselves would double-back, so
+        //     we leave it in place and let the router manage history.
+        return;
+      }
+
+      // (b) Plain dismiss (✕ button or backdrop tap) — remove the sentinel
+      //     entry so the next real Back takes the user to wherever they were
+      //     before opening the drawer.
+      window.history.back();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Close on any route change while open (safety net for programmatic
+  // navigation; NavLink clicks already call onClose directly).
   useEffect(() => {
     if (open) onClose();
-    // We intentionally omit onClose from deps: it's () => setNavOpen(false),
-    // a new function identity each render — it's setNavOpen (the state setter)
-    // that's stable. Including onClose would re-run on every parent render.
+    // onClose is () => setNavOpen(false) — a fresh identity each render
+    // wrapping the stable setter; intentionally omitted from deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
   return (
-    <Drawer
+    <SwipeableDrawer
       anchor="left"
       open={open}
       onClose={onClose}
+      onOpen={() => {
+        /* controlled externally via the open prop */
+      }}
+      disableSwipeToOpen
       slotProps={{
         paper: {
           id: "mobile-nav-drawer",
@@ -330,6 +399,6 @@ export function MobileNavDrawer({ open, onClose }: Props) {
           <LoggedOutPanel onClose={onClose} />
         )}
       </div>
-    </Drawer>
+    </SwipeableDrawer>
   );
 }
