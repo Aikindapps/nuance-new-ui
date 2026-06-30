@@ -96,100 +96,106 @@ export function PublishView({
           {mode === "publish" ? c.titlePublish : c.titleDraft}
         </h1>
 
-        {/* Publish-to dropdown */}
-        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-          <label className="text-label font-bold text-ink">
-            {c.publishToLabel}
-          </label>
-          {/* Relative wrapper for the foldout */}
-          <div className="relative" ref={publishToRef}>
-            <button
-              type="button"
-              role="combobox"
-              aria-haspopup="listbox"
-              aria-expanded={open}
-              aria-controls={listId}
-              onClick={() => setOpen((o) => !o)}
-              className={[
-                "flex h-[calc(48*var(--fpx))] w-full items-center justify-between rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] text-body text-ink-80",
-                open
-                  ? "border-2 border-brand-purple bg-brand-purple-5"
-                  : "border-2 border-ink-border-10 bg-ink-border-5",
-              ].join(" ")}
-            >
-              <span>{displayLabel}</span>
-              <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0 text-ink-80" />
-            </button>
-
-            {/* Dark foldout panel (Figma 1:41888 — applied to Publish-to field) */}
-            {open && (
-              <ul
-                id={listId}
-                role="listbox"
-                className="absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]"
+        {/* Publish-to dropdown — hidden for personal-only users (NIC-72) */}
+        {publications.length > 0 && (
+          <div className="flex flex-col gap-[calc(6*var(--fpx))]">
+            <label className="text-label font-bold text-ink">
+              {c.publishToLabel}
+            </label>
+            {/* Relative wrapper for the foldout */}
+            <div className="relative" ref={publishToRef}>
+              <button
+                type="button"
+                role="combobox"
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-controls={listId}
+                onClick={() => setOpen((o) => !o)}
+                className={[
+                  "flex h-[calc(48*var(--fpx))] w-full items-center justify-between rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] text-body text-ink-80",
+                  open
+                    ? "border-2 border-brand-purple bg-brand-purple-5"
+                    : "border-2 border-ink-border-10 bg-ink-border-5",
+                ].join(" ")}
               >
-                {/* "My profile" option */}
-                <li role="option" aria-selected={pubHandle === null}>
-                  <button
-                    type="button"
-                    onClick={() => { setPubHandle(null); setOpen(false); }}
-                    className={[
-                      "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
-                      pubHandle === null
-                        ? "bg-brand-purple-fluor-80 font-medium"
-                        : "hover:bg-brand-purple-fluor-80",
-                    ].join(" ")}
-                  >
-                    {c.personalOption}
-                  </button>
-                </li>
-                {publications.map((pub) => (
-                  <li
-                    key={pub.publicationName}
-                    role="option"
-                    aria-selected={pubHandle === pub.publicationName}
-                  >
+                <span>{displayLabel}</span>
+                <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0 text-ink-80" />
+              </button>
+
+              {/* Dark foldout panel (Figma 1:41888 — applied to Publish-to field) */}
+              {open && (
+                <ul
+                  id={listId}
+                  role="listbox"
+                  className="absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]"
+                >
+                  {/* "My profile" option */}
+                  <li role="option" aria-selected={pubHandle === null}>
                     <button
                       type="button"
-                      onClick={() => { setPubHandle(pub.publicationName); setOpen(false); }}
+                      onClick={() => { setPubHandle(null); setOpen(false); }}
                       className={[
                         "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
-                        pubHandle === pub.publicationName
+                        pubHandle === null
                           ? "bg-brand-purple-fluor-80 font-medium"
                           : "hover:bg-brand-purple-fluor-80",
                       ].join(" ")}
                     >
-                      {pub.publicationName}
+                      {c.personalOption}
                     </button>
                   </li>
-                ))}
-              </ul>
-            )}
+                  {publications.map((pub) => (
+                    <li
+                      key={pub.publicationName}
+                      role="option"
+                      aria-selected={pubHandle === pub.publicationName}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => { setPubHandle(pub.publicationName); setOpen(false); }}
+                        className={[
+                          "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
+                          pubHandle === pub.publicationName
+                            ? "bg-brand-purple-fluor-80 font-medium"
+                            : "hover:bg-brand-purple-fluor-80",
+                        ].join(" ")}
+                      >
+                        {pub.publicationName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Select category (disabled / gated F-cat / NIC-57) */}
-        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-          <label className="text-label font-bold text-ink">
-            {c.categoryLabel}
-          </label>
-          <div
-            role="combobox"
-            aria-disabled="true"
-            aria-expanded="false"
-            aria-label={c.categoryLabel}
-            className="flex h-[calc(48*var(--fpx))] w-full cursor-not-allowed select-none items-center justify-between rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink-60 opacity-50"
-          >
-            <span>{c.categoryPlaceholder}</span>
-            <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0" />
+        {/* Select category (disabled / gated F-cat / NIC-57) — shown only when a publication is selected (NIC-72) */}
+        {pubHandle !== null && (
+          <div className="flex flex-col gap-[calc(6*var(--fpx))]">
+            <label className="text-label font-bold text-ink">
+              {c.categoryLabel}
+            </label>
+            <div
+              role="combobox"
+              aria-disabled="true"
+              aria-expanded="false"
+              aria-label={c.categoryLabel}
+              className="flex h-[calc(48*var(--fpx))] w-full cursor-not-allowed select-none items-center justify-between rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink-60 opacity-50"
+            >
+              <span>{c.categoryPlaceholder}</span>
+              <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0" />
+            </div>
+            <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(4*var(--fpx))]">
+              {c.categoryComingSoon}
+            </p>
           </div>
-          <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(4*var(--fpx))]">
-            {c.categoryComingSoon}
-          </p>
-        </div>
+        )}
 
-        {/* Divider */}
-        <hr className="w-full border-t border-ink-border/20" />
+        {/* Divider — hidden for personal-only users (NIC-72) */}
+        {publications.length > 0 && (
+          <hr className="w-full border-t border-ink-border/20" />
+        )}
 
         {/* Topics block */}
         <div className="flex flex-col gap-[calc(6*var(--fpx))]">
