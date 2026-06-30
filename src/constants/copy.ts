@@ -183,7 +183,7 @@ export const writeArticleCopy = {
   publish: {
     titlePublish: "Publish",
     titleDraft: "Save as draft",
-    topicsLabel: "Topics",
+    topicsLabel: "Add topics",
     topicsPlaceholder: "Search topics…",
     topicsHint: "Choose 1–3 topics.",
     publishButton: "Publish",
@@ -195,6 +195,8 @@ export const writeArticleCopy = {
     categoryLabel: "Select category",
     categoryPlaceholder: "Select category",
     categoryComingSoon: "Category selection is coming soon.",
+    topicsDescription: "Add or change tags to help know your readers what it's about.",
+    backToArticle: "Back to article",
   },
   leaveGuard: {
     title: "Leave without saving?",

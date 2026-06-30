@@ -15,10 +15,7 @@ import { AutoGrowTextarea } from "./sections/AutoGrowTextarea";
 import { StatusTag } from "./sections/StatusTag";
 import { CoverImageDropzone } from "./sections/CoverImageDropzone";
 import { ActionBar } from "./sections/ActionBar";
-import {
-  PUBLISH_MODAL_TITLE_ID,
-  PublishModal,
-} from "./sections/PublishModal";
+import { PublishView } from "./sections/PublishView";
 import {
   LEAVE_GUARD_TITLE_ID,
   LeaveGuardDialog,
@@ -114,6 +111,11 @@ export function WriteArticleForm({
       setPublicationHandle(initialTarget);
     }
   }, [initialTarget]);
+
+  // Publish / Save-as-draft view state. null = hidden; { mode } = open.
+  // Replaces the old modal.open(<PublishModal/>) pattern — the view renders
+  // as a fixed full-surface overlay so the Lexical editor stays mounted.
+  const [publishView, setPublishView] = useState<{ mode: "draft" | "publish" } | null>(null);
 
   // Preview snapshot — populated when the writer clicks Preview; reading the
   // editor at click time keeps the overlay decoupled from the editor's live
@@ -236,41 +238,9 @@ export function WriteArticleForm({
 
   const openPublish = useCallback(
     (mode: "draft" | "publish") => {
-      modal.open(
-        <PublishModal
-          mode={mode}
-          initialTagIds={tagIds}
-          publications={myPublications}
-          initialPublicationHandle={publicationHandle}
-          onConfirm={async (picked, chosenPub) => {
-            if (chosenPub !== publicationHandle) {
-              userChangedTarget.current = true;
-            }
-            setPublicationHandle(chosenPub);
-            const post = await doSave(
-              mode === "publish" ? false : true,
-              picked,
-              chosenPub,
-            );
-            if (post) {
-              if (mode === "publish") {
-                // Re-publishing an already-live article = saving changes.
-                show(
-                  isPublished ? C.toasts.changesSaved : C.toasts.published,
-                  "success",
-                );
-                navigate(post.url || "/");
-              } else {
-                show(C.toasts.savedDraft, "success");
-              }
-            }
-            return post !== null;
-          }}
-        />,
-        { ariaLabelledBy: PUBLISH_MODAL_TITLE_ID, dismissable: true },
-      );
+      setPublishView({ mode });
     },
-    [modal, tagIds, myPublications, publicationHandle, doSave, show, navigate, isPublished],
+    [],
   );
 
   const handleSave = useCallback(async () => {
@@ -419,6 +389,40 @@ export function WriteArticleForm({
           {...previewSnapshot}
           isPublished={isPublished}
           onClose={() => setPreviewSnapshot(null)}
+        />
+      )}
+
+      {publishView && (
+        <PublishView
+          mode={publishView.mode}
+          initialTagIds={tagIds}
+          publications={myPublications}
+          initialPublicationHandle={publicationHandle}
+          onBack={() => setPublishView(null)}
+          onConfirm={async (picked, chosenPub) => {
+            if (chosenPub !== publicationHandle) {
+              userChangedTarget.current = true;
+            }
+            setPublicationHandle(chosenPub);
+            const post = await doSave(
+              publishView.mode === "publish" ? false : true,
+              picked,
+              chosenPub,
+            );
+            if (post) {
+              if (publishView.mode === "publish") {
+                // Re-publishing an already-live article = saving changes.
+                show(
+                  isPublished ? C.toasts.changesSaved : C.toasts.published,
+                  "success",
+                );
+                navigate(post.url || "/");
+              } else {
+                show(C.toasts.savedDraft, "success");
+              }
+            }
+            return post !== null;
+          }}
         />
       )}
     </article>

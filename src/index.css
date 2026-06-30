@@ -80,6 +80,7 @@
   --color-brand-purple-5: rgba(84, 5, 212, 0.05); /* nur/purple/5% — tinted bg (WriteCtaBanner) */
   --color-brand-purple-10: rgba(84, 5, 212, 0.1); /* nur/purple/10% — tag pill bg (logged-in Topics rail) */
   --color-brand-purple-fluor: #914eff;     /* nur/purple-fluor/100 — editor block-menu active item + active toolbar btn (decision #36) */
+  --color-brand-purple-fluor-80: #ae7cff; /* nur/purple-fluor/80% — §6.2 publish-to foldout selected/hover row (NIC-71) */
   --color-ink: #202123;                    /* nur/black/100% (text) */
   --color-ink-80: rgba(32, 33, 35, 0.8);   /* nur/black/80% (text) */
   --color-ink-60: rgba(32, 33, 35, 0.6);   /* nur/black/60% (text) */
