@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { useAuth } from "../contexts/useAuth";
 import { writeArticleCopy } from "../constants/copy";
@@ -29,6 +29,8 @@ function Shell({ children }: { children: ReactNode }) {
 export function WriteArticle() {
   const { isAuthenticated, isLoading } = useAuth();
   const { postIdAndBucket } = useParams();
+  const [searchParams] = useSearchParams();
+  const initialPublication = searchParams.get("publication") ?? undefined;
   const parsed = postIdAndBucket ? parseArticleSegment(postIdAndBucket) : null;
   const editQuery = useEditArticle(
     parsed?.bucketCanisterId ?? "",
@@ -59,14 +61,18 @@ export function WriteArticle() {
     }
     return (
       <Shell>
-        <WriteArticleForm key={parsed.postId} initial={editQuery.data} />
+        <WriteArticleForm
+          key={parsed.postId}
+          initial={editQuery.data}
+          initialPublication={initialPublication}
+        />
       </Shell>
     );
   }
 
   return (
     <Shell>
-      <WriteArticleForm key="new" />
+      <WriteArticleForm key="new" initialPublication={initialPublication} />
     </Shell>
   );
 }

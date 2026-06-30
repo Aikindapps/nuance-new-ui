@@ -14,6 +14,12 @@ export type EditArticleInitial = {
   // ("Save changes", isDraft:false) instead of unpublishing it. A newer local
   // autosave only overrides the body/fields — never the published state.
   isPublished: boolean;
+  // Publication home — always taken from the canister post (autosave doesn't
+  // carry publication info). Preserves the post's home on re-save so a
+  // publication article is never silently re-homed to personal (latent-bug fix).
+  isPublication: boolean;
+  publicationHandle: string;
+  creatorHandle: string;
 };
 
 // Loads an existing article into editor-ready shape for /write/:postIdAndBucket.
@@ -42,6 +48,12 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
       // Prefer a newer local autosave (unsaved edits) over the canister copy.
       // The autosave only carries body/fields — published state stays canister
       // truth so a restored draft of a live article still "Saves changes".
+      // Publication fields always come from the canister post — autosave doesn't
+      // carry publication info, so these are read once from the canister truth.
+      const isPublication = post.isPublication;
+      const publicationHandle = post.isPublication ? post.handle : "";
+      const creatorHandle = post.creatorHandle;
+
       const local = loadDraft(post.postId);
       const canisterModified = Number(post.modified) || 0;
       if (local && local.savedAt > canisterModified) {
@@ -53,6 +65,9 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
           tagIds: local.tagIds.length > 0 ? local.tagIds : tagIds,
           editorStateJson: local.editorStateJson,
           isPublished,
+          isPublication,
+          publicationHandle,
+          creatorHandle,
         };
       }
       return {
@@ -63,6 +78,9 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
         tagIds,
         editorStateJson: htmlToEditorStateJson(post.content),
         isPublished,
+        isPublication,
+        publicationHandle,
+        creatorHandle,
       };
     },
   });

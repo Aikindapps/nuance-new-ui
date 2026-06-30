@@ -201,17 +201,16 @@ function MobileCardSkeleton() {
 
 // ─── Header (title + action buttons) ─────────────────────────────────────────
 
-function ListHeader() {
+function ListHeader({ handle }: { handle: string }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      {/* "+ New article" — disabled placeholder (Increment 2 wires this) */}
-      <button
-        type="button"
-        disabled
-        className="inline-flex h-10 cursor-not-allowed items-center justify-center rounded-card border border-brand-purple px-4 text-sm font-medium text-brand-purple opacity-40"
+      {/* "+ New article" — navigates to the write form pre-seeded with this publication */}
+      <Link
+        to={`/write?publication=${encodeURIComponent(handle)}`}
+        className="inline-flex h-10 items-center justify-center rounded-card border border-brand-purple px-4 text-sm font-medium text-brand-purple transition-colors hover:bg-brand-purple-5"
       >
         {manageArticlesCopy.newArticle}
-      </button>
+      </Link>
 
       {/* "Filter status" — disabled placeholder */}
       <button
@@ -236,20 +235,19 @@ function ListHeader() {
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-function EmptyState() {
+function EmptyState({ handle }: { handle: string }) {
   return (
     <div className="rounded-card border border-ink-border/10 bg-ink-border/5 p-12 text-center">
       <p className="text-title-sm font-bold text-ink">
         {manageArticlesCopy.emptyHeading}
       </p>
       <p className="mt-2 text-sm text-ink-80">{manageArticlesCopy.emptyBody}</p>
-      <button
-        type="button"
-        disabled
-        className="mt-6 inline-flex h-10 cursor-not-allowed items-center justify-center rounded-card border border-brand-purple px-4 text-sm font-medium text-brand-purple opacity-40"
+      <Link
+        to={`/write?publication=${encodeURIComponent(handle)}`}
+        className="mt-6 inline-flex h-10 items-center justify-center rounded-card border border-brand-purple px-4 text-sm font-medium text-brand-purple transition-colors hover:bg-brand-purple-5"
       >
         {manageArticlesCopy.newArticle}
-      </button>
+      </Link>
     </div>
   );
 }
@@ -295,7 +293,7 @@ export function ManageArticlesList({ handle }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* Header action buttons */}
-      <ListHeader />
+      <ListHeader handle={handle} />
 
       {/* Loading — skeleton rows */}
       {isLoading && (
@@ -332,7 +330,7 @@ export function ManageArticlesList({ handle }: Props) {
       )}
 
       {/* Empty state */}
-      {!isLoading && !isError && rows.length === 0 && <EmptyState />}
+      {!isLoading && !isError && rows.length === 0 && <EmptyState handle={handle} />}
 
       {/* Populated — desktop table */}
       {!isLoading && !isError && rows.length > 0 && (

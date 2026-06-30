@@ -190,6 +190,11 @@ export const writeArticleCopy = {
     saveDraftButton: "Save as draft",
     cancel: "Cancel",
     closeAriaLabel: "Close",
+    publishToLabel: "Publish to",
+    personalOption: "My profile",
+    categoryLabel: "Select category",
+    categoryPlaceholder: "Select category",
+    categoryComingSoon: "Category selection is coming soon.",
   },
   leaveGuard: {
     title: "Leave without saving?",

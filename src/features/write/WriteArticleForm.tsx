@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { REDO_COMMAND, UNDO_COMMAND, type LexicalEditor } from "lexical";
 import { IconBack } from "../../components/ui/icons/IconBack";
@@ -28,6 +28,7 @@ import { Editor } from "./editor/Editor";
 import { useSavePost } from "./hooks/useSavePost";
 import type { EditArticleInitial } from "./hooks/useEditArticle";
 import { isEditorEmpty, serializeEditorHtml } from "./lib/htmlSerialize";
+import { useMyProfile } from "../../lib/useMyProfile";
 
 const C = writeArticleCopy;
 const MY_ARTICLES = "/my-articles";
@@ -40,13 +41,26 @@ const MY_ARTICLES = "/my-articles";
 // in Lexical (read via editorRef on save).
 export function WriteArticleForm({
   initial,
+  initialPublication,
 }: {
   initial?: EditArticleInitial;
+  initialPublication?: string;
 }) {
   const navigate = useNavigate();
   const modal = useModal();
   const { show } = useToast();
   const saveMutation = useSavePost();
+
+  // Profile — used to build the publication-write model and to populate the
+  // "Publish to" selector in the dialog. myPublications is memoized to keep a
+  // stable reference (avoids react-hooks/exhaustive-deps churn for useMemo /
+  // useCallback that depend on it).
+  const { data: me } = useMyProfile();
+  const myHandle = me?.handle ?? "";
+  const myPublications = useMemo(
+    () => me?.publicationsArray ?? [],
+    [me?.publicationsArray],
+  );
 
   // Editing → seed from the loaded article. New → restore the browser autosave.
   const restored = useMemo(
@@ -65,6 +79,41 @@ export function WriteArticleForm({
   // stays published instead of being silently unpublished (decision #38). New
   // articles and drafts keep the "Save as draft" path.
   const isPublished = initial?.isPublished ?? false;
+
+  // Resolve the initial publication target:
+  //   1. Editing a publication post — use the canister-truth handle.
+  //   2. A ?publication=<handle> query param — match case-insensitively against
+  //      the user's publications and use the canonical publicationName.
+  //   3. Default to personal (null).
+  const initialTarget = useMemo((): string | null => {
+    if (initial?.isPublication && initial.publicationHandle) {
+      return initial.publicationHandle;
+    }
+    if (initialPublication) {
+      const lower = initialPublication.toLowerCase();
+      const match = myPublications.find(
+        (p) => p.publicationName.toLowerCase() === lower,
+      );
+      return match ? match.publicationName : null;
+    }
+    return null;
+  }, [initial, initialPublication, myPublications]);
+
+  // Form-level publication target: null = personal ("My profile").
+  const [publicationHandle, setPublicationHandle] = useState<string | null>(
+    initialTarget,
+  );
+
+  // Track whether the user has explicitly chosen a destination in the modal.
+  // If not, we sync publicationHandle when initialTarget resolves (i.e. when
+  // the profile loads after the first render for the ?publication= flow).
+  const userChangedTarget = useRef(false);
+
+  useEffect(() => {
+    if (!userChangedTarget.current && initialTarget !== null) {
+      setPublicationHandle(initialTarget);
+    }
+  }, [initialTarget]);
 
   // Preview snapshot — populated when the writer clicks Preview; reading the
   // editor at click time keeps the overlay decoupled from the editor's live
@@ -108,12 +157,26 @@ export function WriteArticleForm({
   }, [title, subtitle, coverUrl]);
 
   // The single canister write. Validates body + tags (canister-enforced),
-  // builds the personal-post model, captures the returned postId, and clears
-  // the local autosave slot. Returns the saved Post or null.
+  // builds the save model (publication or personal), captures the returned
+  // postId, and clears the local autosave slot. Returns the saved Post or null.
+  // `pubHandle` defaults to the form-level publicationHandle state so that
+  // direct (non-modal) save paths (handleSave, handleBack's onSaveDraft) work
+  // without passing an explicit argument.
   const doSave = useCallback(
-    async (isDraft: boolean, tags: string[]): Promise<Post | null> => {
+    async (
+      isDraft: boolean,
+      tags: string[],
+      pubHandle: string | null = publicationHandle,
+    ): Promise<Post | null> => {
       const editor = editorRef.current;
       if (!editor) return null;
+      // Guard: a publication save requires a resolved author handle. If the
+      // profile query hasn't resolved yet, myHandle is "" — block the submit
+      // so we never send creatorHandle:"" to the canister.
+      if (pubHandle && !myHandle) {
+        show(C.toasts.saveFailed, "error");
+        return null;
+      }
       if (isEditorEmpty(editor)) {
         show(C.toasts.emptyBody, "error");
         return null;
@@ -127,20 +190,35 @@ export function WriteArticleForm({
         show(C.toasts.needTopic, "error");
         return null;
       }
-      const model: PostSaveModel = {
-        postId,
-        title: title.trim(),
-        subtitle: subtitle.trim(),
-        content,
-        headerImage: coverUrl,
-        isDraft,
-        tagIds: tags,
-        category: "",
-        handle: "", // personal post — canister derives the caller's handle
-        creatorHandle: "",
-        isPublication: false,
-        isMembersOnly: false,
-      };
+      const model: PostSaveModel = pubHandle
+        ? {
+            postId,
+            title: title.trim(),
+            subtitle: subtitle.trim(),
+            content,
+            headerImage: coverUrl,
+            isDraft,
+            tagIds: tags,
+            category: "",
+            handle: pubHandle,
+            creatorHandle: myHandle,
+            isPublication: true,
+            isMembersOnly: false,
+          }
+        : {
+            postId,
+            title: title.trim(),
+            subtitle: subtitle.trim(),
+            content,
+            headerImage: coverUrl,
+            isDraft,
+            tagIds: tags,
+            category: "",
+            handle: "", // personal post — canister derives the caller's handle
+            creatorHandle: "",
+            isPublication: false,
+            isMembersOnly: false,
+          };
       try {
         const post = await saveMutation.mutateAsync(model);
         clearDraft(postId || DRAFT_NEW_ID);
@@ -153,7 +231,7 @@ export function WriteArticleForm({
         return null;
       }
     },
-    [postId, title, subtitle, coverUrl, saveMutation, show],
+    [postId, title, subtitle, coverUrl, myHandle, publicationHandle, saveMutation, show],
   );
 
   const openPublish = useCallback(
@@ -162,8 +240,18 @@ export function WriteArticleForm({
         <PublishModal
           mode={mode}
           initialTagIds={tagIds}
-          onConfirm={async (picked) => {
-            const post = await doSave(mode === "publish" ? false : true, picked);
+          publications={myPublications}
+          initialPublicationHandle={publicationHandle}
+          onConfirm={async (picked, chosenPub) => {
+            if (chosenPub !== publicationHandle) {
+              userChangedTarget.current = true;
+            }
+            setPublicationHandle(chosenPub);
+            const post = await doSave(
+              mode === "publish" ? false : true,
+              picked,
+              chosenPub,
+            );
             if (post) {
               if (mode === "publish") {
                 // Re-publishing an already-live article = saving changes.
@@ -182,7 +270,7 @@ export function WriteArticleForm({
         { ariaLabelledBy: PUBLISH_MODAL_TITLE_ID, dismissable: true },
       );
     },
-    [modal, tagIds, doSave, show, navigate, isPublished],
+    [modal, tagIds, myPublications, publicationHandle, doSave, show, navigate, isPublished],
   );
 
   const handleSave = useCallback(async () => {
