@@ -9,10 +9,14 @@ export function MyArticleCard({
   article,
   onDelete,
   deleting,
+  onUnpublish,
+  unpublishing,
 }: {
   article: MyArticle;
   onDelete: () => void;
   deleting: boolean;
+  onUnpublish: () => void;
+  unpublishing: boolean;
 }) {
   const c = myArticlesCopy;
   const editTo = `/write/${article.id}-${article.bucketCanisterId}`;
@@ -70,6 +74,16 @@ export function MyArticleCard({
             >
               {c.view}
             </Link>
+          )}
+          {!article.isDraft && (
+            <button
+              type="button"
+              onClick={onUnpublish}
+              disabled={unpublishing}
+              className="text-body font-medium text-brand-purple hover:underline disabled:opacity-50"
+            >
+              {unpublishing ? c.unpublishing : c.unpublish}
+            </button>
           )}
           <button
             type="button"

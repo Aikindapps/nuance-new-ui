@@ -14,6 +14,7 @@ import {
   useMyArticles,
 } from "../features/write/myArticles/hooks/useMyArticles";
 import { useDeletePost } from "../features/write/myArticles/hooks/useDeletePost";
+import { useUnpublishPost } from "../features/write/myArticles/hooks/useUnpublishPost";
 import { MyArticleCard } from "../features/write/myArticles/MyArticleCard";
 
 // My Articles (Figma 5.7) — the authed writer's drafts + published list, with
@@ -27,6 +28,7 @@ export function MyArticles() {
   const { show } = useToast();
   const modal = useModal();
   const deleteMutation = useDeletePost();
+  const unpublishMutation = useUnpublishPost();
 
   const tabParam = params.get("tab");
   const filter: MyArticleFilter = TABS.includes(tabParam as MyArticleFilter)
@@ -56,6 +58,32 @@ export function MyArticles() {
             show(c.deleted, "success");
           } catch (e) {
             show((e as Error).message || c.deleteFailed, "error");
+            throw e; // keep the dialog open
+          }
+        }}
+      />,
+      { ariaLabelledBy: CONFIRM_DIALOG_TITLE_ID, dismissable: true },
+    );
+  };
+
+  const confirmUnpublish = (article: MyArticle) => {
+    modal.open(
+      <ConfirmDialog
+        title={c.unpublishConfirm.title}
+        body={c.unpublishConfirm.body}
+        confirmLabel={c.unpublishConfirm.confirm}
+        cancelLabel={c.unpublishConfirm.cancel}
+        closeAriaLabel={c.unpublishConfirm.closeAriaLabel}
+        onConfirm={async () => {
+          try {
+            await unpublishMutation.mutateAsync({
+              bucketCanisterId: article.bucketCanisterId,
+              postId: article.id,
+            });
+            show(c.unpublished, "success");
+          } catch (e) {
+            console.error(e);
+            show(c.unpublishFailed, "error");
             throw e; // keep the dialog open
           }
         }}
@@ -121,6 +149,11 @@ export function MyArticles() {
                 deleteMutation.variables?.postId === article.id
               }
               onDelete={() => confirmDelete(article)}
+              onUnpublish={() => confirmUnpublish(article)}
+              unpublishing={
+                unpublishMutation.isPending &&
+                unpublishMutation.variables?.postId === article.id
+              }
             />
           ))}
         </div>

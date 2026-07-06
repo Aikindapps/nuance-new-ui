@@ -257,6 +257,17 @@ export const myArticlesCopy = {
   },
   deleted: "Article deleted.",
   deleteFailed: "Couldn't delete. Please try again.",
+  unpublish: "Unpublish",
+  unpublishing: "Unpublishing…",
+  unpublishConfirm: {
+    title: "Move to drafts?",
+    body: "This unpublishes the article and moves it back to your drafts. Readers won't see it until you publish it again.",
+    confirm: "Unpublish",
+    cancel: "Cancel",
+    closeAriaLabel: "Close",
+  },
+  unpublished: "Article moved to drafts.",
+  unpublishFailed: "Couldn't unpublish. Please try again.",
 };
 
 export const loginModalCopy = {
