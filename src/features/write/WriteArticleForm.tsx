@@ -23,6 +23,7 @@ import {
 import { PreviewOverlay } from "./sections/PreviewOverlay";
 import { Editor } from "./editor/Editor";
 import { useSavePost } from "./hooks/useSavePost";
+import { useMigratePost } from "./hooks/useMigratePost";
 import type { EditArticleInitial } from "./hooks/useEditArticle";
 import { isEditorEmpty, serializeEditorHtml } from "./lib/htmlSerialize";
 import { useMyProfile } from "../../lib/useMyProfile";
@@ -47,6 +48,7 @@ export function WriteArticleForm({
   const modal = useModal();
   const { show } = useToast();
   const saveMutation = useSavePost();
+  const migrateMutation = useMigratePost();
 
   // Profile — used to build the publication-write model and to populate the
   // "Publish to" selector in the dialog. myPublications is memoized to keep a
@@ -70,6 +72,12 @@ export function WriteArticleForm({
   const [coverUrl, setCoverUrl] = useState(source?.coverUrl ?? "");
   const [tagIds, setTagIds] = useState<string[]>(source?.tagIds ?? []);
   const [postId, setPostId] = useState(initial?.postId ?? "");
+  // Track the publication the post is currently homed in on the canister so
+  // doSave can decide whether to use the two-step migrate path (personal draft
+  // → publication) or the direct publication save (new/already-pub article).
+  const [savedPubHandle, setSavedPubHandle] = useState<string | null>(
+    initial?.isPublication ? (initial.publicationHandle ?? null) : null,
+  );
   // Editing starts clean (matches canister); a restored new draft starts dirty.
   const [dirty, setDirty] = useState(initial ? false : restored != null);
   // Editing a live article: save in place ("Save changes", isDraft:false) so it
@@ -158,9 +166,15 @@ export function WriteArticleForm({
     });
   }, [title, subtitle, coverUrl]);
 
-  // The single canister write. Validates body + tags (canister-enforced),
-  // builds the save model (publication or personal), captures the returned
-  // postId, and clears the local autosave slot. Returns the saved Post or null.
+  // The canister write path. Validates body + tags (canister-enforced), then:
+  //  • Personal post (pubHandle falsy): single PostCore.save call.
+  //  • Publication post, new article (postId="") OR already a pub post
+  //    (savedPubHandle≠null): single PostCore.save call with isPublication:true.
+  //  • Publication post, existing personal draft (postId≠"" && savedPubHandle===null):
+  //    TWO-STEP — save as personal draft first (so the canister records a bucket
+  //    home), then call PostBucket.migratePostToPublication which records the
+  //    creator unconditionally. This fixes the empty-byline bug (decision #36
+  //    addendum): a plain update-to-publication save never sets the creator field.
   // `pubHandle` defaults to the form-level publicationHandle state so that
   // direct (non-modal) save paths (handleSave, handleBack's onSaveDraft) work
   // without passing an explicit argument.
@@ -192,8 +206,42 @@ export function WriteArticleForm({
         show(C.toasts.needTopic, "error");
         return null;
       }
-      const model: PostSaveModel = pubHandle
-        ? {
+
+      try {
+        if (pubHandle) {
+          // Existing personal draft being moved into a publication for the first
+          // time: two-step migrate so the creator is recorded by the bucket.
+          if (postId !== "" && savedPubHandle === null) {
+            const personalModel: PostSaveModel = {
+              postId,
+              title: title.trim(),
+              subtitle: subtitle.trim(),
+              content,
+              headerImage: coverUrl,
+              isDraft: true, // must be draft for migratePostToPublication auth check
+              tagIds: tags,
+              category: "",
+              handle: "",
+              creatorHandle: "",
+              isPublication: false,
+              isMembersOnly: false,
+            };
+            const saved = await saveMutation.mutateAsync(personalModel);
+            const migrated = await migrateMutation.mutateAsync({
+              bucketCanisterId: saved.bucketCanisterId,
+              postId: saved.postId,
+              publicationHandle: pubHandle,
+              isDraft,
+            });
+            clearDraft(postId || DRAFT_NEW_ID);
+            setPostId(migrated.postId);
+            setTagIds(tags);
+            setDirty(false);
+            setSavedPubHandle(pubHandle);
+            return migrated;
+          }
+          // New article (isNew) or already a publication post: direct pub save.
+          const pubModel: PostSaveModel = {
             postId,
             title: title.trim(),
             subtitle: subtitle.trim(),
@@ -206,34 +254,43 @@ export function WriteArticleForm({
             creatorHandle: myHandle,
             isPublication: true,
             isMembersOnly: false,
-          }
-        : {
-            postId,
-            title: title.trim(),
-            subtitle: subtitle.trim(),
-            content,
-            headerImage: coverUrl,
-            isDraft,
-            tagIds: tags,
-            category: "",
-            handle: "", // personal post — canister derives the caller's handle
-            creatorHandle: "",
-            isPublication: false,
-            isMembersOnly: false,
           };
-      try {
-        const post = await saveMutation.mutateAsync(model);
+          const post = await saveMutation.mutateAsync(pubModel);
+          clearDraft(postId || DRAFT_NEW_ID);
+          setPostId(post.postId);
+          setTagIds(tags);
+          setDirty(false);
+          setSavedPubHandle(pubHandle);
+          return post;
+        }
+        // Personal (My profile) save — unchanged.
+        const personalModel: PostSaveModel = {
+          postId,
+          title: title.trim(),
+          subtitle: subtitle.trim(),
+          content,
+          headerImage: coverUrl,
+          isDraft,
+          tagIds: tags,
+          category: "",
+          handle: "", // personal post — canister derives the caller's handle
+          creatorHandle: "",
+          isPublication: false,
+          isMembersOnly: false,
+        };
+        const post = await saveMutation.mutateAsync(personalModel);
         clearDraft(postId || DRAFT_NEW_ID);
         setPostId(post.postId);
         setTagIds(tags);
         setDirty(false);
+        setSavedPubHandle(null);
         return post;
       } catch (e) {
         show((e as Error).message || C.toasts.saveFailed, "error");
         return null;
       }
     },
-    [postId, title, subtitle, coverUrl, myHandle, publicationHandle, saveMutation, show],
+    [postId, savedPubHandle, title, subtitle, coverUrl, myHandle, publicationHandle, saveMutation, migrateMutation, show],
   );
 
   const openPublish = useCallback(
@@ -265,7 +322,7 @@ export function WriteArticleForm({
     }
     modal.open(
       <LeaveGuardDialog
-        saving={saveMutation.isPending}
+        saving={saveMutation.isPending || migrateMutation.isPending}
         onCancel={() => modal.close()}
         onLeave={() => {
           clearDraft(autosaveId);
@@ -297,6 +354,7 @@ export function WriteArticleForm({
     navigate,
     modal,
     saveMutation.isPending,
+    migrateMutation.isPending,
     tagIds,
     doSave,
     show,
@@ -381,7 +439,7 @@ export function WriteArticleForm({
         onSave={handleSave}
         saveLabel={isPublished ? C.actionBar.saveChanges : C.actionBar.saveDraft}
         onContinue={() => openPublish("publish")}
-        saving={saveMutation.isPending}
+        saving={saveMutation.isPending || migrateMutation.isPending}
       />
 
       {previewSnapshot && (

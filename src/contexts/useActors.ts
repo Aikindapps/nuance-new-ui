@@ -203,6 +203,16 @@ export type ActorsValue = {
     postId: string,
     isDraft: boolean,
   ) => Promise<UpdateDraftResult>;
+  // Move an existing personal draft into a publication, recording the creator
+  // unconditionally. Must be called AFTER an initial personal save so the post
+  // exists in a bucket. Returns the migrated Post or an err string. Uses the
+  // same Result_1 ({ok:Post}|{err:string}) as updatePostDraft.
+  migratePostToPublication: (
+    bucketCanisterId: string,
+    postId: string,
+    publicationHandle: string,
+    isDraft: boolean,
+  ) => Promise<UpdateDraftResult>;
   // Delete a post (PostBucket.delete_). Authors cannot delete premium posts —
   // the canister returns an err in that case.
   deletePost: (

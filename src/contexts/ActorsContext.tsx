@@ -205,6 +205,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getBucket(bucketCanisterId);
         return actor.updatePostDraft(postId, isDraft);
       },
+      migratePostToPublication: async (bucketCanisterId, postId, publicationHandle, isDraft) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.migratePostToPublication(postId, publicationHandle, isDraft);
+      },
       deletePost: async (bucketCanisterId, postId) => {
         const actor = await getBucket(bucketCanisterId);
         return actor.delete_(postId);
