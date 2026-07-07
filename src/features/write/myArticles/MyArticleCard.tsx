@@ -75,7 +75,10 @@ export function MyArticleCard({
               {c.view}
             </Link>
           )}
-          {!article.isDraft && (
+          {/* Unpublish is a personal-post-only action: publication
+              publish/unpublish is an editor-only editorial action handled
+              in Manage Articles (NIC-86), not in My Articles. */}
+          {!article.isDraft && article.publication === null && (
             <button
               type="button"
               onClick={onUnpublish}
