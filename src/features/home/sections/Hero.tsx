@@ -28,7 +28,7 @@ export function Hero() {
         <ul className="scrollbar-hide mt-4 flex gap-3 overflow-x-auto lg:mt-6 lg:gap-4">
           {topics.map((topic) => (
             <li key={topic} className="shrink-0">
-              <Tag label={topic} href={`/topic/${encodeURIComponent(topic)}`} />
+              <Tag label={topic} href={`/explore/topic/${encodeURIComponent(topic)}`} />
             </li>
           ))}
         </ul>

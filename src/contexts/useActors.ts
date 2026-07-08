@@ -347,6 +347,8 @@ export type ActorsValue = {
   // --- Search (NIC-41) — anon-safe queries. ---
   // Full-text search via PostRelations. Returns matching post IDs.
   searchPost: (query: string) => Promise<Array<string>>;
+  // Anon-safe query; returns matching post IDs for a tag (case-sensitive exact match).
+  searchByTag: (tag: string) => Promise<Array<string>>;
   // Fetch PostKeyProperties for a batch of post IDs from PostCore.
   // Named differently from the PostBucket-scoped getPostsByPostIds (3-arg).
   getPostKeyPropertiesByIds: (postIds: string[]) => Promise<Array<PostKeyProperties>>;

@@ -368,6 +368,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await postRelationsPromise;
         return actor.searchPost(query);
       },
+      searchByTag: async (tag) => {
+        const actor = await postRelationsPromise;
+        return actor.searchByTag(tag);
+      },
       getPostKeyPropertiesByIds: async (postIds) => {
         const actor = await postCorePromise;
         return actor.getPostsByPostIds(postIds);

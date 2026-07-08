@@ -17,7 +17,7 @@ export function PopularPublications() {
           {popularPublicationsCopy.heading}
         </SectionHeading>
         <a
-          href="/publications"
+          href="/explore/publications"
           className="shrink-0 text-body font-medium text-brand-purple hover:underline"
         >
           {popularPublicationsCopy.viewAllLabel}

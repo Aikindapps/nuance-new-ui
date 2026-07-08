@@ -51,7 +51,7 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
                 <li key={topic} className="shrink-0">
                   <Tag
                     label={topic}
-                    href={`/topic/${encodeURIComponent(topic)}`}
+                    href={`/explore/topic/${encodeURIComponent(topic)}`}
                     variant="on-light"
                   />
                 </li>

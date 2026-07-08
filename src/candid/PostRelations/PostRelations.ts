@@ -10,12 +10,16 @@ import { idlFactory, type _SERVICE } from "./declarations/PostRelations.did";
 
 export interface PostRelationsInterface {
     searchPost(query: string): Promise<Array<string>>;
+    searchByTag(tag: string): Promise<Array<string>>;
 }
 
 export class PostRelations implements PostRelationsInterface {
     constructor(private actor: ActorSubclass<_SERVICE>) {}
     async searchPost(query: string): Promise<Array<string>> {
         return this.actor.searchPost(query);
+    }
+    async searchByTag(tag: string): Promise<Array<string>> {
+        return this.actor.searchByTag(tag);
     }
 }
 

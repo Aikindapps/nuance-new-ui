@@ -60,6 +60,7 @@ export const heroCopy = {
 
 export const popularWritersCopy = {
   heading: "Popular writers you might like",
+  viewAllLabel: "View all writers",
 };
 
 export const popularPublicationsCopy = {
@@ -603,6 +604,29 @@ export const tipModalCopy = {
   successBody: "Your applause is on its way to the writer.",
   successClose: "Done",
   closeAria: "Close",
+};
+
+// NIC-43 Explore pages.
+export const exploreCopy = {
+  metaTitleSuffix: "— Nuance",
+  publicationsTitleAuthed: "Recommended publications for you",
+  publicationsTitle: "Recommended publications",
+  writersTitleAuthed: "Recommended writers for you",
+  writersTitle: "Recommended writers",
+  followPublicationLabel: "Follow publication",
+  followersLabel: "followers",
+  loadMore: "Show more",
+  topicArticleCount: "{count} articles",
+  topicArticleCountOne: "1 article",
+  topicFeedLabel: "Articles tagged {tag}",
+  topicEmpty: "No articles tagged \u201c{tag}\u201d yet.",
+  errorHeading: "Something went wrong",
+  publicationsErrorBody: "We couldn't load publications right now. Please try again.",
+  writersErrorBody: "We couldn't load writers right now. Please try again.",
+  emptyHeading: "Nothing to show yet",
+  publicationsEmptyBody: "There aren't any publications to recommend right now.",
+  writersEmptyBody: "There aren't any writers to recommend right now.",
+  backHomeLabel: "Back to home",
 };
 
 // NIC-41 Search Phase 1.

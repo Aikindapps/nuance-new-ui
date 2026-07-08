@@ -12,9 +12,17 @@ export function PopularWriters() {
 
   return (
     <section aria-labelledby="popular-writers-heading">
-      <SectionHeading id="popular-writers-heading" className="mb-6">
-        {popularWritersCopy.heading}
-      </SectionHeading>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <SectionHeading id="popular-writers-heading">
+          {popularWritersCopy.heading}
+        </SectionHeading>
+        <a
+          href="/explore/writers"
+          className="shrink-0 text-body font-medium text-brand-purple hover:underline"
+        >
+          {popularWritersCopy.viewAllLabel}
+        </a>
+      </div>
 
       {isLoading ? (
         <div className="flex gap-4 overflow-hidden">

@@ -12,11 +12,13 @@ import { IDL } from '@icp-sdk/core/candid';
 
 export interface _SERVICE {
   'searchPost' : ActorMethod<[string], Array<string>>;
+  'searchByTag' : ActorMethod<[string], Array<string>>;
 }
 
 export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
   return IDL.Service({
     'searchPost' : IDL.Func([IDL.Text], [IDL.Vec(IDL.Text)], ['query']),
+    'searchByTag' : IDL.Func([IDL.Text], [IDL.Vec(IDL.Text)], ['query']),
   });
 };
 

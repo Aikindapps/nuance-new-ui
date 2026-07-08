@@ -15,6 +15,9 @@ import { WriterProfile } from "./routes/WriterProfile";
 import { PublicationHome } from "./routes/PublicationHome";
 import { ManageArticles } from "./routes/ManageArticles";
 import { SearchResults, SearchRedirect } from "./routes/SearchResults";
+import { ExploreTopic } from "./routes/ExploreTopic";
+import { ExplorePublications } from "./routes/ExplorePublications";
+import { ExploreWriters } from "./routes/ExploreWriters";
 import { NotFound } from "./routes/NotFound";
 import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingShell";
 
@@ -100,6 +103,12 @@ const router = createBrowserRouter([
   // /:handle so /search/articles and /search rank above the dynamic segment.
   { path: "/search/articles", element: <SearchResults /> },
   { path: "/search", element: <SearchRedirect /> },
+  // NIC-43: Explore pages. Non-lazy — reuse home-bundle components
+  // (PageShell, ArticleFeed, FollowButton, Avatar); no heavy deps.
+  // Must appear before /:handle so /explore/* never falls through.
+  { path: "/explore/topic/:tag", element: <ExploreTopic /> },
+  { path: "/explore/publications", element: <ExplorePublications /> },
+  { path: "/explore/writers", element: <ExploreWriters /> },
   // NIC-42: Writer profile, Publication home, 404 catch-all.
   // Non-lazy — these reuse home-bundle components (ArticleFeed, Avatar,
   // FollowButton) and pull in no heavy deps, so a separate chunk buys nothing.
