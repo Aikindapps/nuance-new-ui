@@ -5,8 +5,8 @@ import { FEATURED_PAGE_SIZE, INFINITE_PAGE_SIZE } from "../../home/hooks/useArti
 
 // NIC-43 Topic feed: client-side pagination over a hard-capped id list
 // returned by searchByTag(tag). Mirror of useSearchPosts but calls
-// actors.searchByTag instead of searchPost. Tag is passed verbatim —
-// searchByTag is a case-sensitive exact-match lookup on the backend.
+// actors.searchByTag instead of searchPost. The tag is lowercased before
+// querying because index keys on the backend are stored in lowercase.
 
 const SEARCH_CAP = 60;
 
@@ -34,7 +34,7 @@ async function fetchTopicPage(
     allIds = pageParam.allIds;
     totalCount = pageParam.totalCount;
   } else {
-    const full = await actors.searchByTag(tag);
+    const full = await actors.searchByTag(tag.toLowerCase());
     totalCount = full.length;
     allIds = full.slice(0, SEARCH_CAP);
   }

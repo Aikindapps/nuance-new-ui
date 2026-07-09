@@ -6,7 +6,7 @@ import { exploreCopy } from "../constants/copy";
 
 // NIC-43 — /explore/topic/:tag
 // Displays a feed of articles tagged with the given topic.
-// Tag is passed verbatim to searchByTag (case-sensitive exact match).
+// The display-case tag is used for the title; useTopicPosts lowercases it for the searchByTag query (index keys are lowercase).
 
 export function ExploreTopic() {
   const { tag = "" } = useParams();
