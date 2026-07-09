@@ -3,11 +3,16 @@ import { useActors, type ActorsValue } from "../../../contexts/useActors";
 import { hydrateArticles } from "../../home/lib/hydrateArticles";
 import { FEATURED_PAGE_SIZE, INFINITE_PAGE_SIZE } from "../../home/hooks/useArticles";
 
-// Range-paginated publication feed (NIC-42).
+// Range-paginated publication feed (NIC-42, fixed NIC-89).
 //
-// getPublicationPosts(from, to, handle) → PostKeyProperties[] (bare array,
-// no .posts wrapper — verified against the candid bindings). Mirrors the
-// useArticles server-paged approach: (indexFrom, indexTo) half-open range.
+// getPostsByFollowers([handle], from, to) is the reader-facing published-posts
+// source — it is public and works for any caller including anonymous.
+// Returns { totalCount: string; posts: PostKeyProperties[] }; we destructure
+// .posts as keyProps. Mirrors the useArticles server-paged approach:
+// (indexFrom, indexTo) half-open range.
+//
+// (Do NOT use getPublicationPosts here — that method is editor-gated on the
+// backend and returns [] for all non-editor callers.)
 //
 // Page shape mirrors useArticles / ArticleFeed:
 //   { articles: Article[], keyPropsLength: number }
@@ -23,7 +28,7 @@ async function fetchPublicationPage(
   skip: number,
   count: number,
 ): Promise<ArticlesPage> {
-  const keyProps = await actors.getPublicationPosts(skip, skip + count, handle);
+  const { posts: keyProps } = await actors.getPostsByFollowers([handle], skip, skip + count);
   if (keyProps.length === 0) return { articles: [], keyPropsLength: 0 };
   const articles = await hydrateArticles(actors, keyProps);
   return { articles, keyPropsLength: keyProps.length };
