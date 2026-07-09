@@ -45,7 +45,6 @@ export const homeStatus = {
 
 export const heroCopy = {
   topicsHeading: "Topics that might interest you:",
-  exploreAllLabel: "Explore all topics",
   fallbackTopics: [
     "Crypto",
     "DAO",

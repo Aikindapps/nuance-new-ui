@@ -58,12 +58,6 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
               ))}
             </ul>
 
-            <a
-              href="/topics"
-              className="mt-4 inline-block text-body font-medium text-brand-purple underline underline-offset-4 hover:no-underline lg:mt-6"
-            >
-              {heroCopy.exploreAllLabel}
-            </a>
           </section>
         </div>
 
