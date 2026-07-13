@@ -58,6 +58,17 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
               ))}
             </ul>
 
+            {/* "Explore all topics" — intentionally NOT plugged in yet; see NIC-90/NIC-91.
+                Disabled "Coming soon" affordance, not a live link (no /topics route;
+                single-segment paths fall through to /:handle → "Writer not found"). */}
+            <span
+              aria-disabled="true"
+              title="Coming soon"
+              className="mt-4 inline-block cursor-not-allowed text-body font-medium text-ink-60 underline underline-offset-4 lg:mt-6"
+            >
+              {heroCopy.exploreAllLabel}
+            </span>
+
           </section>
         </div>
 
