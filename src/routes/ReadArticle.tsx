@@ -27,10 +27,14 @@ import {
   NFT_PURCHASE_MODAL_TITLE_ID,
 } from "../features/article/purchase/NftPurchaseModal";
 import {
+  SubscriptionPurchaseModal,
+  SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID,
+} from "../features/article/purchase/SubscriptionPurchaseModal";
+import {
   LoginModal,
   LOGIN_MODAL_TITLE_ID,
 } from "../components/LoginModal/LoginModal";
-import { nftPurchaseCopy } from "../constants/copy";
+import { nftPurchaseCopy, subscriptionPurchaseCopy } from "../constants/copy";
 
 // Read Article — Page 3, sections 3.2 + 3.3 (PR #7, decisions #31/#32).
 //
@@ -154,6 +158,30 @@ export function ReadArticle() {
   }
   crumbs.push({ label: writerLabel, to: `/${writerHandle}` });
 
+  // Open the subscription purchase modal (auth-guarded). Logged-out →
+  // LoginModal; logged-in → SubscriptionPurchaseModal. Mirrors the NFT flow.
+  const openSubscriptionPurchase = () => {
+    if (!isAuthenticated) {
+      modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });
+      return;
+    }
+    const subHandle = post.isPublication
+      ? post.handle
+      : post.creatorHandle || post.handle;
+    modal.open(
+      <SubscriptionPurchaseModal
+        isPublication={post.isPublication}
+        handle={subHandle}
+        creatorPrincipal={post.creatorPrincipal}
+        onClose={modal.close}
+      />,
+      {
+        ariaLabelledBy: SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID,
+        dismissable: false,
+      },
+    );
+  };
+
   // Open the NFT purchase modal (auth-guarded). Logged-out → LoginModal;
   // logged-in → NftPurchaseModal. Guard: if nftCanisterId is missing the
   // button is not rendered, so this never fires for a misconfigured premium
@@ -199,10 +227,22 @@ export function ReadArticle() {
       </p>
     )
   ) : (
-    // Members-only placeholder — UNCHANGED per task spec.
-    <p className="text-body text-ink-60">
-      This is a members-only article. The purchase flow is not yet available.
-    </p>
+    // Members-only: subscription purchase CTA (NIC-129 §3.5/§3.6).
+    <div className="flex flex-col items-start gap-4">
+      <p className="text-body text-ink-60">
+        {subscriptionPurchaseCopy.paywallHeading}
+      </p>
+      <p className="text-body text-ink-60">
+        {subscriptionPurchaseCopy.paywallBody}
+      </p>
+      <button
+        type="button"
+        onClick={openSubscriptionPurchase}
+        className="bg-brand-gradient-button flex h-12 items-center justify-center rounded-card px-6 text-body font-medium text-white"
+      >
+        {subscriptionPurchaseCopy.subscribeCtaLabel}
+      </button>
+    </div>
   );
 
   return (

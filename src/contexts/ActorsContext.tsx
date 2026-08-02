@@ -304,6 +304,35 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = createSubscriptionActor(await agentPromise);
         return actor.getWriterSubscriptionDetails(null);
       },
+      // Subscription purchase flow (NIC-129 §3.5/§3.6).
+      getWriterSubscriptionDetailsByPrincipalId: async (principalText) => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.getWriterSubscriptionDetailsByPrincipalId(principalText);
+      },
+      createPaymentRequestAsReader: async (writerPrincipalId, interval, amount) => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.createPaymentRequestAsReader(writerPrincipalId, interval, amount);
+      },
+      completeSubscriptionEvent: async (eventId) => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.completeSubscriptionEvent(eventId);
+      },
+      disperseTokensForSuccessfulSubscription: async (eventId) => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.disperseTokensForSuccessfulSubscription(eventId);
+      },
+      pendingStuckTokensHeartbeatExternal: async () => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.pendingStuckTokensHeartbeatExternal();
+      },
+      spendRestrictedTokensForSubscription: async (eventId, amount) => {
+        const actor = await userPromise;
+        return actor.spendRestrictedTokensForSubscription(eventId, amount);
+      },
+      getPublicationCanisters: async () => {
+        const actor = await postCorePromise;
+        return actor.getPublicationCanisters();
+      },
       // Article Keys (PR #14, decision #43).
       getAllNftCanisters: async () => {
         const actor = await postCorePromise;

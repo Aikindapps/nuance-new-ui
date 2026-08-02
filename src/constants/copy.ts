@@ -730,3 +730,90 @@ export const nftPurchaseCopy = {
 
   closeAria: "Close",
 };
+
+// NIC-129 §3.5/§3.6: subscription reader purchase flow. Pub variant (§3.5)
+// and author variant (§3.6) — modal picks by `isPublication`.
+export const subscriptionPurchaseCopy = {
+  // ── Paywall CTA (members-only locked article) ──
+  paywallHeading: "This is a members-only article.",
+  paywallBody:
+    "Subscribe to get unlimited access to all membership content from this author.",
+  subscribeCtaLabel: "Subscribe to read",
+
+  // ── Modal close aria ──
+  closeAria: "Close",
+
+  // ── Confirm state — publication variant (frame 1:6561) ──
+  pub: {
+    confirmTitle: "Subscribe to publication",
+    confirmIntro:
+      "When you subscribe to this publication, you get unlimited access to all membership content for a NUA fee. You pay this fee for the period you choose. After that, you\u2019ll receive a notification about continuing your subscription.",
+    successTitle: "You are now subscribed!",
+    // {handle} → publication name (both the "says thanks" name and the "articles of" name);
+    // {period} → "the coming week/month/year" or "life" for Lifetime.
+    successBody:
+      "{handle} says thanks! You can now read all the articles of {handle} for {period}. You can manage your subscriptions in your profile.",
+  },
+
+  // ── Confirm state — author variant (frame 1:6792) ──
+  author: {
+    confirmTitle: "Subscribe to author",
+    confirmIntro:
+      "When you subscribe to this author, you get unlimited access to all membership content for a NUA fee. You pay this fee for the period you choose. After that, you\u2019ll receive a notification about continuing your subscription.",
+    successTitle: "You are now subscribed!",
+    // {handle} → author handle (the "says thanks" name is plain handle; "articles of" uses @{handle});
+    // {period} → "the coming week/month/year" or "life" for Lifetime.
+    successBody:
+      "{handle} says thanks! You can now read all the articles of @{handle} for {period}. You can manage your subscriptions in your profile.",
+  },
+
+  // ── Shared confirm-screen strings ──
+  confirmDurationLabel: "Please choose the duration of your membership",
+  confirmTerms:
+    "I am aware of terms and conditions, general policy and agree to them.",
+  confirmCancel: "Cancel",
+  confirmSubscribe: "Subscribe",
+
+  // ── Plan interval labels ──
+  intervalWeek: "Week",
+  intervalMonth: "Month",
+  intervalYear: "Year",
+  intervalLifetime: "Lifetime",
+
+  // ── Processing state (frame 1030:11530 / 1030:11584) ──
+  processingTitle: "Confirming your subscription\u2026",
+  // {amount} → formatted NUA amount
+  processingBody:
+    "We\u2019re processing your payment of {amount} NUA from your Nuance wallet. This only takes a moment.",
+  processingCancel: "Cancel",
+
+  // ── Success state (frame 1:6657 / 1:6889) ──
+  successClose: "Close",
+
+  // ── Insufficient funds state (frame 1030:11539 / 1030:11593) ──
+  insufficientTitle: "Not enough NUA in your wallet",
+  // {cost} → formatted NUA cost; {interval} → plan label; {balance} → formatted NUA balance
+  insufficientBody:
+    "This subscription costs {cost} NUA for a {interval}, but your wallet balance is {balance} NUA. Add funds to your Nuance wallet to continue.",
+  insufficientRowSubscription: "Subscription ({interval})",
+  insufficientRowBalance: "Your balance",
+  insufficientCancel: "Cancel",
+  insufficientAddFunds: "Add funds",
+
+  // ── Error state (frame 1030:11555 / 1030:11609) ──
+  errorTitle: "Something went wrong",
+  // paid=true variant — regular NUA left wallet but canister settle failed;
+  // any deducted NUA is being auto-returned. No "Try again" is shown.
+  // paid=false variant body is rendered inline in the modal with a bolded segment.
+  errorPaidBody:
+    "We couldn\u2019t finalise your subscription. Any NUA that was deducted is being returned to your wallet automatically. Please close and try again later.",
+  errorCancel: "Cancel",
+  errorTryAgain: "Try again",
+  errorClose: "Close",
+
+  // ── No-plans state (graceful: author hasn't configured subscriptions) ──
+  noPlansTitle: "No subscription plans",
+  noPlansBody:
+    "This author hasn\u2019t set up any subscription plans yet. Check back later.",
+  noPlansClose: "Close",
+};

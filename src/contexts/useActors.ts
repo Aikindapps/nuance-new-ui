@@ -24,6 +24,7 @@ import type {
   RegisterUserReturn,
   Result as UserResult,
   Result_1 as SpendTipResult,
+  Result_2 as UserSubSpendResult,
   Result_7 as UserListItemResult,
   UserListItem,
 } from "../candid/User/User";
@@ -42,6 +43,9 @@ import type { Applaud } from "../candid/PostBucket/PostBucket";
 import type {
   Result as WriterSubscriptionResult,
   Result_2 as ReaderSubscriptionResult,
+  Result_5 as PaymentRequestResult,
+  Result_1 as SubVoidResult,
+  SubscriptionTimeInterval,
 } from "../candid/Subscription/Subscription";
 import type {
   Result as ExtTokensResult,
@@ -318,6 +322,34 @@ export type ActorsValue = {
   // writer earnings).
   getReaderSubscriptionDetails: () => Promise<ReaderSubscriptionResult>;
   getWriterSubscriptionDetails: () => Promise<WriterSubscriptionResult>;
+  // --- Subscription purchase flow (NIC-129 §3.5/§3.6) ---
+  // Lookup writer subscription plan details by their principal ID.
+  getWriterSubscriptionDetailsByPrincipalId: (
+    principalText: string,
+  ) => Promise<WriterSubscriptionResult>;
+  // Create a payment request for a subscription interval; returns the subaccount
+  // to deposit into and the eventId to finalise with.
+  createPaymentRequestAsReader: (
+    writerPrincipalId: string,
+    interval: SubscriptionTimeInterval,
+    amount: bigint,
+  ) => Promise<PaymentRequestResult>;
+  // Finalise subscription after a pure-regular-NUA transfer.
+  completeSubscriptionEvent: (eventId: string) => Promise<ReaderSubscriptionResult>;
+  // Notify the canister that tokens have been dispersed to the writer.
+  disperseTokensForSuccessfulSubscription: (eventId: string) => Promise<SubVoidResult>;
+  // Trigger recovery heartbeat for stuck payment events (fire-and-forget).
+  pendingStuckTokensHeartbeatExternal: () => Promise<void>;
+  // Spend restricted ("Free") NUA toward a subscription — mirrors
+  // spendRestrictedTokensForTipping but for the subscription flow.
+  spendRestrictedTokensForSubscription: (
+    eventId: string,
+    amount: bigint,
+  ) => Promise<UserSubSpendResult>;
+  // Registry of publication canisters: [handle, canisterId] pairs.
+  // Used to resolve the writer principal for a publication-based subscription.
+  getPublicationCanisters: () => Promise<Array<[string, string]>>;
+
   // --- Article Keys (PR #14, decision #43) — ext_v2 NFT access keys for
   // premium articles. One ext_v2 canister per premium article; the registry
   // lives on PostCore. All reads are anon-safe queries; the transfer is authed
