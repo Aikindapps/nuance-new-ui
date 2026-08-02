@@ -321,6 +321,23 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getExt(nftCanisterId);
         return actor.ext_transfer(request);
       },
+      // NFT purchase flow (NIC-128 §3.4): read available token info. The
+      // returned availableTokenIndex being undefined signals sold-out.
+      getAvailableToken: async (nftCanisterId) => {
+        const a = await getExt(nftCanisterId);
+        return a.getAvailableToken();
+      },
+      // Lock the next available token for the buyer; returns the ICP payment
+      // address on ok, a CommonError on err.
+      lockExtToken: async (nftCanisterId, tokenId, price, buyerAccountIdHex) => {
+        const a = await getExt(nftCanisterId);
+        return a.lock(tokenId, price, buyerAccountIdHex, new Uint8Array(0));
+      },
+      // Settle after the ICP transfer lands — canister assigns the token.
+      settleExtToken: async (nftCanisterId, tokenId) => {
+        const a = await getExt(nftCanisterId);
+        return a.settle(tokenId);
+      },
       // Lazy actor: the legacy ledger interface is only needed when a user
       // actually withdraws ICP to an account-id receiver.
       transferIcp: async (toAccountId, amount) => {

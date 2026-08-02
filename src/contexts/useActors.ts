@@ -48,6 +48,9 @@ import type {
   TransactionsAndSupply,
   TransferRequest as ExtTransferRequest,
   TransferResponse as ExtTransferResponse,
+  PremiumArticleSellingInformation,
+  Result_7 as ExtLockResult,
+  Result_3 as ExtSettleResult,
 } from "../candid/ExtV2/ExtV2";
 import type {
   Result as SonicQuoteResult,
@@ -336,6 +339,26 @@ export type ActorsValue = {
     nftCanisterId: string,
     request: ExtTransferRequest,
   ) => Promise<ExtTransferResponse>;
+  // --- NFT purchase flow (NIC-128 §3.4) — lock → pay → settle sequence. ---
+  // Returns the sale info for the premium article (price, supply, available
+  // token index). availableTokenIndex === undefined means sold out.
+  getAvailableToken: (
+    nftCanisterId: string,
+  ) => Promise<PremiumArticleSellingInformation>;
+  // Lock the next available token for the buyer's account — returns the ICP
+  // payment address (account-id hex) on success, a CommonError on failure.
+  lockExtToken: (
+    nftCanisterId: string,
+    tokenId: string,
+    price: bigint,
+    buyerAccountIdHex: string,
+  ) => Promise<ExtLockResult>;
+  // Settle the purchase after payment — canister verifies the transfer landed
+  // and assigns the token to the buyer. Returns ok:null on success.
+  settleExtToken: (
+    nftCanisterId: string,
+    tokenId: string,
+  ) => Promise<ExtSettleResult>;
   // Legacy ICP ledger transfer to a 32-byte account identifier (Withdraw,
   // PR #14, decision #43). Principal receivers go through transferIcrc1 on the
   // ICP ledger instead — both paths debit the same underlying account. amount

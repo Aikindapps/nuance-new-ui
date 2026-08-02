@@ -21,6 +21,16 @@ import { ArticleHead } from "../features/article/sections/ArticleHead";
 import { ArticleLoadingShell } from "../features/article/sections/ArticleLoadingShell";
 import { useMoreArticles } from "../features/article/hooks/useMoreArticles";
 import { useRecommendedArticles } from "../features/article/hooks/useRecommendedArticles";
+import { useModal } from "../services/modal";
+import {
+  NftPurchaseModal,
+  NFT_PURCHASE_MODAL_TITLE_ID,
+} from "../features/article/purchase/NftPurchaseModal";
+import {
+  LoginModal,
+  LOGIN_MODAL_TITLE_ID,
+} from "../components/LoginModal/LoginModal";
+import { nftPurchaseCopy } from "../constants/copy";
 
 // Read Article — Page 3, sections 3.2 + 3.3 (PR #7, decisions #31/#32).
 //
@@ -89,6 +99,11 @@ export function ReadArticle() {
   const moreArticles = useMoreArticles(postId, railAuthorHandle);
   const recommended = useRecommendedArticles(postId);
 
+  // Modal service + auth — must be called unconditionally (hooks rule).
+  const modal = useModal();
+  const { isAuthenticated } = useAuth();
+
+
   if (!parsed) {
     return (
       <Centered
@@ -139,6 +154,57 @@ export function ReadArticle() {
   }
   crumbs.push({ label: writerLabel, to: `/${writerHandle}` });
 
+  // Open the NFT purchase modal (auth-guarded). Logged-out → LoginModal;
+  // logged-in → NftPurchaseModal. Guard: if nftCanisterId is missing the
+  // button is not rendered, so this never fires for a misconfigured premium
+  // post.
+  const openNftPurchase = () => {
+    if (!isAuthenticated) {
+      modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });
+      return;
+    }
+    // Mount the purchase modal; the modal service overlays it.
+    modal.open(
+      <NftPurchaseModal
+        nftCanisterId={post.nftCanisterId!}
+        authorHandle={writerHandle}
+        onClose={modal.close}
+      />,
+      { ariaLabelledBy: NFT_PURCHASE_MODAL_TITLE_ID, dismissable: false },
+    );
+  };
+
+  // Locked content area — split on isPremium vs isMembersOnly.
+  const lockedBlock = post.isPremium ? (
+    post.nftCanisterId ? (
+      // Premium with a valid NFT canister — show the "Buy the NFT key" CTA.
+      <div className="flex flex-col items-start gap-4">
+        <p className="text-body text-ink-60">
+          {nftPurchaseCopy.paywallHeading}
+        </p>
+        <p className="text-body text-ink-60">{nftPurchaseCopy.paywallBody}</p>
+        <button
+          type="button"
+          onClick={openNftPurchase}
+          className="bg-brand-gradient-button flex h-12 items-center justify-center rounded-card px-6 text-body font-medium text-white"
+        >
+          {nftPurchaseCopy.buyCtaLabel}
+        </button>
+
+      </div>
+    ) : (
+      // Premium without an NFT canister — graceful fallback (non-crashing).
+      <p className="text-body text-ink-60">
+        This is a premium article. The purchase flow is not yet available.
+      </p>
+    )
+  ) : (
+    // Members-only placeholder — UNCHANGED per task spec.
+    <p className="text-body text-ink-60">
+      This is a members-only article. The purchase flow is not yet available.
+    </p>
+  );
+
   return (
     <ArticleShell>
       <ArticleHead
@@ -159,16 +225,7 @@ export function ReadArticle() {
         />
 
         <div className="mt-8 px-6 lg:mt-[calc(50*var(--fpx))] lg:px-24">
-          {locked ? (
-            <p className="text-body text-ink-60">
-              {post.isMembersOnly
-                ? "This is a members-only article."
-                : "This is a premium article."}{" "}
-              The purchase flow is not yet available.
-            </p>
-          ) : (
-            <ArticleBody html={post.content} />
-          )}
+          {locked ? lockedBlock : <ArticleBody html={post.content} />}
         </div>
 
         <div className="mt-8 lg:mt-[calc(50*var(--fpx))]">

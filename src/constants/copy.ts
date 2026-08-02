@@ -647,3 +647,72 @@ export const searchCopy = {
   topicsTab: "Topics",
   feedLabel: "Search results",
 };
+
+// NIC-128 §3.4: Limited-edition NFT reader purchase flow. All six modal states
+// (Confirm / Processing / Success / Insufficient funds / Error / Sold out).
+export const nftPurchaseCopy = {
+  // CTA on the locked article paywall
+  paywallHeading: "This is a premium article.",
+  paywallBody:
+    "Unlock it permanently by purchasing an NFT key from your Nuance wallet.",
+  buyCtaLabel: "Buy the NFT key",
+
+  // Confirm state (frame 1030:11352)
+  confirmTitle: "Buy this NFT key",
+  // {count} → current supply, {max} → max supply, {price} → formatted ICP amount
+  confirmIntro:
+    "You're about to buy {count} of {max} NFT keys to unlock this article for {price} ICP, paid from your Nuance wallet. NFT keys are limited and this purchase can't be undone.",
+  confirmYouPay: "You pay",
+  confirmKeysRemaining: "Keys remaining",
+  // {current} of {max}
+  confirmKeysValue: "{current} of {max}",
+  confirmTerms:
+    "I am aware of terms and conditions, general policy and agree to them.",
+  confirmCancel: "Cancel",
+  confirmPurchase: "Confirm purchase",
+
+  // Processing state (frame 1030:11369)
+  processingTitle: "Purchasing your NFT key\u2026",
+  // {price} → formatted ICP amount
+  processingBody:
+    "We\u2019re processing your payment of {price} ICP from your Nuance wallet. This only takes a moment.",
+  processingCancel: "Cancel",
+
+  // Success state (frame 1030:11378)
+  successTitle: "You own an NFT key!",
+  successBody:
+    "This article is now unlocked and your NFT key is safe in your Nuance wallet. Enjoy the read!",
+  successReadArticle: "Read the article",
+
+  // Insufficient funds state (frame 1030:11386)
+  insufficientTitle: "Not enough ICP in your wallet",
+  // {price} → formatted ICP amount, {balance} → formatted balance
+  insufficientBody:
+    "This NFT key costs {price} ICP, but your wallet balance is {balance} ICP. Add funds to your Nuance wallet to continue.",
+  insufficientNftKey: "NFT key",
+  insufficientYourBalance: "Your balance",
+  insufficientCancel: "Cancel",
+  insufficientAddFunds: "Add funds",
+
+  // Error state (frame 1030:11402)
+  errorTitle: "Something went wrong",
+  errorBody:
+    "We couldn\u2019t complete your purchase and no ICP was deducted from your wallet. Please try again.",
+  // Post-payment error variant: ICP transferred but settle failed. Copy must
+  // NOT claim "no ICP was deducted" because ICP HAS left the buyer's wallet.
+  // "Try again" retries only settle() — the user is never charged again.
+  errorPaidTitle: "Almost there",
+  errorPaidBody:
+    "Your payment went through, but we couldn\u2019t finalize your NFT key. Tap Try again \u2014 you won\u2019t be charged again.",
+  errorCancel: "Cancel",
+  errorTryAgain: "Try again",
+
+  // Sold out state (frame 1030:11411)
+  soldOutTitle: "All NFT keys are sold",
+  soldOutBody:
+    "Every NFT key for this article has been claimed, so it can\u2019t be unlocked right now. Follow the author to hear about their next release.",
+  soldOutClose: "Close",
+  soldOutFollowAuthor: "Follow author",
+
+  closeAria: "Close",
+};
