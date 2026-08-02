@@ -65,12 +65,12 @@ export function NotificationsPage() {
   const showEmpty = query.isSuccess && allNotifications.length === 0;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-ink-border/5">
       <title>{c.routeMetaTitle}</title>
       <meta name="description" content={c.routeMetaDescription} />
       <HeaderLoggedIn />
       <main className={`${CONTAINER} px-6 pt-12 lg:px-14 lg:pt-20`}>
-        <h1 className="text-title-md font-bold text-ink lg:text-title-lg">
+        <h1 className="text-title-md font-bold text-ink-80 lg:text-title-lg">
           {c.routeHeading}
         </h1>
 
