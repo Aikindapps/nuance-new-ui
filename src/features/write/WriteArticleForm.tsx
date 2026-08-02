@@ -17,6 +17,10 @@ import { CoverImageDropzone } from "./sections/CoverImageDropzone";
 import { ActionBar } from "./sections/ActionBar";
 import { PublishView } from "./sections/PublishView";
 import {
+  PremiumMintView,
+  PREMIUM_MINT_VIEW_TITLE_ID,
+} from "./sections/PremiumMintView";
+import {
   LEAVE_GUARD_TITLE_ID,
   LeaveGuardDialog,
 } from "./sections/LeaveGuardDialog";
@@ -183,6 +187,7 @@ export function WriteArticleForm({
       isDraft: boolean,
       tags: string[],
       pubHandle: string | null = publicationHandle,
+      premium?: { thumbnail: string; icpPrice: bigint; maxSupply: bigint },
     ): Promise<Post | null> => {
       const editor = editorRef.current;
       if (!editor) return null;
@@ -211,7 +216,8 @@ export function WriteArticleForm({
         if (pubHandle) {
           // Existing personal draft being moved into a publication for the first
           // time: two-step migrate so the creator is recorded by the bucket.
-          if (postId !== "" && savedPubHandle === null) {
+          // Premium mints always use the direct pub-save path (no migrate).
+          if (postId !== "" && savedPubHandle === null && !premium) {
             const personalModel: PostSaveModel = {
               postId,
               title: title.trim(),
@@ -241,19 +247,21 @@ export function WriteArticleForm({
             return migrated;
           }
           // New article (isNew) or already a publication post: direct pub save.
+          // Also used for premium mints (forced, isDraft:false, isPublication:true).
           const pubModel: PostSaveModel = {
             postId,
             title: title.trim(),
             subtitle: subtitle.trim(),
             content,
             headerImage: coverUrl,
-            isDraft,
+            isDraft: premium ? false : isDraft,
             tagIds: tags,
             category: "",
             handle: pubHandle,
             creatorHandle: myHandle,
             isPublication: true,
             isMembersOnly: false,
+            ...(premium ? { premium } : {}),
           };
           const post = await saveMutation.mutateAsync(pubModel);
           clearDraft(postId || DRAFT_NEW_ID);
@@ -456,6 +464,34 @@ export function WriteArticleForm({
           initialTagIds={tagIds}
           publications={myPublications}
           initialPublicationHandle={publicationHandle}
+          coverPresent={coverUrl !== ""}
+          onMintPremium={(tags, pubH) => {
+            // Guard: migrate path not needed (article is new or already in this pub).
+            const migrateNotNeeded =
+              postId === "" || savedPubHandle === pubH;
+            if (!migrateNotNeeded) return;
+            modal.open(
+              <PremiumMintView
+                post={{ title, subtitle, coverUrl }}
+                handle={myHandle}
+                tagIds={tags}
+                publicationHandle={pubH}
+                onCancel={() => modal.close()}
+                onMint={async (premium) => {
+                  const post = await doSave(false, tags, pubH, premium);
+                  if (post) {
+                    modal.close();
+                    setPublishView(null);
+                    show(C.toasts.published, "success");
+                    navigate(post.url || "/");
+                    return true;
+                  }
+                  return false;
+                }}
+              />,
+              { ariaLabelledBy: PREMIUM_MINT_VIEW_TITLE_ID, dismissable: false },
+            );
+          }}
           onBack={() => setPublishView(null)}
           onConfirm={async (picked, chosenPub) => {
             if (chosenPub !== publicationHandle) {

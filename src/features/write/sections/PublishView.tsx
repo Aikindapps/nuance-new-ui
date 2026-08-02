@@ -24,6 +24,8 @@ export function PublishView({
   initialPublicationHandle,
   onBack,
   onConfirm,
+  coverPresent,
+  onMintPremium,
 }: {
   mode: "draft" | "publish";
   initialTagIds: string[];
@@ -31,12 +33,23 @@ export function PublishView({
   initialPublicationHandle: string | null;
   onBack: () => void;
   onConfirm: (tagIds: string[], publicationHandle: string | null) => Promise<boolean>;
+  coverPresent?: boolean;
+  onMintPremium?: (tagIds: string[], publicationHandle: string) => void;
 }) {
   const c = writeArticleCopy.publish;
+  const cp = writeArticleCopy.premium;
   const [selected, setSelected] = useState<string[]>(initialTagIds);
   const [pubHandle, setPubHandle] = useState<string | null>(initialPublicationHandle);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const selectedPub = publications.find((p) => p.publicationName === pubHandle);
+  const premiumEligible =
+    mode === "publish" &&
+    pubHandle !== null &&
+    selectedPub?.isEditor === true &&
+    coverPresent === true &&
+    onMintPremium != null;
 
   // Ref wrapping the publish-to field + foldout panel for outside-click close.
   const publishToRef = useRef<HTMLDivElement>(null);
@@ -213,13 +226,28 @@ export function PublishView({
           >
             {c.backToArticle}
           </Button>
-          <Button
-            sx={{ ...primaryButtonSx, width: { xs: "100%", lg: "auto" } }}
-            disabled={selected.length < 1 || saving}
-            onClick={confirm}
-          >
-            {mode === "publish" ? c.publishButton : c.saveDraftButton}
-          </Button>
+          <div className="flex flex-col gap-[calc(8*var(--fpx))] lg:flex-row lg:items-center">
+            {premiumEligible && (
+              <Button
+                sx={{ ...secondaryButtonSx, width: { xs: "100%", lg: "auto" } }}
+                disabled={selected.length < 1 || saving}
+                onClick={() => {
+                  if (selected.length >= 1 && pubHandle !== null) {
+                    onMintPremium!(selected, pubHandle);
+                  }
+                }}
+              >
+                {cp.mintCta}
+              </Button>
+            )}
+            <Button
+              sx={{ ...primaryButtonSx, width: { xs: "100%", lg: "auto" } }}
+              disabled={selected.length < 1 || saving}
+              onClick={confirm}
+            >
+              {mode === "publish" ? c.publishButton : c.saveDraftButton}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
