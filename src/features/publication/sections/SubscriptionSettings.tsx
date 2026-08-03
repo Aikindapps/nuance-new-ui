@@ -278,10 +278,19 @@ function SubscriptionSettingsForm({
   // Validation.
   const paymentTrimmed = paymentAddress.trim();
   const paymentValid = paymentTrimmed !== "" && isValidPrincipal(paymentTrimmed);
-  const paymentError: string | null = paymentTrimmed === ""
-    ? c.errorPaymentRequired
-    : !paymentValid
-      ? c.errorPaymentInvalid
+
+  const anyEnabled =
+    form.weekly.enabled ||
+    form.monthly.enabled ||
+    form.annually.enabled ||
+    form.lifetime.enabled;
+
+  // When all plans are OFF, fall back to the on-record receiver so re-enabling
+  // later preserves routing without forcing a re-entry of the address.
+  const effectiveReceiver: string | null = paymentValid
+    ? paymentTrimmed
+    : !anyEnabled && isValidPrincipal(initialDetails.paymentReceiverPrincipalId)
+      ? initialDetails.paymentReceiverPrincipalId
       : null;
 
   const enabledAmountsValid = PLANS.every(({ feeField: _field }) => {
@@ -299,7 +308,10 @@ function SubscriptionSettingsForm({
     return amountText !== "" && !isNaN(n) && n > 0;
   });
 
-  const canSave = paymentValid && enabledAmountsValid && !save.isPending;
+  const canSave =
+    enabledAmountsValid &&
+    !save.isPending &&
+    (anyEnabled ? paymentValid : effectiveReceiver !== null);
 
   function handleToggle(key: PlanKey) {
     setForm((prev) => ({
@@ -331,7 +343,7 @@ function SubscriptionSettingsForm({
       annuallyFee: toE8s("annually"),
       lifeTimeFee: toE8s("lifetime"),
       publicationInformation: [
-        Principal.fromText(paymentTrimmed),
+        Principal.fromText(effectiveReceiver as string),
         canisterId,
       ],
     };
@@ -379,34 +391,62 @@ function SubscriptionSettingsForm({
         })}
       </div>
 
-      {/* Payment address block — styled to match WithdrawModal receiver input */}
-      <div className="flex flex-col gap-2">
-        <label
-          htmlFor="subscription-payment-address"
-          className="text-label font-bold text-ink"
-        >
-          {c.paymentAddressLabel}
-        </label>
-        <input
-          id="subscription-payment-address"
-          type="text"
-          spellCheck={false}
-          autoComplete="off"
-          value={paymentAddress}
-          placeholder={c.paymentAddressPlaceholder}
-          onChange={(e) => setPaymentAddress(e.target.value)}
-          aria-invalid={paymentTrimmed !== "" && !paymentValid}
-          aria-describedby="subscription-payment-address-error"
-          className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink focus:border-brand-purple focus:outline-none"
-        />
-        <p
-          id="subscription-payment-address-error"
-          className="text-label text-error empty:hidden"
-        >
-          {paymentTrimmed !== "" && !paymentValid ? paymentError : null}
-        </p>
-        <p className="text-label text-ink-80">{c.paymentAddressHelp}</p>
-      </div>
+      {/* Payment address sub-section — Figma 1081:7119; shown only when ≥1 plan is enabled */}
+      {anyEnabled && (
+        <div className="flex flex-col gap-[calc(24*var(--fpx))]">
+          {/* Payment address header: heading + section-level help */}
+          <div className="flex flex-col gap-[calc(8*var(--fpx))]">
+            <p className="text-[length:calc(22*var(--fpx))] leading-[calc(32*var(--fpx))] text-ink-80">
+              {c.paymentHeading}
+            </p>
+            <p className="text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink-80">
+              {c.paymentSectionHelp}
+            </p>
+          </div>
+
+          {/* Receiving principal field frame — gap 6 per design context */}
+          <div className="flex flex-col gap-[calc(6*var(--fpx))]">
+            <label
+              htmlFor="subscription-payment-address"
+              className="text-label font-bold text-ink"
+            >
+              {c.paymentFieldLabel}
+            </label>
+            {/* Persistent grey helper ABOVE the input */}
+            <p className="text-label text-ink-80">
+              {paymentTrimmed === ""
+                ? c.paymentHelperRequired
+                : c.paymentHelperDefault}
+            </p>
+            <input
+              id="subscription-payment-address"
+              type="text"
+              spellCheck={false}
+              autoComplete="off"
+              value={paymentAddress}
+              placeholder={c.paymentPlaceholder}
+              onChange={(e) => setPaymentAddress(e.target.value)}
+              aria-invalid={paymentTrimmed !== "" && !paymentValid}
+              aria-describedby="subscription-payment-address-error"
+              className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink focus:border-brand-purple focus:outline-none"
+            />
+            {/* Error info-slot BELOW the input; empty collapses */}
+            <p
+              id="subscription-payment-address-error"
+              className="text-label text-error empty:hidden"
+            >
+              {paymentTrimmed !== "" && !paymentValid
+                ? c.errorPaymentInvalid
+                : ""}
+            </p>
+          </div>
+
+          {/* Split-model help */}
+          <p className="text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink-80">
+            {c.paymentSplitHelp}
+          </p>
+        </div>
+      )}
 
       {/* Save button */}
       <div className="flex">
