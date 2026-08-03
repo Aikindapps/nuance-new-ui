@@ -526,6 +526,39 @@ export const publicationCopy = {
 };
 
 // Manage Articles screen (NIC-40) — access-control spine + 6.1 body (NIC-63).
+export const manageSubscriptionsCopy = {
+  metaTitleSuffix: "— Nuance",
+  title: "Subscription prices",
+  notAuthorizedHeading: "Access restricted",
+  notAuthorizedBody:
+    "You need to be an editor of this publication to manage its subscription prices.",
+  errorHeading: "Something went wrong",
+  errorBody:
+    "We couldn't verify your access to this publication. Please try again.",
+  loadErrorHeading: "Couldn't load subscription prices",
+  loadErrorBody:
+    "We couldn't load this publication's subscription details. Please try again.",
+  intro:
+    "Set the price of each plan in NUA. Turn a plan off to stop offering it.",
+  planWeekly: "Week",
+  planMonthly: "Month",
+  planAnnually: "Year",
+  planLifetime: "Lifetime",
+  amountLabel: "Price",
+  unit: "NUA",
+  paymentAddressLabel: "Payment address",
+  paymentAddressHelp:
+    "Subscription revenue for this publication (after the 10% platform fee) is sent to this principal.",
+  paymentAddressPlaceholder: "Principal ID",
+  errorPaymentInvalid: "Enter a valid principal ID.",
+  errorPaymentRequired: "A payment address is required.",
+  errorAmount: "Enter a price greater than 0.",
+  saveLabel: "Save",
+  saving: "Saving\u2026",
+  saveSuccess: "Subscription prices saved.",
+  saveError: "Couldn't save subscription prices. Please try again.",
+};
+
 export const manageArticlesCopy = {
   metaTitleSuffix: "— Nuance",
   title: "Articles",

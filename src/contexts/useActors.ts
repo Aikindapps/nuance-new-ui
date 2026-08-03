@@ -46,6 +46,7 @@ import type {
   Result_5 as PaymentRequestResult,
   Result_1 as SubVoidResult,
   SubscriptionTimeInterval,
+  UpdateSubscriptionDetailsModel,
 } from "../candid/Subscription/Subscription";
 import type {
   Result as ExtTokensResult,
@@ -327,6 +328,8 @@ export type ActorsValue = {
   getWriterSubscriptionDetailsByPrincipalId: (
     principalText: string,
   ) => Promise<WriterSubscriptionResult>;
+  // Update subscription plan prices and payment receiver (NIC-130 §6.4).
+  updateSubscriptionDetails: (model: UpdateSubscriptionDetailsModel) => Promise<WriterSubscriptionResult>;
   // Create a payment request for a subscription interval; returns the subaccount
   // to deposit into and the eventId to finalise with.
   createPaymentRequestAsReader: (

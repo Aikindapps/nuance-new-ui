@@ -14,6 +14,7 @@ import { Home } from "./routes/Home";
 import { WriterProfile } from "./routes/WriterProfile";
 import { PublicationHome } from "./routes/PublicationHome";
 import { ManageArticles } from "./routes/ManageArticles";
+import { ManageSubscriptions } from "./routes/ManageSubscriptions";
 import { SearchResults, SearchRedirect } from "./routes/SearchResults";
 import { ExploreTopic } from "./routes/ExploreTopic";
 import { ExplorePublications } from "./routes/ExplorePublications";
@@ -118,6 +119,7 @@ const router = createBrowserRouter([
   // /following, /write, /my-articles, /notifications never reach /:handle.
   { path: "/:handle", element: <WriterProfile /> },
   { path: "/publication/:handle/manage/articles", element: <ManageArticles /> },
+  { path: "/publication/:handle/manage/subscriptions", element: <ManageSubscriptions /> },
   { path: "/publication/:h", element: <PublicationHome /> },
   { path: "*", element: <NotFound /> },
 ]);

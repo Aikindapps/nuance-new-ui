@@ -309,6 +309,11 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = createSubscriptionActor(await agentPromise);
         return actor.getWriterSubscriptionDetailsByPrincipalId(principalText);
       },
+      // Update subscription plan prices and payment receiver (NIC-130 §6.4).
+      updateSubscriptionDetails: async (model) => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.updateSubscriptionDetails(model);
+      },
       createPaymentRequestAsReader: async (writerPrincipalId, interval, amount) => {
         const actor = createSubscriptionActor(await agentPromise);
         return actor.createPaymentRequestAsReader(writerPrincipalId, interval, amount);
