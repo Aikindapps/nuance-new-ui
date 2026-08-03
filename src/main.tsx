@@ -18,6 +18,7 @@ import { SearchResults, SearchRedirect } from "./routes/SearchResults";
 import { ExploreTopic } from "./routes/ExploreTopic";
 import { ExplorePublications } from "./routes/ExplorePublications";
 import { ExploreWriters } from "./routes/ExploreWriters";
+import { ExploreTopics } from "./routes/ExploreTopics";
 import { NotFound } from "./routes/NotFound";
 import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingShell";
 
@@ -109,6 +110,7 @@ const router = createBrowserRouter([
   { path: "/explore/topic/:tag", element: <ExploreTopic /> },
   { path: "/explore/publications", element: <ExplorePublications /> },
   { path: "/explore/writers", element: <ExploreWriters /> },
+  { path: "/explore/topics", element: <ExploreTopics /> },
   // NIC-42: Writer profile, Publication home, 404 catch-all.
   // Non-lazy — these reuse home-bundle components (ArticleFeed, Avatar,
   // FollowButton) and pull in no heavy deps, so a separate chunk buys nothing.

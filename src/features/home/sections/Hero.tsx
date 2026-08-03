@@ -33,18 +33,13 @@ export function Hero() {
           ))}
         </ul>
 
-        {/* "Explore all topics" — intentionally NOT plugged in yet: the all-topics
-            Explore surface is undesigned (NIC-91). Rendered as a disabled "Coming soon"
-            affordance (DisabledTab convention, SearchResults.tsx) rather than a live link,
-            because there is no /topics route and any single-segment path falls through to
-            /:handle (WriterProfile) → misleading "Writer not found" (NIC-90). */}
-        <span
-          aria-disabled="true"
-          title="Coming soon"
-          className="mt-4 inline-block cursor-not-allowed text-body font-medium text-white/60 underline underline-offset-4 lg:mt-6"
+        {/* "Explore all topics" — links to the all-topics Explore index (NIC-139). */}
+        <a
+          href="/explore/topics"
+          className="mt-4 inline-block text-body font-medium text-white underline underline-offset-4 hover:no-underline lg:mt-6"
         >
           {heroCopy.exploreAllLabel}
-        </span>
+        </a>
 
       </section>
     </div>

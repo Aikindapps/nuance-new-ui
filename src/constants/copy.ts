@@ -641,6 +641,13 @@ export const exploreCopy = {
   publicationsEmptyBody: "There aren't any publications to recommend right now.",
   writersEmptyBody: "There aren't any writers to recommend right now.",
   backHomeLabel: "Back to home",
+  topicsTitle: "Explore all topics",
+  topicsLoadMore: "Show more topics",
+  topicsEmptyHeading: "No topics yet",
+  topicsEmptyBody: "Topics appear here as writers tag their articles. Check back soon, or explore the latest articles.",
+  topicsErrorHeading: "Couldn't load topics",
+  topicsErrorBody: "Something went wrong loading topics. Please try again.",
+  topicsRetryLabel: "Try again",
 };
 
 // NIC-41 Search Phase 1.
