@@ -139,7 +139,7 @@ function PlanCard({
   // Active card has brand-purple border; disabled card has ink-border dimmed.
   const cardBorder = enabled
     ? "border-[color:rgba(84,5,212,0.4)]"
-    : "border-[color:rgba(32,33,35,0.2)]";
+    : "border-ink-border/20";
 
   return (
     <div
