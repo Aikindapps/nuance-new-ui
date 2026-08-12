@@ -859,3 +859,16 @@ export const subscriptionPurchaseCopy = {
     "This author hasn\u2019t set up any subscription plans yet. Check back later.",
   noPlansClose: "Close",
 };
+
+// §4.8 (un)follow-tag article topic pills (NIC-157). {tag} → display-case tag name.
+export const topicFollowCopy = {
+  followTooltip: "Follow topic",
+  unfollowTooltip: "Unfollow topic",
+  followAria: "Follow {tag}",
+  unfollowAria: "Unfollow {tag}",
+  followed: "Following {tag}",
+  unfollowed: "Unfollowed {tag}",
+  followError: "Couldn\u2019t follow {tag}. Please try again.",
+  unfollowError: "Couldn\u2019t unfollow {tag}. Please try again.",
+  updating: "Updating\u2026",
+};

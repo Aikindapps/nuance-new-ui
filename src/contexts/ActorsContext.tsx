@@ -140,6 +140,14 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await postCorePromise;
         return actor.followTags(tagIds);
       },
+      followTag: async (tagId) => {
+        const actor = await postCorePromise;
+        return actor.followTag(tagId);
+      },
+      unfollowTag: async (tagId) => {
+        const actor = await postCorePromise;
+        return actor.unfollowTag(tagId);
+      },
       // Read Article (PR #7, decision #31). All anon-safe — query/oneway —
       // so an article reads identically logged-out (the SEO path) or in.
       getPost: async (bucketCanisterId, postId) => {

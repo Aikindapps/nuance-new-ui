@@ -120,6 +120,9 @@ export type ActorsValue = {
   getAllTags: () => Promise<Array<TagModel>>;
   // Follows the given tag IDs for the authed caller (TopicsModal "Done").
   followTags: (tagIds: string[]) => Promise<FollowTagsResult>;
+  // Follow / unfollow a single tag by tagId (§4.8 article topic pills).
+  followTag: (tagId: string) => Promise<FollowTagsResult>;
+  unfollowTag: (tagId: string) => Promise<FollowTagsResult>;
   // --- Read Article (PR #7, decision #31) — all query / oneway, anon-safe.
   // The article body lives in a bucket canister whose ID is dynamic (carried
   // in the URL), so getPost takes the bucketCanisterId like getPostsByPostIds.
