@@ -6,6 +6,7 @@ import MenuItem from "@mui/material/MenuItem";
 import { Avatar } from "./Avatar";
 import { useAuth } from "../../contexts/useAuth";
 import { headerCopy } from "../../constants/copy";
+import { useMyPublicationsEntry } from "../../lib/useMyPublicationsEntry";
 
 // Header logged-in state.
 //
@@ -20,6 +21,7 @@ export function UserMenu() {
   const { principal, logout } = useAuth();
   const navigate = useNavigate();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const { show: showPubs, firstPubHandle } = useMyPublicationsEntry();
 
   if (!principal) return null;
 
@@ -32,6 +34,17 @@ export function UserMenu() {
   const handleMyArticles = () => {
     handleClose();
     navigate("/my-articles");
+  };
+
+  const handleFollowing = () => {
+    handleClose();
+    navigate("/following/manage");
+  };
+
+  const handlePublications = () => {
+    if (!firstPubHandle) return;
+    handleClose();
+    navigate(`/publication/${firstPubHandle}/manage/articles`);
   };
 
   const handleLogout = async () => {
@@ -67,6 +80,10 @@ export function UserMenu() {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <MenuItem onClick={handleMyArticles}>{headerCopy.myArticles}</MenuItem>
+        <MenuItem onClick={handleFollowing}>{headerCopy.following}</MenuItem>
+        {showPubs && firstPubHandle && (
+          <MenuItem onClick={handlePublications}>{headerCopy.publications}</MenuItem>
+        )}
         <MenuItem onClick={handleLogout}>{headerCopy.logout}</MenuItem>
       </Menu>
     </>

@@ -90,6 +90,8 @@ export const headerCopy = {
   openMenuAriaLabel: "Open menu",
   userMenuAriaLabel: "Account menu",
   myArticles: "My articles",
+  following: "Following",
+  publications: "Publications",
   logout: "Logout",
 };
 
@@ -110,6 +112,10 @@ export const navDrawerCopy = {
   login: "Login",
   startWriting: "Start writing",
   myArticles: "My articles",
+  // NIC-174: top-level account nav rows (distinct from navFollowing which is
+  // the Home feed sub-row pointing at /following).
+  accountFollowing: "Following",
+  publications: "Publications",
   notifications: "Notifications",
   logout: "Logout",
 };

@@ -16,6 +16,7 @@ import Skeleton from "@mui/material/Skeleton";
 import { useAuth } from "../../contexts/useAuth";
 import { useMyProfile } from "../../lib/useMyProfile";
 import { useUnreadCount } from "../../features/notifications/hooks/useUnreadCount";
+import { useMyPublicationsEntry } from "../../lib/useMyPublicationsEntry";
 import { useModal } from "../../services/modal";
 import { LoginModal, LOGIN_MODAL_TITLE_ID } from "../LoginModal/LoginModal";
 import { Avatar } from "./Avatar";
@@ -124,6 +125,7 @@ function LoggedInPanel({ onClose }: { onClose: () => void }) {
   const { principal, logout } = useAuth();
   const profile = useMyProfile();
   const unreadCount = useUnreadCount();
+  const { show: showPubs, firstPubHandle } = useMyPublicationsEntry();
   const [homeExpanded, setHomeExpanded] = useState(true);
 
   const displayName = profile.data?.displayName || profile.data?.handle || principal?.toText() || "";
@@ -247,6 +249,26 @@ function LoggedInPanel({ onClose }: { onClose: () => void }) {
         >
           {navDrawerCopy.myArticles}
         </NavLink>
+
+        {/* NIC-174: Account-level Following → /following/manage (all users) */}
+        <NavLink
+          to="/following/manage"
+          onClick={onClose}
+          className={({ isActive }) => navRowClass(isActive)}
+        >
+          {navDrawerCopy.accountFollowing}
+        </NavLink>
+
+        {/* NIC-174: Publications → /publication/:handle/manage/articles (editors/writers only) */}
+        {showPubs && firstPubHandle && (
+          <NavLink
+            to={`/publication/${firstPubHandle}/manage/articles`}
+            onClick={onClose}
+            className={({ isActive }) => navRowClass(isActive)}
+          >
+            {navDrawerCopy.publications}
+          </NavLink>
+        )}
 
         <NavLink
           to="/notifications"
