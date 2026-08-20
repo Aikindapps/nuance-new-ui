@@ -6,8 +6,13 @@ import { createContext, useContext } from "react";
 
 export type ToastSeverity = "success" | "error";
 
+export type ToastOptions = {
+  actionLabel?: string;
+  onAction?: () => void;
+};
+
 export type ToastContextValue = {
-  show: (message: string, severity: ToastSeverity) => void;
+  show: (message: string, severity: ToastSeverity, options?: ToastOptions) => void;
 };
 
 export const ToastContext = createContext<ToastContextValue | null>(null);

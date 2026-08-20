@@ -872,3 +872,60 @@ export const topicFollowCopy = {
   unfollowError: "Couldn\u2019t unfollow {tag}. Please try again.",
   updating: "Updating\u2026",
 };
+
+// NIC-173 §reader Following management surface (/following/manage).
+export const followingManageCopy = {
+  // Page <title> and H1
+  pageTitle: "Following",
+  metaTitle: "Following \u2014 Nuance",
+
+  // Sub-nav tab labels
+  tabTopics: "Topics",
+  tabWriters: "Writers",
+  tabPublications: "Publications",
+
+  // Per-group empty states
+  topicsEmptyHeading: "You\u2019re not following any topics yet",
+  topicsEmptyBody: "Follow topics to tune your feed with the stories you care about.",
+  topicsEmptyCta: "Explore topics \u2192",
+  topicsEmptyCtaHref: "/explore/topics",
+
+  writersEmptyHeading: "You\u2019re not following any writers yet",
+  writersEmptyBody: "Follow writers to see their new articles first.",
+  writersEmptyCta: "Discover writers \u2192",
+  writersEmptyCtaHref: "/explore/writers",
+
+  publicationsEmptyHeading: "You\u2019re not following any publications yet",
+  publicationsEmptyBody: "Follow publications to keep up with what they publish.",
+  publicationsEmptyCta: "Browse publications \u2192",
+  publicationsEmptyCtaHref: "/explore/publications",
+
+  // All-empty first-run state
+  allEmptyHeading: "Start following to build your feed",
+  allEmptyBody:
+    "You\u2019re not following anything yet. Pick topics, writers and publications to personalise Nuance.",
+  allEmptyTopicsCta: "Explore topics \u2192",
+  allEmptyWritersCta: "Discover writers \u2192",
+  allEmptyPublicationsCta: "Browse publications \u2192",
+
+  // Error state
+  errorHeading: "Couldn\u2019t load your follows",
+  errorBody: "Something went wrong fetching your follow data. Please try again.",
+  retryLabel: "Retry",
+
+  // Unfollow toasts — {handle} / {tag} substituted at call-site
+  unfollowedAuthor: "Unfollowed @{handle}",
+  unfollowedTag: "Unfollowed {tag}",
+  undoLabel: "Undo",
+  unfollowErrorAuthor: "Couldn\u2019t unfollow @{handle}. Please try again.",
+  unfollowErrorTag: "Couldn\u2019t unfollow {tag}. Please try again.",
+
+  // Show-more button
+  loadMore: "Load more",
+
+  // Following button label (on each row)
+  followingLabel: "Following",
+
+  // Followers count suffix for publications
+  readersLabel: "readers",
+};
