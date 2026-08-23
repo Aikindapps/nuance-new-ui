@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { PageShell, CenteredMessage } from "../components/ui/CenteredMessage";
 import { ArticleFeed } from "../features/home/sections/ArticleFeed";
 import { useTopicPosts } from "../features/explore/hooks/useTopicPosts";
+import { TopicFollowButton } from "../features/explore/sections/TopicFollowButton";
 import { exploreCopy } from "../constants/copy";
 
 // NIC-43 — /explore/topic/:tag
@@ -49,6 +50,7 @@ function ExploreTopicContent({ tag }: { tag: string }) {
             {articleCountLine && (
               <p className="mt-2 text-body text-ink-80">{articleCountLine}</p>
             )}
+            <TopicFollowButton routeTag={tag} />
           </div>
 
           {/* Feed */}

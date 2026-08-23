@@ -877,6 +877,12 @@ export const topicFollowCopy = {
   followError: "Couldn\u2019t follow {tag}. Please try again.",
   unfollowError: "Couldn\u2019t unfollow {tag}. Please try again.",
   updating: "Updating\u2026",
+  // NIC-191 hero "Follow topic" button on /explore/topic/:tag (11.3, 1:52110).
+  heroFollow: "Follow topic",
+  heroFollowing: "Following",
+  heroUnfollow: "Unfollow",
+  heroFollowingPending: "Following\u2026",
+  heroUnfollowingPending: "Unfollowing\u2026",
 };
 
 // NIC-173 §reader Following management surface (/following/manage).
