@@ -465,6 +465,8 @@ export function WriteArticleForm({
           publications={myPublications}
           initialPublicationHandle={publicationHandle}
           coverPresent={coverUrl !== ""}
+          articleSavedToCanister={postId !== ""}
+          savedPublicationHandle={savedPubHandle}
           onMintPremium={(tags, pubH) => {
             // Guard: migrate path not needed (article is new or already in this pub).
             const migrateNotNeeded =

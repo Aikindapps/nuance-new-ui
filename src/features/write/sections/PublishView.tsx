@@ -26,6 +26,8 @@ export function PublishView({
   onConfirm,
   coverPresent,
   onMintPremium,
+  articleSavedToCanister,
+  savedPublicationHandle,
 }: {
   mode: "draft" | "publish";
   initialTagIds: string[];
@@ -35,6 +37,8 @@ export function PublishView({
   onConfirm: (tagIds: string[], publicationHandle: string | null) => Promise<boolean>;
   coverPresent?: boolean;
   onMintPremium?: (tagIds: string[], publicationHandle: string) => void;
+  articleSavedToCanister?: boolean;
+  savedPublicationHandle?: string | null;
 }) {
   const c = writeArticleCopy.publish;
   const cp = writeArticleCopy.premium;
@@ -49,7 +53,8 @@ export function PublishView({
     pubHandle !== null &&
     selectedPub?.isEditor === true &&
     coverPresent === true &&
-    onMintPremium != null;
+    onMintPremium != null &&
+    (articleSavedToCanister !== true || savedPublicationHandle === pubHandle);
 
   // Ref wrapping the publish-to field + foldout panel for outside-click close.
   const publishToRef = useRef<HTMLDivElement>(null);
