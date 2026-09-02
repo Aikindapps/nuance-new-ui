@@ -1,6 +1,6 @@
 import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@mui/material/styles";
 import "./index.css";
@@ -48,7 +48,28 @@ const Wallet = lazy(() => import("./routes/Wallet"));
 // eslint-disable-next-line react-refresh/only-export-components
 const FollowingManage = lazy(() => import("./routes/FollowingManage"));
 
-const router = createBrowserRouter([
+// Root layout route — hosts the app-wide overlays (modal service, toasts) and
+// the onboarding controller INSIDE the router so modal content rendered by the
+// modal service sits within the Router context. Without this, modals that call
+// router hooks (useNavigate) throw "useNavigate() may be used only in the
+// context of a <Router> component" on mount, whiting out the whole app (there
+// is no global error boundary). All routes render through <Outlet />.
+// eslint-disable-next-line react-refresh/only-export-components
+function RootLayout() {
+  return (
+    <ModalProvider>
+      <ToastProvider>
+        {/* Controller for the Create Account onboarding flow — opens the
+            register/topics modals when an authed user has no profile.
+            Renders nothing. */}
+        <OnboardingGate />
+        <Outlet />
+      </ToastProvider>
+    </ModalProvider>
+  );
+}
+
+const appRoutes = [
   { path: "/", element: <Home tab="popular" /> },
   { path: "/following", element: <Home tab="following" /> },
   {
@@ -132,6 +153,10 @@ const router = createBrowserRouter([
   { path: "/publication/:handle/manage/subscriptions", element: <ManageSubscriptions /> },
   { path: "/publication/:h", element: <PublicationHome /> },
   { path: "*", element: <NotFound /> },
+];
+
+const router = createBrowserRouter([
+  { element: <RootLayout />, children: appRoutes },
 ]);
 
 const queryClient = new QueryClient({
@@ -149,15 +174,7 @@ createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ActorsProvider>
-            <ModalProvider>
-              <ToastProvider>
-                {/* Controller for the Create Account onboarding flow —
-                    opens the register/topics modals when an authed user
-                    has no profile. Renders nothing. */}
-                <OnboardingGate />
-                <RouterProvider router={router} />
-              </ToastProvider>
-            </ModalProvider>
+            <RouterProvider router={router} />
           </ActorsProvider>
         </AuthProvider>
       </QueryClientProvider>
