@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Skeleton from "@mui/material/Skeleton";
 import { PageShell, CenteredMessage } from "../components/ui/CenteredMessage";
-import { Tag } from "../components/ui/Tag";
+import { TopicFollowPill } from "../features/article/sections/TopicFollowPill";
 import { useAllTags } from "../features/onboarding/useAllTags";
 import { exploreCopy } from "../constants/copy";
 
@@ -75,12 +75,7 @@ export function ExploreTopics() {
                 <ul className="flex flex-wrap gap-4">
                   {allTags.slice(0, visible).map((tag) => (
                     <li key={tag.id}>
-                      <Tag
-                        label={tag.value}
-                        href={`/explore/topic/${encodeURIComponent(tag.value.toLowerCase())}`}
-                        variant="on-light"
-                        truncate
-                      />
+                      <TopicFollowPill tag={{ tagId: tag.id, tagName: tag.value }} />
                     </li>
                   ))}
                 </ul>
