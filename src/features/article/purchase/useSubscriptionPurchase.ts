@@ -69,11 +69,13 @@ export type SubscriptionPurchaseHook = SubscriptionPurchaseState & {
 };
 
 type Props = {
-  isPublication: boolean;
-  /** Publication or author handle — used to look up the pub canister principal. */
-  handle: string;
-  /** Creator's principal text — used directly for author (non-pub) subscriptions. */
-  creatorPrincipal: string;
+  /**
+   * The subscription writer/target principal, taken from the post's
+   * `postOwnerPrincipal`: the writer's principal for a personal post, or the
+   * publication canister id for a publication post. This is exactly the id the
+   * backend keys subscriptions on (isReaderSubscriber(postOwnerPrincipal, …)).
+   */
+  writerPrincipalId: string;
 };
 
 // Map a SubscriptionTimeInterval to the WriterSubscriptionDetails fee field.
@@ -106,9 +108,7 @@ function hasAnyPlan(details: WriterSubscriptionDetails): boolean {
 }
 
 export function useSubscriptionPurchase({
-  isPublication,
-  handle,
-  creatorPrincipal,
+  writerPrincipalId,
 }: Props): SubscriptionPurchaseHook {
   const actors = useActors();
   const { principal } = useAuth();
@@ -144,18 +144,10 @@ export function useSubscriptionPurchase({
       });
 
       try {
-        // Step 1: resolve the writer principal ID.
-        let writerId: string | null = null;
-
-        if (isPublication) {
-          const cans = await actors.getPublicationCanisters();
-          const match = cans.find(
-            ([h]) => h.toLowerCase() === handle.toLowerCase(),
-          );
-          writerId = match?.[1] ?? null;
-        } else {
-          writerId = creatorPrincipal;
-        }
+        // Step 1: the subscribe target is the post's postOwnerPrincipal, passed
+        // straight through (writer principal for a personal post; publication
+        // canister id for a publication post).
+        const writerId = writerPrincipalId;
 
         if (!writerId) {
           if (cancelled) return;
@@ -174,11 +166,14 @@ export function useSubscriptionPurchase({
         if (cancelled) return;
 
         if (result.__kind__ === "err") {
+          // The only `err` this query returns is a missing subscription record,
+          // i.e. the writer has not configured any plans — surface the graceful
+          // no-plans state, not the payment-error state (whose "Try again" is
+          // futile at load time, before any payment has been attempted).
           setState((s) => ({
             ...s,
-            stage: "error",
+            stage: "noplans",
             writerPrincipalId: writerId,
-            errorMessage: result.err || "Couldn\u2019t load subscription details.",
           }));
           return;
         }
@@ -217,7 +212,7 @@ export function useSubscriptionPurchase({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPublication, handle, creatorPrincipal]);
+  }, [writerPrincipalId]);
 
   // ── SELECT ───────────────────────────────────────────────────────────────
   const select = useCallback((interval: SubscriptionTimeInterval) => {

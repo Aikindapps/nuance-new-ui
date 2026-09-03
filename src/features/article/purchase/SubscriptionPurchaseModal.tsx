@@ -139,7 +139,7 @@ function periodPhrase(interval: SubscriptionTimeInterval): string {
 type Props = {
   isPublication: boolean;
   handle: string;
-  creatorPrincipal: string;
+  writerPrincipalId: string;
   onClose: () => void;
 };
 
@@ -148,14 +148,10 @@ type Props = {
 export function SubscriptionPurchaseModal({
   isPublication,
   handle,
-  creatorPrincipal,
+  writerPrincipalId,
   onClose,
 }: Props) {
-  const purchase = useSubscriptionPurchase({
-    isPublication,
-    handle,
-    creatorPrincipal,
-  });
+  const purchase = useSubscriptionPurchase({ writerPrincipalId });
   const navigate = useNavigate();
   const [terms, setTerms] = useState(false);
 

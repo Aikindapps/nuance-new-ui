@@ -172,7 +172,7 @@ export function ReadArticle() {
       <SubscriptionPurchaseModal
         isPublication={post.isPublication}
         handle={subHandle}
-        creatorPrincipal={post.creatorPrincipal}
+        writerPrincipalId={post.postOwnerPrincipal}
         onClose={modal.close}
       />,
       {
