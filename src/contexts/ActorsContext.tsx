@@ -11,6 +11,7 @@ import {
   createPostBucketActor,
   createPostCoreActor,
   createPostRelationsActor,
+  createPublisherActor,
   createSonicActor,
   createStorageActor,
   createSubscriptionActor,
@@ -85,6 +86,18 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       if (cached) return cached;
       const actor = createExtV2Actor(await agentPromise, nftCanisterId);
       extActors.set(nftCanisterId, actor);
+      return actor;
+    };
+
+    // Per-publication Publisher canister (NIC-225): editor-aware premium mint
+    // minimum. Dynamic ids resolved from PostCore.getPublicationCanisters,
+    // cached like ext/bucket actors.
+    const publisherActors = new Map<string, ReturnType<typeof createPublisherActor>>();
+    const getPublisher = async (publisherCanisterId: string) => {
+      const cached = publisherActors.get(publisherCanisterId);
+      if (cached) return cached;
+      const actor = createPublisherActor(await agentPromise, publisherCanisterId);
+      publisherActors.set(publisherCanisterId, actor);
       return actor;
     };
 
@@ -345,6 +358,14 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       getPublicationCanisters: async () => {
         const actor = await postCorePromise;
         return actor.getPublicationCanisters();
+      },
+      // Editor + writer principals for a publication's Publisher canister
+      // (NIC-225). Returns [editors, writers]; the premium-mint form counts
+      // editors (each auto-receives a key). Resolve the publisherCanisterId via
+      // getPublicationCanisters.
+      getEditorAndWriterPrincipalIds: async (publisherCanisterId) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.getEditorAndWriterPrincipalIds();
       },
       // Article Keys (PR #14, decision #43).
       getAllNftCanisters: async () => {

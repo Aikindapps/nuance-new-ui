@@ -8,6 +8,7 @@ import {
 import { writeArticleCopy } from "../../../constants/copy";
 import { buildSvgForPremiumArticle, loadHeaderImage } from "../lib/premiumThumbnail";
 import { useNuaPrices, priceBetween } from "../../wallet/hooks/useNuaEquivalent";
+import { usePublicationEditorCount } from "../hooks/usePublicationEditorCount";
 
 export const PREMIUM_MINT_VIEW_TITLE_ID = "premium-mint-view-title";
 
@@ -60,11 +61,12 @@ function validateNft(
   termsAccepted: boolean,
   keys: string,
   price: string,
+  minKeys: number,
 ): boolean {
   if (!resizedHeaderImage) return false;
   if (!termsAccepted) return false;
   const keysInt = parseInt(keys, 10);
-  if (!Number.isInteger(keysInt) || keysInt <= 2 || keysInt > 10000) return false;
+  if (!Number.isInteger(keysInt) || keysInt < minKeys || keysInt > 10000) return false;
   if (!/^\d*\.?\d{0,4}$/.test(price) || price === "" || price === ".") return false;
   const e8s = Math.round(parseFloat(price) * 1e8);
   if (e8s < 100000 || e8s > 10_000_000_000) return false;
@@ -74,6 +76,7 @@ function validateNft(
 export function PremiumMintView({
   post,
   handle,
+  publicationHandle,
   onMint,
   onCancel,
 }: PremiumMintViewProps) {
@@ -112,7 +115,15 @@ export function PremiumMintView({
   const nuaEquiv =
     prices && icpAmount > 0 ? priceBetween(prices, "ICP", "NUA", icpAmount) : null;
 
-  const isValid = validateNft(resizedHeaderImage, termsAccepted, keys, price);
+  // Editor-aware minimum (NIC-225): backend requires maxSupply > numberOfEditors
+  // + 1, and editors are each auto-given a key, so the floor is editorCount + 2.
+  const { editorCount, isError: editorCountError } =
+    usePublicationEditorCount(publicationHandle);
+  const minKeys = editorCount != null ? editorCount + 2 : null;
+
+  const isValid =
+    minKeys != null &&
+    validateNft(resizedHeaderImage, termsAccepted, keys, price, minKeys);
 
   // Build SVG only when the image is loaded.
   const svg =
@@ -210,6 +221,16 @@ export function PremiumMintView({
           <p className="text-[length:calc(13*var(--fpx))] text-ink-60">
             {c.keysInfo}
           </p>
+          {minKeys != null && (
+            <p className="text-[length:calc(13*var(--fpx))] text-ink-60">
+              {c.keysMinHint
+                .replace("{count}", String(editorCount))
+                .replace("{min}", String(minKeys))}
+            </p>
+          )}
+          {editorCountError && (
+            <p className="text-label text-error">{c.keysCountError}</p>
+          )}
         </div>
 
         {/* COST PER KEY (IN ICP) */}

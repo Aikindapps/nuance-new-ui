@@ -356,6 +356,12 @@ export type ActorsValue = {
   // Used to resolve the writer principal for a publication-based subscription.
   getPublicationCanisters: () => Promise<Array<[string, string]>>;
 
+  // Editor + writer principals for one publication's Publisher canister
+  // (NIC-225). [editors, writers]; the premium-mint form counts editors.
+  getEditorAndWriterPrincipalIds: (
+    publisherCanisterId: string,
+  ) => Promise<[Array<string>, Array<string>]>;
+
   // --- Article Keys (PR #14, decision #43) — ext_v2 NFT access keys for
   // premium articles. One ext_v2 canister per premium article; the registry
   // lives on PostCore. All reads are anon-safe queries; the transfer is authed

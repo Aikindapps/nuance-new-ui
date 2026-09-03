@@ -228,6 +228,8 @@ export const writeArticleCopy = {
     keysLabel: "AMOUNT OF KEYS",
     keysPlaceholder: "Fill in amount of keys",
     keysInfo: "Editors of the publication are automatically given a key (the minimum number of keys). You can't earn revenue from editors' keys.",
+    keysMinHint: "This publication has {count} editors, so the minimum is {min} keys.",
+    keysCountError: "Couldn't check this publication's editors. Please try again.",
     priceLabel: "COST PER KEY (IN ICP)",
     pricePlaceholder: "Amount",
     terms: "I am aware when I mint this article, I can not change it again. I am aware of terms and conditions, general policy and agree to them.",

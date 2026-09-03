@@ -12,6 +12,7 @@ import { createActor as createIcpIndex } from "../candid/IcpIndex/IcpIndex";
 import { createActor as createIcrcIndex } from "../candid/CkBtcIndex/CkBtcIndex";
 import { createActor as createExtV2 } from "../candid/ExtV2/ExtV2";
 import { createActor as createSubscription } from "../candid/Subscription/Subscription";
+import { createActor as createPublisher } from "../candid/Publisher/Publisher";
 import canisterIds from "../config/canister_ids.json";
 import { ICP_INDEX_CANISTER_ID, TOKENS } from "../config/tokens";
 
@@ -69,6 +70,12 @@ export function createIcrcIndexActor(agent: HttpAgent, indexCanisterId: string) 
 
 export function createExtV2Actor(agent: HttpAgent, nftCanisterId: string) {
   return createExtV2(nftCanisterId, { agent });
+}
+
+// Per-publication Publisher canister (NIC-225): editor-aware premium mint
+// minimum. Dynamic canisterId (one per publication), like createExtV2Actor.
+export function createPublisherActor(agent: HttpAgent, publisherCanisterId: string) {
+  return createPublisher(publisherCanisterId, { agent });
 }
 
 export function createSubscriptionActor(agent: HttpAgent) {
