@@ -710,6 +710,13 @@ export const searchCopy = {
   publicationsTab: "Publications",
   topicsTab: "Topics",
   feedLabel: "Search results",
+  // {q} → the search query
+  writersNoResults: 'No writers found for \u201c{q}\u201d.',
+  // {q} → the search query
+  publicationsNoResults: 'No publications found for \u201c{q}\u201d.',
+  // {q} → the search query
+  topicsNoResults: 'No topics found for \u201c{q}\u201d.',
+  loadMore: "Show more",
 };
 
 // NIC-128 §3.4: Limited-edition NFT reader purchase flow. All six modal states

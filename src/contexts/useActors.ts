@@ -450,6 +450,8 @@ export type ActorsValue = {
     postId: string,
     symbol: string,
   ) => Promise<TippingResult>;
+  // All handles on the platform (writers + publications), anon-safe query. Client-side name search source (NIC-60).
+  getAllHandles: () => Promise<Array<string>>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);

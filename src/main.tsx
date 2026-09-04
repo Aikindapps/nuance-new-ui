@@ -131,10 +131,13 @@ const appRoutes = [
       </Suspense>
     ),
   },
-  // NIC-41: Search results (Phase 1). Non-lazy — reuses ArticleFeed/Tab/
+  // NIC-41/NIC-60: Search results (Phase 1 + Phase 2). Non-lazy — reuses ArticleFeed/Tab/
   // PageShell from the home bundle; no heavy deps. Must appear before
-  // /:handle so /search/articles and /search rank above the dynamic segment.
-  { path: "/search/articles", element: <SearchResults /> },
+  // /:handle so /search/* and /search rank above the dynamic segment.
+  { path: "/search/articles", element: <SearchResults tab="articles" /> },
+  { path: "/search/writers", element: <SearchResults tab="writers" /> },
+  { path: "/search/publications", element: <SearchResults tab="publications" /> },
+  { path: "/search/topics", element: <SearchResults tab="topics" /> },
   { path: "/search", element: <SearchRedirect /> },
   // NIC-43: Explore pages. Non-lazy — reuse home-bundle components
   // (PageShell, ArticleFeed, FollowButton, Avatar); no heavy deps.

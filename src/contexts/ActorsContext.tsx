@@ -456,6 +456,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await postCorePromise;
         return actor.getPostsByPostIds(postIds);
       },
+      getAllHandles: async () => {
+        const actor = await userPromise;
+        return actor.getAllHandles();
+      },
     };
   }, [identity]);
 
