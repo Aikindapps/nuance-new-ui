@@ -2,8 +2,7 @@ import { useState } from "react";
 import { IconClaps } from "../../../components/ui/icons/IconClaps";
 import { IconComment } from "../../../components/ui/icons/IconComment";
 import { IconViews } from "../../../components/ui/icons/IconViews";
-import { IconLink } from "../../../components/ui/icons/IconLink";
-import { ShareButton } from "../../../components/ui/ShareButton/ShareButton";
+import { IconShare } from "../../../components/ui/icons/IconShare";
 import { formatCount } from "../../../lib/formatCount";
 import { useAuth } from "../../../contexts/useAuth";
 import { useModal } from "../../../services/modal";
@@ -13,22 +12,19 @@ import {
 } from "../../../components/LoginModal/LoginModal";
 import { TipModal, TIP_MODAL_TITLE_ID } from "../../wallet/tip/TipModal";
 
-// Floating article action bar — Figma 1:5382 (desktop) + 1:5455 (mobile),
-// share interactions per 4.4 `1:18426` (PR #8 Phase 2).
+// Floating article action bar — Figma 1:5382 (desktop) + 1:5455 (mobile).
 // Fixed to the viewport bottom-centre so it stays in reach while reading.
 //
 // Applause + Comment remain inert shells — those wire later in PR #8
-// (Phases 3-7). Share is wired: ShareButton opens a popover with the
-// four Figma social channels (Google/LinkedIn/Reddit/Facebook), and on
-// mobile tries `navigator.share` first before falling back. Copy link
-// stays a separate button in the bar per the Figma split.
+// (Phases 3-7). Share copies the article URL to the clipboard (no popover,
+// no OS share sheet) and cycles through idle → copied/failed → idle states.
 //
-// Desktop (Figma 1:5382): Applause + Comment + Views + Share + Copy link.
+// Desktop (Figma 1:5382): Applause + Comment + Views + Share.
 // The third slot would be Bookmark in Figma but Nuance has no bookmark
 // feature, so it shows the view count instead (Mr Nick, 2026-05-19): a
 // passive stat, not a button.
 //
-// Mobile (Figma 1:5455): Applause + Comment + Link + Share — icon-only,
+// Mobile (Figma 1:5455): Applause + Comment + Share — icon-only,
 // drops the view count.
 
 type CopyState = "idle" | "copied" | "failed";
@@ -36,14 +32,12 @@ type CopyState = "idle" | "copied" | "failed";
 export function ActionBar({
   claps,
   views,
-  title,
   commentCount,
   postId,
   bucketCanisterId,
 }: {
   claps: number;
   views: number;
-  title: string;
   commentCount: number;
   postId: string;
   bucketCanisterId: string;
@@ -88,7 +82,6 @@ export function ActionBar({
       <DesktopBar
         claps={claps}
         views={views}
-        title={title}
         commentCount={commentCount}
         copyState={copyState}
         copyLink={copyLink}
@@ -96,7 +89,6 @@ export function ActionBar({
       />
       {/* Mobile bar — icon-only, drops Views slot */}
       <MobileBar
-        title={title}
         copyState={copyState}
         copyLink={copyLink}
         onApplaud={onApplaud}
@@ -108,19 +100,18 @@ export function ActionBar({
 function copyLabel(state: CopyState): string {
   if (state === "copied") return "Copied!";
   if (state === "failed") return "Copy failed";
-  return "Copy link";
+  return "Share";
 }
 
 function copyAriaLabel(state: CopyState): string {
   if (state === "copied") return "Link copied";
   if (state === "failed") return "Copy failed";
-  return "Copy link";
+  return "Copy article link";
 }
 
 function DesktopBar({
   claps,
   views,
-  title,
   commentCount,
   copyState,
   copyLink,
@@ -128,7 +119,6 @@ function DesktopBar({
 }: {
   claps: number;
   views: number;
-  title: string;
   commentCount: number;
   copyState: CopyState;
   copyLink: () => void;
@@ -169,16 +159,13 @@ function DesktopBar({
           {formatCount(String(views))} views
         </div>
 
-        {/* Share — opens 4-channel social popover above the bar */}
-        <ShareButton variant="desktop" title={title} />
-
-        {/* Copy link — wired (no canister needed) */}
+        {/* Share — copies the article URL to the clipboard */}
         <button
           type="button"
           onClick={copyLink}
           className={`${item} transition-colors hover:bg-white-10`}
         >
-          <IconLink className="size-6" />
+          <IconShare className="size-6" />
           {copyLabel(copyState)}
         </button>
       </div>
@@ -187,12 +174,10 @@ function DesktopBar({
 }
 
 function MobileBar({
-  title,
   copyState,
   copyLink,
   onApplaud,
 }: {
-  title: string;
   copyState: CopyState;
   copyLink: () => void;
   onApplaud: () => void;
@@ -222,18 +207,15 @@ function MobileBar({
           <IconComment className="size-6" />
         </a>
 
-        {/* Copy link — wired */}
+        {/* Share — copies the article URL to the clipboard */}
         <button
           type="button"
           onClick={copyLink}
           aria-label={copyAriaLabel(copyState)}
           className={iconButton}
         >
-          <IconLink className="size-6" />
+          <IconShare className="size-6" />
         </button>
-
-        {/* Share — native share sheet on mobile when available, else popover */}
-        <ShareButton variant="mobile" title={title} />
       </div>
     </div>
   );
