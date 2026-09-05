@@ -125,8 +125,9 @@ function LoggedInPanel({ onClose }: { onClose: () => void }) {
   const { principal, logout } = useAuth();
   const profile = useMyProfile();
   const unreadCount = useUnreadCount();
-  const { show: showPubs, firstPubHandle } = useMyPublicationsEntry();
+  const { show: showPubs, firstPubHandle, publications, count } = useMyPublicationsEntry();
   const [homeExpanded, setHomeExpanded] = useState(true);
+  const [pubsExpanded, setPubsExpanded] = useState(false);
 
   const displayName = profile.data?.displayName || profile.data?.handle || principal?.toText() || "";
   const handle = profile.data?.handle || "";
@@ -259,8 +260,8 @@ function LoggedInPanel({ onClose }: { onClose: () => void }) {
           {navDrawerCopy.accountFollowing}
         </NavLink>
 
-        {/* NIC-174: Publications → /publication/:handle/manage/articles (editors/writers only) */}
-        {showPubs && firstPubHandle && (
+        {/* NIC-174/NIC-248: Publications → single-pub deep-links; multi-pub expands */}
+        {showPubs && firstPubHandle && count === 1 && (
           <NavLink
             to={`/publication/${firstPubHandle}/manage/articles`}
             onClick={onClose}
@@ -268,6 +269,51 @@ function LoggedInPanel({ onClose }: { onClose: () => void }) {
           >
             {navDrawerCopy.publications}
           </NavLink>
+        )}
+
+        {showPubs && count > 1 && (
+          <>
+            {/* Disclosure toggle row */}
+            <button
+              type="button"
+              aria-expanded={pubsExpanded}
+              aria-controls="pubs-subnav"
+              onClick={() => setPubsExpanded((v) => !v)}
+              className="flex min-h-[44px] w-full items-center justify-between px-4 text-body font-medium text-ink-80 hover:text-ink"
+            >
+              <span>{navDrawerCopy.publications}</span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+                className={`transition-transform ${pubsExpanded ? "rotate-180" : ""}`}
+              >
+                {/* Chevron-down (∨); rotated 180° (∧) when expanded */}
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {pubsExpanded && (
+              <div id="pubs-subnav">
+                {publications.map((pub) => (
+                  <NavLink
+                    key={pub.handle}
+                    to={`/publication/${pub.handle}/manage/articles`}
+                    onClick={onClose}
+                    className={({ isActive }) => subRowClass(isActive)}
+                  >
+                    {pub.name}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         <NavLink

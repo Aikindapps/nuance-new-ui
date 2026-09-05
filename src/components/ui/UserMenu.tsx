@@ -7,6 +7,8 @@ import { Avatar } from "./Avatar";
 import { useAuth } from "../../contexts/useAuth";
 import { headerCopy } from "../../constants/copy";
 import { useMyPublicationsEntry } from "../../lib/useMyPublicationsEntry";
+import { useModal } from "../../services/modal";
+import { PublicationChooser, PUBLICATION_CHOOSER_TITLE_ID } from "./PublicationChooser";
 
 // Header logged-in state.
 //
@@ -20,8 +22,9 @@ import { useMyPublicationsEntry } from "../../lib/useMyPublicationsEntry";
 export function UserMenu() {
   const { principal, logout } = useAuth();
   const navigate = useNavigate();
+  const modal = useModal();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const { show: showPubs, firstPubHandle } = useMyPublicationsEntry();
+  const { show: showPubs, firstPubHandle, count } = useMyPublicationsEntry();
 
   if (!principal) return null;
 
@@ -44,7 +47,11 @@ export function UserMenu() {
   const handlePublications = () => {
     if (!firstPubHandle) return;
     handleClose();
-    navigate(`/publication/${firstPubHandle}/manage/articles`);
+    if (count > 1) {
+      modal.open(<PublicationChooser />, { ariaLabelledBy: PUBLICATION_CHOOSER_TITLE_ID });
+    } else {
+      navigate(`/publication/${firstPubHandle}/manage/articles`);
+    }
   };
 
   const handleWallet = () => {

@@ -951,3 +951,17 @@ export const followingManageCopy = {
   // Followers count suffix for publications
   readersLabel: "readers",
 };
+
+// NIC-248 — Publication chooser (desktop modal + mobile in-drawer expand).
+export const publicationChooserCopy = {
+  title: "Choose a publication",
+  // {count} is substituted at call-site
+  subcount: (count: number) =>
+    `You edit ${count} publication${count === 1 ? "" : "s"} — pick one to manage.`,
+  loadingSubcount: "Loading your publications\u2026",
+  closeAriaLabel: "Close publication chooser",
+  errorHeading: "Couldn\u2019t load your publications",
+  errorBody: "Something went wrong. Try again.",
+  retryLabel: "Retry",
+  rowAriaLabel: (name: string) => `Manage ${name}`,
+};
