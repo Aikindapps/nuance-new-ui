@@ -9,7 +9,7 @@
 // — no new deps needed.  disableSwipeToOpen prevents accidental opens from
 // edge-swipe elsewhere on the page.
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import SwipeableDrawer from "@mui/material/SwipeableDrawer";
 import Skeleton from "@mui/material/Skeleton";
@@ -319,13 +319,6 @@ export function MobileNavDrawer({ open, onClose }: Props) {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
 
-  // Track the current location key synchronously (layout effect) so the
-  // [open] passive cleanup can tell whether a route change caused the close.
-  const locationKeyRef = useRef(location.key);
-  useLayoutEffect(() => {
-    locationKeyRef.current = location.key;
-  }, [location.key]);
-
   useEffect(() => {
     // Nothing to set up while the drawer is closed.
     if (!open) return;
@@ -363,14 +356,17 @@ export function MobileNavDrawer({ open, onClose }: Props) {
         return;
       }
 
-      if (locationKeyRef.current !== location.key) {
-        // (c) Route change — the NavLink onClick={onClose} state update and
-        //     react-router's navigate() commit in one render (React 18
-        //     automatic batching), so the layout effect above updates
-        //     locationKeyRef before this passive cleanup reads it →
-        //     routeChanged=true.  React-router already moved the history
-        //     pointer; popping the sentinel ourselves would double-back, so
-        //     we leave it in place and let the router manage history.
+      if (!window.history.state?.__navDrawer) {
+        // (c) Route change — a NavLink tap (or programmatic navigate) pushed a
+        //     new history entry on top of our sentinel, so window.history.state
+        //     no longer carries __navDrawer. react-router already advanced the
+        //     history pointer; calling history.back() here would UNDO that
+        //     navigation. Leave the sentinel and let the router own history.
+        //     We read window.history.state (mutated synchronously by
+        //     react-router's push) rather than comparing the router `location`,
+        //     because RRv7 wraps navigation updates in React.startTransition,
+        //     so `location` has NOT updated yet in the urgent setNavOpen(false)
+        //     commit where this cleanup runs.
         return;
       }
 
