@@ -92,6 +92,7 @@ export const headerCopy = {
   myArticles: "My articles",
   following: "Following",
   publications: "Publications",
+  wallet: "My wallet",
   logout: "Logout",
 };
 

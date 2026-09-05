@@ -47,6 +47,11 @@ export function UserMenu() {
     navigate(`/publication/${firstPubHandle}/manage/articles`);
   };
 
+  const handleWallet = () => {
+    handleClose();
+    navigate("/wallet");
+  };
+
   const handleLogout = async () => {
     handleClose();
     try {
@@ -84,6 +89,7 @@ export function UserMenu() {
         {showPubs && firstPubHandle && (
           <MenuItem onClick={handlePublications}>{headerCopy.publications}</MenuItem>
         )}
+        <MenuItem onClick={handleWallet}>{headerCopy.wallet}</MenuItem>
         <MenuItem onClick={handleLogout}>{headerCopy.logout}</MenuItem>
       </Menu>
     </>
