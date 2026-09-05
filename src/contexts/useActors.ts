@@ -325,7 +325,9 @@ export type ActorsValue = {
   // The caller's subscription history, both directions (reader payments and
   // writer earnings).
   getReaderSubscriptionDetails: () => Promise<ReaderSubscriptionResult>;
-  getWriterSubscriptionDetails: () => Promise<WriterSubscriptionResult>;
+  getWriterSubscriptionDetails: (
+    principalText?: string | null,
+  ) => Promise<WriterSubscriptionResult>;
   // --- Subscription purchase flow (NIC-129 §3.5/§3.6) ---
   // Lookup writer subscription plan details by their principal ID.
   getWriterSubscriptionDetailsByPrincipalId: (

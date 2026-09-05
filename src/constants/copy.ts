@@ -965,3 +965,37 @@ export const publicationChooserCopy = {
   retryLabel: "Retry",
   rowAriaLabel: (name: string) => `Manage ${name}`,
 };
+
+// NIC-252 §6.9 Publication Subscribers (/publication/:handle/manage/subscribers).
+// Read-only, editor-gated. Earnings aggregates (NUA earned, Earned total) and
+// the revenue chart are deferred to the monetization work (NIC-44) and render
+// as the muted `deferred` em dash until then.
+export const publicationSubscribersCopy = {
+  metaTitleSuffix: "\u2014 Nuance",
+  title: "Subscribers",
+  notAuthorizedHeading: "Access restricted",
+  notAuthorizedBody:
+    "You need to be an editor of this publication to view its subscribers.",
+  errorHeading: "Something went wrong",
+  errorBody:
+    "We couldn\u2019t verify your access to this publication. Please try again.",
+  loadErrorHeading: "Couldn\u2019t load subscribers",
+  loadErrorBody:
+    "We couldn\u2019t load this publication\u2019s subscribers. Please try again.",
+  retryLabel: "Retry",
+  emptyBody: "You do not have any subscription data yet.",
+  showMore: "Show more",
+  sincePrefix: "Since",
+  feeUnit: "NUA",
+  deferred: "\u2014",
+  colReader: "Reader",
+  colSince: "Supports since",
+  colPeriod: "Period",
+  colFee: "Fee per period",
+  colEarned: "Earned total",
+  counterSubscribers: "Subscribers",
+  counterEarned: "NUA earned",
+  counterThisWeek: "This week",
+  monetizationNote:
+    "Managing subscription plans and prices lives in Publication Settings \u2014 arriving with monetization.",
+};

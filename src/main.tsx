@@ -15,6 +15,7 @@ import { WriterProfile } from "./routes/WriterProfile";
 import { PublicationHome } from "./routes/PublicationHome";
 import { ManageArticles } from "./routes/ManageArticles";
 import { ManageSubscriptions } from "./routes/ManageSubscriptions";
+import { ManageSubscribers } from "./routes/ManageSubscribers";
 import { SearchResults, SearchRedirect } from "./routes/SearchResults";
 import { ExploreTopic } from "./routes/ExploreTopic";
 import { ExplorePublications } from "./routes/ExplorePublications";
@@ -154,6 +155,7 @@ const appRoutes = [
   { path: "/:handle", element: <WriterProfile /> },
   { path: "/publication/:handle/manage/articles", element: <ManageArticles /> },
   { path: "/publication/:handle/manage/subscriptions", element: <ManageSubscriptions /> },
+  { path: "/publication/:handle/manage/subscribers", element: <ManageSubscribers /> },
   { path: "/publication/:h", element: <PublicationHome /> },
   { path: "*", element: <NotFound /> },
 ];

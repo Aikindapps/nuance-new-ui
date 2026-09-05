@@ -321,9 +321,9 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = createSubscriptionActor(await agentPromise);
         return actor.getReaderSubscriptionDetails();
       },
-      getWriterSubscriptionDetails: async () => {
+      getWriterSubscriptionDetails: async (principalText = null) => {
         const actor = createSubscriptionActor(await agentPromise);
-        return actor.getWriterSubscriptionDetails(null);
+        return actor.getWriterSubscriptionDetails(principalText);
       },
       // Subscription purchase flow (NIC-129 §3.5/§3.6).
       getWriterSubscriptionDetailsByPrincipalId: async (principalText) => {
