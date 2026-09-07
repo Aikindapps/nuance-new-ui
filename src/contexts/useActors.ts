@@ -132,6 +132,13 @@ export type ActorsValue = {
     bucketCanisterId: string,
     postId: string,
   ) => Promise<GetPostResult>;
+  // Ownership-aware read used by the article reader path: returns full
+  // `content` to authorized callers (premium: NFT key/token owner;
+  // members-only: author or active subscriber) and blanks it to "" otherwise.
+  getPostCompositeQuery: (
+    bucketCanisterId: string,
+    postId: string,
+  ) => Promise<GetPostResult>;
   // Views / claps / tags for a post. PostBucketType carries none of these —
   // they live on PostKeyProperties in PostCore.
   getPostKeyProperties: (postId: string) => Promise<PostKeyPropertiesResult>;

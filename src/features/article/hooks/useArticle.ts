@@ -5,16 +5,19 @@ import type { UserListItem } from "../../../candid/User/User";
 
 // The article body + its author/publication User records.
 //
-// Two-stage fetch: PostBucket.getPost for the body, then User.getUsersByHandles
-// to hydrate the author (and the publication, when the post belongs to one).
-// Views/claps/tags are NOT here — they live on PostKeyProperties in PostCore;
-// see usePostMeta. Keeping them in a separate query lets the article body
-// paint even while/if the meta call is slow or fails.
+// Two-stage fetch: PostBucket.getPostCompositeQuery for the body, then
+// User.getUsersByHandles to hydrate the author (and the publication, when the
+// post belongs to one). Views/claps/tags are NOT here — they live on
+// PostKeyProperties in PostCore; see usePostMeta. Keeping them in a separate
+// query lets the article body paint even while/if the meta call is slow or
+// fails.
 //
-// Premium / members-only posts: PostBucket.getPost returns the record with
-// `content` blanked to "". The hook passes that through unchanged — the
-// consumer detects `(isPremium || isMembersOnly) && content === ""` and shows
-// a locked state. The paywall purchase flow (Page 3.4) is out of scope.
+// Premium / members-only posts: PostBucket.getPostCompositeQuery returns full
+// `content` to authorized callers (premium: NFT key/token owner; members-only:
+// author or active subscriber) and blanks `content` to "" for everyone else.
+// The hook passes the record through unchanged — the consumer detects
+// `(isPremium || isMembersOnly) && content === ""` and shows a locked state.
+// The paywall purchase flow (Page 3.4) is out of scope.
 
 export type ArticleData = {
   post: PostBucketType__1;
@@ -35,7 +38,7 @@ export type ArticleData = {
 // means a genuine network/replica failure. Consumers distinguish the two:
 // `data === null` → not-found UI; `isError` → error UI.
 export function useArticle(bucketCanisterId: string, postId: string) {
-  const { getPost, getUsersByHandles, getUserByPrincipalId } = useActors();
+  const { getPostCompositeQuery, getUsersByHandles, getUserByPrincipalId } = useActors();
 
   return useQuery<ArticleData | null>({
     queryKey: ["article", bucketCanisterId, postId],
@@ -45,7 +48,7 @@ export function useArticle(bucketCanisterId: string, postId: string) {
     enabled: postId !== "" && bucketCanisterId !== "",
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const result = await getPost(bucketCanisterId, postId);
+      const result = await getPostCompositeQuery(bucketCanisterId, postId);
       // `err` here can only be not-found or unauthorized-draft — a transport
       // failure rejects before a Result is produced. Same reasoning as
       // useMyProfile (PR #6 review m1): treat every `err` as not-found.

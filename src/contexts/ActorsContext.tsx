@@ -167,6 +167,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getBucket(bucketCanisterId);
         return actor.getPost(postId);
       },
+      getPostCompositeQuery: async (bucketCanisterId, postId) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.getPostCompositeQuery(postId);
+      },
       getPostKeyProperties: async (postId) => {
         const actor = await postCorePromise;
         return actor.getPostKeyProperties(postId);
