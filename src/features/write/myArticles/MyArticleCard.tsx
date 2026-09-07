@@ -19,6 +19,7 @@ export function MyArticleCard({
   unpublishing: boolean;
 }) {
   const c = myArticlesCopy;
+  const isNft = article.hasNft;
   const editTo = `/write/${article.id}-${article.bucketCanisterId}`;
   const viewTo = buildArticleUrl({
     handle: article.routeHandle,
@@ -50,7 +51,7 @@ export function MyArticleCard({
           )}
         </div>
         <Link
-          to={editTo}
+          to={isNft ? viewTo : editTo}
           className="mt-1 line-clamp-2 text-lg font-bold text-ink hover:text-brand-purple"
         >
           {article.title}
@@ -61,12 +62,14 @@ export function MyArticleCard({
           </p>
         )}
         <div className="mt-auto flex items-center gap-4 pt-3">
-          <Link
-            to={editTo}
-            className="text-body font-medium text-brand-purple hover:underline"
-          >
-            {c.edit}
-          </Link>
+          {!isNft && (
+            <Link
+              to={editTo}
+              className="text-body font-medium text-brand-purple hover:underline"
+            >
+              {c.edit}
+            </Link>
+          )}
           {!article.isDraft && (
             <Link
               to={viewTo}

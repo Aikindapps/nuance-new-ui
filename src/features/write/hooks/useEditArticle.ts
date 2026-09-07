@@ -14,6 +14,8 @@ export type EditArticleInitial = {
   // ("Save changes", isDraft:false) instead of unpublishing it. A newer local
   // autosave only overrides the body/fields — never the published state.
   isPublished: boolean;
+  // A minted NFT article can't be edited; the route uses this to block editing.
+  isNft: boolean;
   // Publication home — always taken from the canister post (autosave doesn't
   // carry publication info). Preserves the post's home on re-save so a
   // publication article is never silently re-homed to personal (latent-bug fix).
@@ -39,6 +41,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
       ]);
       if (postRes.__kind__ === "err") return null;
       const post = postRes.ok;
+      const isNft = Boolean(post.nftCanisterId) || post.isPremium;
       const isPublished = !post.isDraft;
       const tagIds =
         metaRes.__kind__ === "ok"
@@ -65,6 +68,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
           tagIds: local.tagIds.length > 0 ? local.tagIds : tagIds,
           editorStateJson: local.editorStateJson,
           isPublished,
+          isNft,
           isPublication,
           publicationHandle,
           creatorHandle,
@@ -78,6 +82,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
         tagIds,
         editorStateJson: htmlToEditorStateJson(post.content),
         isPublished,
+        isNft,
         isPublication,
         publicationHandle,
         creatorHandle,

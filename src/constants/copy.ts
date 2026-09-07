@@ -173,6 +173,8 @@ export const writeArticleCopy = {
   bodyPlaceholder: "Start your story…",
   loadingArticle: "Loading article…",
   loadError: "This article could not be loaded for editing.",
+  nftNotEditable: "This article has been minted as an NFT and can no longer be edited.",
+  backToMyArticles: "Back to my articles",
   coverPrompt: "Drop highlighted image here or ",
   coverChooseFile: "choose file",
   statusDraft: "Draft",

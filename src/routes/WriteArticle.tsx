@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { useAuth } from "../contexts/useAuth";
 import { writeArticleCopy } from "../constants/copy";
@@ -56,6 +56,18 @@ export function WriteArticle() {
           <p className="px-6 py-12 text-body text-ink-60 lg:px-24">
             {writeArticleCopy.loadError}
           </p>
+        </Shell>
+      );
+    }
+    if (editQuery.data.isNft) {
+      return (
+        <Shell>
+          <div className="px-6 py-12 lg:px-24">
+            <p className="text-body text-ink-60">{writeArticleCopy.nftNotEditable}</p>
+            <Link to="/my-articles" className="mt-4 inline-block text-body font-medium text-brand-purple hover:underline">
+              {writeArticleCopy.backToMyArticles}
+            </Link>
+          </div>
         </Shell>
       );
     }
