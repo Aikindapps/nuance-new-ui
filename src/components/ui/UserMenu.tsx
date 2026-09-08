@@ -34,6 +34,11 @@ export function UserMenu() {
   const handleOpen = (e: MouseEvent<HTMLButtonElement>) => setAnchor(e.currentTarget);
   const handleClose = () => setAnchor(null);
 
+  const handleMyProfile = () => {
+    handleClose();
+    navigate("/profile");
+  };
+
   const handleMyArticles = () => {
     handleClose();
     navigate("/my-articles");
@@ -91,6 +96,7 @@ export function UserMenu() {
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
+        <MenuItem onClick={handleMyProfile}>{headerCopy.myProfile}</MenuItem>
         <MenuItem onClick={handleMyArticles}>{headerCopy.myArticles}</MenuItem>
         <MenuItem onClick={handleFollowing}>{headerCopy.following}</MenuItem>
         {showPubs && firstPubHandle && (

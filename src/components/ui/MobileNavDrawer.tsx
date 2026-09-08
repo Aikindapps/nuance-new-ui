@@ -168,7 +168,7 @@ function LoggedInPanel({ onClose }: { onClose: () => void }) {
         </div>
       ) : handle ? (
         <Link
-          to={`/${handle}`}
+          to="/profile"
           onClick={onClose}
           className="flex min-h-[44px] items-center gap-3 px-4 py-3 hover:bg-brand-purple-5"
         >

@@ -89,6 +89,7 @@ export const headerCopy = {
   notificationsAriaLabel: "Notifications",
   openMenuAriaLabel: "Open menu",
   userMenuAriaLabel: "Account menu",
+  myProfile: "My profile",
   myArticles: "My articles",
   following: "Following",
   publications: "Publications",
@@ -1000,4 +1001,31 @@ export const publicationSubscribersCopy = {
   counterThisWeek: "This week",
   monetizationNote:
     "Managing subscription plans and prices lives in Publication Settings \u2014 arriving with monetization.",
+};
+
+// NIC-261 — Account area shell (AccountShell left-rail nav).
+export const accountCopy = {
+  navAriaLabel: "Account navigation",
+  navMyProfile: "My profile",
+  navMyArticles: "My articles",
+  navActivity: "Activity",
+  navPublications: "Publications",
+  navMyWallet: "My wallet",
+  activityComingSoon: "Coming soon",
+};
+
+// NIC-261 — My Profile self-view (/profile).
+export const profileSelfCopy = {
+  metaTitle: "My profile \u2014 Nuance",
+  followersLabel: "followers",
+  followingLabel: "following",
+  editProfile: "Edit profile",
+  viewPublicProfile: "View public profile",
+  sectionHeading: "Your articles",
+  sectionSubheading: "Articles you\u2019ve published",
+  emptyFeed: "You haven\u2019t published any articles yet.",
+  errorHeading: "Something went wrong",
+  errorBody: "We couldn\u2019t load your profile. Please try again.",
+  editComingSoonHeading: "Edit profile is coming",
+  editComingSoonBody: "Profile editing is being built \u2014 check back soon.",
 };

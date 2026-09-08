@@ -22,6 +22,7 @@ import { ExplorePublications } from "./routes/ExplorePublications";
 import { ExploreWriters } from "./routes/ExploreWriters";
 import { ExploreTopics } from "./routes/ExploreTopics";
 import { NotFound } from "./routes/NotFound";
+import { Profile, ProfileEditPlaceholder } from "./routes/Profile";
 import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingShell";
 
 // Article route ships as its own chunk — DOMPurify + Crimson Text + every
@@ -147,6 +148,11 @@ const appRoutes = [
   { path: "/explore/publications", element: <ExplorePublications /> },
   { path: "/explore/writers", element: <ExploreWriters /> },
   { path: "/explore/topics", element: <ExploreTopics /> },
+  // NIC-261: Account self-view routes. Non-lazy — reuse home-bundle components
+  // (AccountShell, ArticleFeed, Avatar). Must appear BEFORE /:handle so
+  // /profile and /profile/edit are never swallowed by the dynamic segment.
+  { path: "/profile", element: <Profile /> },
+  { path: "/profile/edit", element: <ProfileEditPlaceholder /> },
   // NIC-42: Writer profile, Publication home, 404 catch-all.
   // Non-lazy — these reuse home-bundle components (ArticleFeed, Avatar,
   // FollowButton) and pull in no heavy deps, so a separate chunk buys nothing.
