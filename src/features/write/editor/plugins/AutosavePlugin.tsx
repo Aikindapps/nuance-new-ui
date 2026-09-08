@@ -63,9 +63,15 @@ export function AutosavePlugin({
     };
 
     const unregister = editor.registerUpdateListener(
-      ({ dirtyElements, dirtyLeaves }) => {
+      ({ dirtyElements, dirtyLeaves, tags }) => {
         // Ignore pure selection moves (no content change).
         if (dirtyElements.size === 0 && dirtyLeaves.size === 0) return;
+        // Ignore programmatic content loads: hydrating an edited article or a
+        // restored draft — and any history merge / plugin transform re-run over
+        // that loaded content — is tagged 'history-merge' by Lexical, not a user
+        // edit, so it must not mark the editor dirty or trigger an autosave.
+        // Mirrors Lexical OnChangePlugin's default ignoreHistoryMergeTagChange.
+        if (tags.has("history-merge")) return;
         onChange?.();
         schedule();
       },
