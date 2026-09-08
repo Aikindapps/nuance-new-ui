@@ -323,9 +323,8 @@ export const registerModalCopy = {
   displayNamePlaceholder: "Display name",
   termsPrefix: "Accept the ",
   termsLinkText: "terms and conditions",
-  // Placeholder — Nuance has no dedicated terms & conditions page yet
-  // (PR #6 plan, 2026-05-19). Swap in the real URL when one exists.
-  termsUrl: "#",
+  // Terms & Conditions page on NuanceWiki (NIC-263).
+  termsUrl: "https://wiki.nuance.xyz/nuance/terms-and-conditions",
   cancelLabel: "Cancel",
   submitLabel: "Create account",
   submittingLabel: "Creating account…",
