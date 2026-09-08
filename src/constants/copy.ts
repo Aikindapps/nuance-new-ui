@@ -959,7 +959,7 @@ export const publicationChooserCopy = {
   title: "Choose a publication",
   // {count} is substituted at call-site
   subcount: (count: number) =>
-    `You edit ${count} publication${count === 1 ? "" : "s"} — pick one to manage.`,
+    `You are an Editor of ${count} publication${count === 1 ? "" : "s"} — pick one to manage.`,
   loadingSubcount: "Loading your publications\u2026",
   closeAriaLabel: "Close publication chooser",
   errorHeading: "Couldn\u2019t load your publications",
