@@ -9,6 +9,7 @@ import {
   type SupportedTokenSymbol,
 } from "../../../config/tokens";
 import { principalToAccountIdentifier } from "../../../lib/accountIdentifier";
+import { copyToClipboard } from "../../../lib/clipboard";
 import { BalancesRow } from "../components/BalancesRow";
 
 export const DEPOSIT_TITLE_ID = "deposit-modal-title";
@@ -40,13 +41,12 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     : walletCopy.depositAddressPrincipal;
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(address);
+    const ok = await copyToClipboard(address);
+    if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* clipboard blocked — the address is still selectable on screen */
     }
+    // If even the fallback fails the address remains selectable on screen.
   };
 
   if (page === "code") {
