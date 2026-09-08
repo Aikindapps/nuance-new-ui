@@ -105,7 +105,7 @@ export function ReadArticle() {
 
   // Modal service + auth — must be called unconditionally (hooks rule).
   const modal = useModal();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, principal } = useAuth();
 
 
   if (!parsed) {
@@ -142,6 +142,23 @@ export function ReadArticle() {
   const { post, author, publication } = article.data;
   const locked =
     (post.isPremium || post.isMembersOnly) && post.content.trim() === "";
+
+  // NIC-270: the author must not be able to applaud (tip) their own article.
+  // Compare the signed-in principal against the resolved author principal
+  // (primary — `author` is resolved via a handle lookup, so it's the writer's
+  // real principal even when the post's creatorPrincipal field is empty) with
+  // the post creator/owner principals as fallbacks. Comparing a valid principal
+  // text to "" / undefined is always false, so empty fields never match, and a
+  // reader principal never equals a publication canister id, so there is no
+  // false-positive block. (postOwnerPrincipal is the writer's principal for a
+  // personal post but the publication canister id for a publication post — it
+  // only adds coverage for personal posts; the author check covers pub posts.)
+  const myPrincipal = principal?.toText() ?? null;
+  const isOwnArticle =
+    myPrincipal !== null &&
+    (myPrincipal === author?.principal ||
+      myPrincipal === post.creatorPrincipal ||
+      myPrincipal === post.postOwnerPrincipal);
 
   // Breadcrumb: publication posts show "@pubHandle / @writerHandle"; standalone
   // posts show just "@writerHandle". Labels use the @handle (navigation), not
@@ -309,6 +326,7 @@ export function ReadArticle() {
         commentCount={commentCount}
         postId={postId}
         bucketCanisterId={bucketCanisterId}
+        isOwnArticle={isOwnArticle}
       />
       <RelatedArticlesFoldout articles={recommended.data} />
     </ArticleShell>
