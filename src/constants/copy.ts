@@ -333,6 +333,13 @@ export const registerModalCopy = {
   submittingLabel: "Creating account…",
   closeAriaLabel: "Close",
   errorFallback: "Registration failed. Please try again.",
+  // Avatar picker block (NIC-272, Figma 1:1366 "Avatar image" frame).
+  avatarSectionLabel: "Select an avatar image",
+  avatarAddLabel: "Add a profile picture",
+  avatarChangeLabel: "Change",
+  avatarRemoveLabel: "Remove",
+  avatarAlt: "Profile picture preview",
+  avatarUploadError: "We couldn't upload your picture. Please try again.",
 };
 
 // TopicsModal — Figma node 1:1519 ("What Interests You?"). Step two of the

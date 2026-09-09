@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
 import { Popup } from "../../components/ui/Popup";
@@ -8,14 +8,16 @@ import {
 } from "../../components/ui/modalButtons";
 import { registerModalCopy } from "../../constants/copy";
 import { useRegister } from "./useRegister";
+import { AvatarPicker } from "./AvatarPicker";
 
 // RegisterModal — Figma node 1:1366 ("Nice to meet you!").
 //
 // Step one of the onboarding flow (decision #30): a user has authenticated
-// but has no Nuance profile. The avatar selector block is omitted — avatar
-// upload is deferred. The component is a pure form; the OnboardingGate
-// (Phase 4) owns sequencing — `onRegistered` advances to the TopicsModal,
-// `onCancel` logs the user out (decision #30: no authed-unregistered limbo).
+// but has no Nuance profile. NIC-272 adds the avatar picker block (circular
+// preview, no interactive crop — that is a separate follow-up card). The
+// component is a pure form; the OnboardingGate (Phase 4) owns sequencing —
+// `onRegistered` advances to the TopicsModal, `onCancel` logs the user out
+// (decision #30: no authed-unregistered limbo).
 
 export const REGISTER_MODAL_TITLE_ID = "register-modal-title";
 const REGISTER_ERROR_ID = "register-modal-error";
@@ -95,7 +97,39 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  // Ref tracks the current object URL so we can revoke it without putting the
+  // URL value into the effect's dependency array (avoids calling setState in
+  // an effect — react-hooks/set-state-in-effect). The ref is only read in
+  // event handlers and the unmount cleanup, never during render.
+  const avatarUrlRef = useRef<string | null>(null);
   const register = useRegister();
+
+  // Revoke the object URL on unmount; URL lifecycle on pick/remove is handled
+  // by the event handlers below (no setState inside effects).
+  useEffect(() => {
+    return () => {
+      if (avatarUrlRef.current) URL.revokeObjectURL(avatarUrlRef.current);
+    };
+  }, []);
+
+  const handleSelectFile = (file: File) => {
+    if (avatarUrlRef.current) URL.revokeObjectURL(avatarUrlRef.current);
+    const url = URL.createObjectURL(file);
+    avatarUrlRef.current = url;
+    setAvatarFile(file);
+    setAvatarPreview(url);
+  };
+
+  const handleRemoveAvatar = () => {
+    if (avatarUrlRef.current) {
+      URL.revokeObjectURL(avatarUrlRef.current);
+      avatarUrlRef.current = null;
+    }
+    setAvatarFile(null);
+    setAvatarPreview(null);
+  };
 
   // Handles are case-insensitive (lowercase reverse index) and stored
   // without the @. The field shows a static "@" adornment and leaves the
@@ -110,7 +144,7 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
   const submit = () => {
     if (!isValid || register.isPending) return;
     register.mutate(
-      { handle: normalizedHandle, displayName },
+      { handle: normalizedHandle, displayName, avatarFile },
       { onSuccess: onRegistered },
     );
   };
@@ -143,6 +177,12 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
 
       {/* Inputs — 48px below subtitle, 32px gap between fields (Figma) */}
       <div className="mt-12 flex flex-col gap-8">
+        {/* Avatar picker — Figma 1:1366 "Avatar image" frame, above @handle */}
+        <AvatarPicker
+          previewUrl={avatarPreview}
+          onSelectFile={handleSelectFile}
+          onRemove={handleRemoveAvatar}
+        />
         <Field
           id="register-handle"
           label={registerModalCopy.handleLabel}
