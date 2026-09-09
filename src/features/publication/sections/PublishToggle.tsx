@@ -37,7 +37,6 @@ export function PublishToggle({ handle, row }: Props) {
     if (isPending) return;
     mutation.mutate({
       handle,
-      bucketCanisterId: row.bucketCanisterId,
       postId: row.postId,
       newIsDraft: !row.isDraft,
     });

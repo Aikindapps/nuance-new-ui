@@ -375,6 +375,15 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getPublisher(publisherCanisterId);
         return actor.getEditorAndWriterPrincipalIds();
       },
+      // Publish / unpublish a publication post as an editor (NIC-274). Routes
+      // through the Publisher canister (isEditor authz + flips the draft flag as
+      // the publication) instead of PostBucket.updatePostDraft, which rejects a
+      // browser editor because the post's author principal is the publication
+      // canister. Resolve publisherCanisterId via getPublicationCanisters.
+      updatePublicationPostDraft: async (publisherCanisterId, postId, isDraft) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.updatePublicationPostDraft(postId, isDraft);
+      },
       // Article Keys (PR #14, decision #43).
       getAllNftCanisters: async () => {
         const actor = await postCorePromise;

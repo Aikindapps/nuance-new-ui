@@ -372,6 +372,21 @@ export type ActorsValue = {
     publisherCanisterId: string,
   ) => Promise<[Array<string>, Array<string>]>;
 
+  // Publish (false) / unpublish (true) a PUBLICATION post as an editor
+  // (NIC-274). Routes through the Publisher canister's
+  // updatePublicationPostDraft, which checks isEditor(caller) then flips the
+  // draft flag AS the publication canister — the only authorized path for a
+  // browser editor (a direct PostBucket.updatePostDraft is rejected because a
+  // publication post's author principal is the publication canister). Resolve
+  // publisherCanisterId via getPublicationCanisters.
+  updatePublicationPostDraft: (
+    publisherCanisterId: string,
+    postId: string,
+    isDraft: boolean,
+  ) => Promise<
+    { __kind__: "ok"; ok: unknown } | { __kind__: "err"; err: string }
+  >;
+
   // --- Article Keys (PR #14, decision #43) — ext_v2 NFT access keys for
   // premium articles. One ext_v2 canister per premium article; the registry
   // lives on PostCore. All reads are anon-safe queries; the transfer is authed
