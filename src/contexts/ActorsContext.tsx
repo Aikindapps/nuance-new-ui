@@ -106,6 +106,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await postCorePromise;
         return actor.getPopularThisWeek(from, to);
       },
+      getPopularThisMonth: async (from, to) => {
+        const actor = await postCorePromise;
+        return actor.getPopularThisMonth(from, to);
+      },
       getLatestPosts: async (from, to) => {
         const actor = await postCorePromise;
         return actor.getLatestPosts(from, to);

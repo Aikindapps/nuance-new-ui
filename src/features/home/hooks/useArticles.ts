@@ -22,14 +22,14 @@ async function fetchArticles(
 ): Promise<ArticlesPage> {
   // PostCore's getPopular*/getLatestPosts take (indexFrom, indexTo) — a range,
   // NOT (skip, count). Convert at the boundary.
-  // "Popular" uses the 7-day window (getPopularThisWeek) rather than all-time
-  // (getPopular), so the front page surfaces fresher content. Formula is the
-  // same on every variant: popularity = (claps + applauds + 1) × (views + 1).
+  // "Popular" uses the 30-day window (getPopularThisMonth) rather than the
+  // 7-day one, so the front-page grid fills with enough articles (NIC-282).
+  // Formula is the same on every variant: popularity = (claps + applauds + 1) × (views + 1).
   const indexFrom = skip;
   const indexTo = skip + count;
   const { posts: keyProps } =
     variant === "popular"
-      ? await actors.getPopularThisWeek(indexFrom, indexTo)
+      ? await actors.getPopularThisMonth(indexFrom, indexTo)
       : await actors.getLatestPosts(indexFrom, indexTo);
 
   if (keyProps.length === 0) return { articles: [], keyPropsLength: 0 };

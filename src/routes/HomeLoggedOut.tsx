@@ -97,8 +97,16 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
 
 function FeaturedSection({ articles }: { articles: import("../features/home/types").Article[] }) {
   const heroArticles = articles.slice(0, 2);
-  const firstRow = articles.slice(2, 5);
-  const secondRow = articles.slice(5, 8);
+  // Featured medium grid renders complete rows of 3 only. A trailing partial
+  // row (1–2 leftover articles) would render as a lone card beside blank grid
+  // cells, so collapse it rather than show the gap (NIC-282). The month-window
+  // Popular feed (useArticles) normally supplies enough to fill both rows; this
+  // is the guard for a genuinely short feed.
+  const medium = articles.slice(2, 8);
+  const fullRowCount = Math.floor(medium.length / 3);
+  const mediumRows = Array.from({ length: fullRowCount }, (_, i) =>
+    medium.slice(i * 3, i * 3 + 3),
+  );
 
   return (
     <div className="flex flex-col gap-12 md:gap-14 lg:gap-16">
@@ -109,20 +117,18 @@ function FeaturedSection({ articles }: { articles: import("../features/home/type
           ariaLabel="Featured articles"
         />
       )}
-      {firstRow.length > 0 && (
+      {mediumRows.map((row, i) => (
         <ArticleGrid
-          articles={firstRow}
+          key={`featured-row-${i}`}
+          articles={row}
           layout="grid"
-          ariaLabel="More featured articles"
+          ariaLabel={
+            i === 0
+              ? "More featured articles"
+              : "More featured articles, continued"
+          }
         />
-      )}
-      {secondRow.length > 0 && (
-        <ArticleGrid
-          articles={secondRow}
-          layout="grid"
-          ariaLabel="More featured articles, continued"
-        />
-      )}
+      ))}
     </div>
   );
 }

@@ -68,6 +68,7 @@ import type { Principal } from "@icp-sdk/core/principal";
 
 export type ActorsValue = {
   getPopularThisWeek: (from: number, to: number) => Promise<GetPostsByFollowers>;
+  getPopularThisMonth: (from: number, to: number) => Promise<GetPostsByFollowers>;
   getLatestPosts: (from: number, to: number) => Promise<GetPostsByFollowers>;
   // Query method: same (indexFrom, indexTo) half-open range as the other
   // PostCore list methods (project lesson 2026-04-21). Handles must be
