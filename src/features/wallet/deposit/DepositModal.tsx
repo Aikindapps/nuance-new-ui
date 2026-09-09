@@ -15,13 +15,14 @@ import { BalancesRow } from "../components/BalancesRow";
 export const DEPOSIT_TITLE_ID = "deposit-modal-title";
 
 // Deposit modal (Figma §7.2: 1:46991 select → 1:47902 QR). Two pages: pick a
-// currency, then "Generate code" renders the QR + copyable address. The address
-// itself is deterministic per principal — ICP by its legacy account identifier
-// (verified in scripts/verify-account-id.ts), NUA/ckBTC by the principal — so
-// "generate" is instant and purely client-side. No outbound transfer here.
-// Modal content renders above ToastProvider, so feedback is the inline
-// copied-label flip, never a toast. The currency picker is the button-row the
-// project uses in place of the Figma dropdown (accepted deviation, PR #12).
+// currency, then "Show deposit address" reveals the QR + copyable address. The
+// address is deterministic and permanent per principal — ICP by its legacy
+// account identifier (verified in scripts/verify-account-id.ts), NUA/ckBTC by
+// the principal — so nothing is generated; the modal only reveals an existing,
+// unchanging address (NIC-281). No outbound transfer here. Modal content
+// renders above ToastProvider, so feedback is the inline copied-label flip,
+// never a toast. The currency picker is the button-row the project uses in
+// place of the Figma dropdown (accepted deviation, PR #12).
 export function DepositModal({ onClose }: { onClose: () => void }) {
   const { principal } = useAuth();
   const [selected, setSelected] = useState<SupportedTokenSymbol>("NUA");
@@ -77,7 +78,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
             <QRCodeSVG value={address} size={304} marginSize={2} />
           </div>
 
-          {/* "or enter this code manually" divider (Figma 1:47909) */}
+          {/* "or copy the address below" divider (Figma 1:47909) */}
           <div className="flex items-center gap-2">
             <span className="h-px flex-1 bg-ink-border-10" />
             <span className="text-body text-ink-60">{walletCopy.depositManual}</span>
@@ -125,7 +126,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
             onClick={() => setPage("code")}
             className="bg-brand-gradient-button flex h-12 items-center justify-center rounded-card px-6 text-body font-medium text-white shadow-purple-glow-medium"
           >
-            {walletCopy.depositGenerate}
+            {walletCopy.depositShowAddress}
           </button>
         </>
       }

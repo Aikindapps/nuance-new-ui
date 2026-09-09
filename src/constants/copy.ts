@@ -373,19 +373,21 @@ export const walletCopy = {
   withdrawLabel: "Withdraw",
   // Deposit modal (Figma §7.2: 1:46991 select page → 1:47902 QR page; upgraded
   // from the PR #12 read-only address view in PR #14). Still no transfer — the
-  // QR/address only receives. Note: the Figma helper line says "create a new
-  // wallet address", but the address is deterministic per principal; copy kept
-  // verbatim from Figma — flag for Mr Nick if it reads as misleading.
+  // QR/address only receives. The deposit address is fixed per token (an ICP
+  // account identifier / a principal), so the modal reveals an existing,
+  // unchanging address — it never generates one (NIC-281: dropped the
+  // "generate a code" framing).
   depositTitle: "Deposit",
   depositBodyLine1:
-    "Please enter the correct currency to get the deposit address for your wallet.",
+    "Select a currency to see the deposit address for your wallet.",
   depositBodyLine2: "Your current balance is:",
   depositSelectLabel: "Select currency to deposit",
-  depositHelper: "Click on ‘Generate code’ to create a new wallet address",
-  depositGenerate: "Generate code",
+  depositHelper:
+    "Each currency has a fixed deposit address that stays the same every time.",
+  depositShowAddress: "Show deposit address",
   depositCancel: "Cancel",
-  depositScan: "Scan this code to get the deposit address",
-  depositManual: "or enter this code manually",
+  depositScan: "Scan this QR code to deposit",
+  depositManual: "or copy the address below",
   depositChangeCurrency: "Choose another currency",
   // ICP is addressed by its legacy account identifier; NUA/ckBTC by principal.
   depositAddressPrincipal: "Your deposit address (principal)",
