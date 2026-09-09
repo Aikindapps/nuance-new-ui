@@ -175,6 +175,8 @@ export const writeArticleCopy = {
   loadingArticle: "Loading article…",
   loadError: "This article could not be loaded for editing.",
   nftNotEditable: "This article has been minted as an NFT and can no longer be edited.",
+  publishedNotEditable:
+    "This article is published and can't be edited directly. Unpublish it from My Articles to move it back to a draft, make your changes, then publish again.",
   backToMyArticles: "Back to my articles",
   coverPrompt: "Drop highlighted image here or ",
   coverChooseFile: "choose file",

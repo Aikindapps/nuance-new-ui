@@ -71,6 +71,22 @@ export function WriteArticle() {
         </Shell>
       );
     }
+    if (editQuery.data.isPublished) {
+      // A published article is read-only (one state per article): it cannot be
+      // edited in place. To change it, unpublish it first — it returns to an
+      // editable draft (NIC-283). Defense-in-depth for a direct/bookmarked URL;
+      // the My Articles list already hides Edit on published articles.
+      return (
+        <Shell>
+          <div className="px-6 py-12 lg:px-24">
+            <p className="text-body text-ink-60">{writeArticleCopy.publishedNotEditable}</p>
+            <Link to="/my-articles" className="mt-4 inline-block text-body font-medium text-brand-purple hover:underline">
+              {writeArticleCopy.backToMyArticles}
+            </Link>
+          </div>
+        </Shell>
+      );
+    }
     return (
       <Shell>
         <WriteArticleForm

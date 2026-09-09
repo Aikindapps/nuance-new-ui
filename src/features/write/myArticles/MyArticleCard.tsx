@@ -51,7 +51,7 @@ export function MyArticleCard({
           )}
         </div>
         <Link
-          to={isNft ? viewTo : editTo}
+          to={isNft || !article.isDraft ? viewTo : editTo}
           className="mt-1 line-clamp-2 text-lg font-bold text-ink hover:text-brand-purple"
         >
           {article.title}
@@ -62,7 +62,10 @@ export function MyArticleCard({
           </p>
         )}
         <div className="mt-auto flex items-center gap-4 pt-3">
-          {!isNft && (
+          {/* Edit is offered only for drafts. A published article is read-only
+              (one state per article): to change it, Unpublish first — it returns
+              to an editable draft (NIC-283). NFT articles are never editable. */}
+          {!isNft && article.isDraft && (
             <Link
               to={editTo}
               className="text-body font-medium text-brand-purple hover:underline"
