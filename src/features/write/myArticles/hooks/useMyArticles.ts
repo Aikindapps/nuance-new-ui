@@ -26,7 +26,16 @@ export function useMyArticles(filter: MyArticleFilter) {
       const keyProps = await get(0, 50);
       if (keyProps.length === 0) return [];
       const draftById = new Map(keyProps.map((k) => [k.postId, k.isDraft]));
-      const articles = await hydrateArticles(actors, keyProps, true);
+      const articles = await hydrateArticles(
+        actors,
+        keyProps,
+        true,
+        // false = for the personal list, a keyProps set that all fail to
+        // hydrate (e.g. the just-deleted last post still lingering in the
+        // per-user index due to read-after-write lag) is an empty state,
+        // not an error.
+        false,
+      );
       return articles.map((a) => ({
         ...a,
         isDraft: draftById.get(a.id) ?? false,

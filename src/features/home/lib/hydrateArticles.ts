@@ -35,11 +35,20 @@ function formatPublishedDate(publishedDate: string, created: string): string {
 // Throws when keyProps were returned but every post failed to hydrate so
 // React Query enters its retry/error state rather than rendering an empty
 // feed. Returns [] when keyProps itself was empty (legitimate end-of-feed).
+//
+// Pass throwOnEmptyHydration=false for the personal My Articles list: the
+// per-user index in PostCore has read-after-write lag, so after deleting your
+// last post a page refresh can still return that post's id — but the post is
+// already gone from its bucket, meaning every hydration fails. For a personal
+// list that is a legitimate empty state, not an error.
 export async function hydrateArticles(
   actors: Pick<ActorsValue, "getPostsByPostIds" | "getUsersByHandles">,
   keyProps: PostKeyProperties[],
   // My Articles needs draft bodies; the public feeds pass false (default).
   includeDraft = false,
+  // Set to false only for personal lists (My Articles) where all-failed
+  // hydration is a normal empty state, not a bucket failure.
+  throwOnEmptyHydration = true,
 ): Promise<Article[]> {
   if (keyProps.length === 0) return [];
 
@@ -123,7 +132,11 @@ export async function hydrateArticles(
 
   // PostCore returned posts but every one failed to hydrate — treat as an
   // error so React Query retries instead of rendering an empty feed.
-  if (articles.length === 0) {
+  // throwOnEmptyHydration=false suppresses this for the personal My Articles
+  // list, where the per-user index can transiently point at a just-deleted
+  // post (read-after-write lag) and an all-unreadable result is a valid empty
+  // state.
+  if (articles.length === 0 && throwOnEmptyHydration) {
     throw new Error("All posts failed to hydrate from buckets");
   }
 
