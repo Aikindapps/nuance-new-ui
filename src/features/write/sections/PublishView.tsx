@@ -34,7 +34,11 @@ export function PublishView({
   publications: PublicationObject[];
   initialPublicationHandle: string | null;
   onBack: () => void;
-  onConfirm: (tagIds: string[], publicationHandle: string | null) => Promise<boolean>;
+  onConfirm: (
+    tagIds: string[],
+    publicationHandle: string | null,
+    submitForReview: boolean,
+  ) => Promise<boolean>;
   coverPresent?: boolean;
   onMintPremium?: (tagIds: string[], publicationHandle: string) => void;
   articleSavedToCanister?: boolean;
@@ -55,6 +59,17 @@ export function PublishView({
     coverPresent === true &&
     onMintPremium != null &&
     (articleSavedToCanister !== true || savedPublicationHandle === pubHandle);
+
+  // Writers (non-editor members of the selected publication) can't publish —
+  // only editors can. A writer submits the article to the publication's editor
+  // review queue instead (saved as a publication draft), so the primary action
+  // reads "Submit for review" and routes as isDraft:true. Without this the only
+  // action is "Publish", which the canister rejects with Unauthorized (NIC-269).
+  const submitForReview =
+    mode === "publish" &&
+    pubHandle !== null &&
+    selectedPub !== undefined &&
+    selectedPub.isEditor === false;
 
   // Ref wrapping the publish-to field + foldout panel for outside-click close.
   const publishToRef = useRef<HTMLDivElement>(null);
@@ -89,7 +104,7 @@ export function PublishView({
   const confirm = async () => {
     if (selected.length < 1 || saving) return;
     setSaving(true);
-    const ok = await onConfirm(selected, pubHandle);
+    const ok = await onConfirm(selected, pubHandle, submitForReview);
     setSaving(false);
     if (ok) onBack();
   };
@@ -111,7 +126,11 @@ export function PublishView({
           id={PUBLISH_VIEW_TITLE_ID}
           className="text-lg font-bold text-ink"
         >
-          {mode === "publish" ? c.titlePublish : c.titleDraft}
+          {mode === "publish"
+            ? submitForReview
+              ? c.titleSubmitForReview
+              : c.titlePublish
+            : c.titleDraft}
         </h1>
 
         {/* Publish-to dropdown — hidden for personal-only users (NIC-72) */}
@@ -250,7 +269,11 @@ export function PublishView({
               disabled={selected.length < 1 || saving}
               onClick={confirm}
             >
-              {mode === "publish" ? c.publishButton : c.saveDraftButton}
+              {mode === "publish"
+                ? submitForReview
+                  ? c.submitForReviewButton
+                  : c.publishButton
+                : c.saveDraftButton}
             </Button>
           </div>
         </div>

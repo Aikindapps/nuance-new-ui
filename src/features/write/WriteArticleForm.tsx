@@ -495,24 +495,30 @@ export function WriteArticleForm({
             );
           }}
           onBack={() => setPublishView(null)}
-          onConfirm={async (picked, chosenPub) => {
+          onConfirm={async (picked, chosenPub, submitForReview) => {
             if (chosenPub !== publicationHandle) {
               userChangedTarget.current = true;
             }
             setPublicationHandle(chosenPub);
-            const post = await doSave(
-              publishView.mode === "publish" ? false : true,
-              picked,
-              chosenPub,
-            );
+            // A writer submitting into a publication routes the article to the
+            // editor review queue — saved as a publication draft (isDraft:true)
+            // rather than published, since only editors may publish (NIC-269).
+            const isDraft =
+              publishView.mode === "publish" ? submitForReview : true;
+            const post = await doSave(isDraft, picked, chosenPub);
             if (post) {
               if (publishView.mode === "publish") {
-                // Re-publishing an already-live article = saving changes.
-                show(
-                  isPublished ? C.toasts.changesSaved : C.toasts.published,
-                  "success",
-                );
-                navigate(post.url || "/");
+                if (submitForReview) {
+                  show(C.toasts.submittedForReview, "success");
+                  navigate(MY_ARTICLES);
+                } else {
+                  // Re-publishing an already-live article = saving changes.
+                  show(
+                    isPublished ? C.toasts.changesSaved : C.toasts.published,
+                    "success",
+                  );
+                  navigate(post.url || "/");
+                }
               } else {
                 show(C.toasts.savedDraft, "success");
               }
