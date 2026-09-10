@@ -4,6 +4,7 @@ import { ArticleGrid } from "./ArticleGrid";
 import { useInView } from "../../../lib/useInView";
 import { homeStatus } from "../../../constants/copy";
 import type { Article } from "../types";
+import { splitFeaturedRows } from "./featuredRows";
 
 // Shared renderer for useInfiniteQuery-shaped article feeds. Used by
 // FollowingTab and NewTab (and any future feed surface with the same shape).
@@ -21,9 +22,13 @@ type Props = {
   // Accessibility-only label that disambiguates this feed's heading from
   // any other feed on the same page. Plumbed into ArticleGrid's ariaLabel.
   feedLabel: string;
+  // When true, page 0's medium grid renders complete rows of 3 only and a
+  // trailing 1-2 article partial row collapses (home Popular/New parity with
+  // the logged-out home). Default false = exhaustive (show every article).
+  collapsePartialRows?: boolean;
 };
 
-export function ArticleFeed({ query, emptyMessage, feedLabel }: Props) {
+export function ArticleFeed({ query, emptyMessage, feedLabel, collapsePartialRows = false }: Props) {
   const {
     data,
     isLoading,
@@ -46,34 +51,26 @@ export function ArticleFeed({ query, emptyMessage, feedLabel }: Props) {
     return <EmptyState message={emptyMessage} />;
   }
 
-  const heroArticles = firstPage.articles.slice(0, 2);
-  const firstRow = firstPage.articles.slice(2, 5);
-  const secondRow = firstPage.articles.slice(5, 8);
+  const { hero, rows } = splitFeaturedRows(firstPage.articles, collapsePartialRows);
 
   return (
     <>
       <div className="flex flex-col gap-12 md:gap-14 lg:gap-16">
-        {heroArticles.length > 0 && (
+        {hero.length > 0 && (
           <ArticleGrid
-            articles={heroArticles}
+            articles={hero}
             layout="hero"
             ariaLabel={`${feedLabel}, featured`}
           />
         )}
-        {firstRow.length > 0 && (
+        {rows.map((row, i) => (
           <ArticleGrid
-            articles={firstRow}
+            key={`featured-row-${i}`}
+            articles={row}
             layout="grid"
-            ariaLabel={`${feedLabel}, row 1`}
+            ariaLabel={`${feedLabel}, row ${i + 1}`}
           />
-        )}
-        {secondRow.length > 0 && (
-          <ArticleGrid
-            articles={secondRow}
-            layout="grid"
-            ariaLabel={`${feedLabel}, row 2`}
-          />
-        )}
+        ))}
       </div>
 
       <div className="mt-12 flex flex-col gap-12 md:mt-14 md:gap-14 lg:mt-16 lg:gap-16">

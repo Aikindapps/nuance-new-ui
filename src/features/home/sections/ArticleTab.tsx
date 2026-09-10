@@ -22,6 +22,7 @@ export function ArticleTab({ variant }: { variant: Variant }) {
       query={query}
       emptyMessage={`${homeStatus.emptyTitle} ${homeStatus.emptyBody}`}
       feedLabel={FEED_LABEL[variant]}
+      collapsePartialRows
     />
   );
 }
