@@ -36,6 +36,39 @@ export function formatAmount(
 }
 
 /**
+ * Format a base-unit (e8s) bigint for display, adapting the number of decimal
+ * places to the value's magnitude so a small non-zero amount never renders as
+ * "0.00". Shows at least `sigFigs` significant figures, capped at the token's
+ * native `decimals` precision and never fewer than `minDecimals`, then trims
+ * trailing zeros so ordinary amounts stay tidy (12.34, not 12.34000000).
+ *
+ * Used by the Buy-NFT dialog, where an ICP price can be a tiny fraction and a
+ * fixed 2-dp format rounded it to "0.00" (NIC-277):
+ *   0.00000001 -> "0.00000001"   (1 e8s; was "0.00")
+ *   0.00012345 -> "0.0001234"
+ *   0.102      -> "0.102"
+ *   12.34      -> "12.34"
+ *   1200       -> "1200"
+ */
+export function formatSignificant(
+  raw: bigint,
+  {
+    decimals = 8,
+    sigFigs = 4,
+    minDecimals = 2,
+  }: { decimals?: number; sigFigs?: number; minDecimals?: number } = {},
+): string {
+  const value = fromE8s(raw, decimals);
+  if (value === 0) return "0";
+  const magnitude = Math.floor(Math.log10(Math.abs(value)));
+  const sigDecimals = sigFigs - 1 - magnitude;
+  const places = Math.min(decimals, Math.max(minDecimals, sigDecimals));
+  const fixed = value.toFixed(places);
+  if (!fixed.includes(".")) return fixed;
+  return fixed.replace(/0+$/, "").replace(/\.$/, "");
+}
+
+/**
  * Convert a user-entered display amount to base units (e8s). Rounds to the
  * nearest base unit. Returns a bigint suitable for a ledger transfer.
  */

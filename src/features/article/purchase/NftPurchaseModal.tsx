@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Popup } from "../../../components/ui/Popup";
 import { IconPartySuccess } from "../../../components/ui/icons/IconPartySuccess";
 import { nftPurchaseCopy } from "../../../constants/copy";
-import { formatAmount } from "../../../lib/tokenMath";
+import { formatSignificant } from "../../../lib/tokenMath";
+import { TOKENS } from "../../../config/tokens";
 import { primaryButtonSx, secondaryButtonSx } from "../../../components/ui/modalButtons";
 import { useNftPurchase } from "./useNftPurchase";
 
@@ -101,7 +102,11 @@ export function NftPurchaseModal({
   const c = nftPurchaseCopy;
 
   // --- helpers ---
-  const fmtIcp = (e8s: bigint) => formatAmount(e8s, { displayDecimals: 2 });
+  // Price precision adapts to the value's magnitude so a tiny ICP price never
+  // rounds to "0.00" (NIC-277). Capped at ICP's native 8-dp precision; trailing
+  // zeros trimmed so ordinary prices stay tidy (12.34, not 12.34000000).
+  const fmtIcp = (e8s: bigint) =>
+    formatSignificant(e8s, { decimals: TOKENS.ICP.decimals });
   const isProcessing = purchase.stage === "processing";
 
   // Processing: non-dismissable at the Popup chrome level — the framework
