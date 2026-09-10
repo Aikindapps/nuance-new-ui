@@ -692,8 +692,7 @@ export const tipModalCopy = {
 // NIC-43 Explore pages.
 export const exploreCopy = {
   metaTitleSuffix: "— Nuance",
-  publicationsTitleAuthed: "Recommended publications for you",
-  publicationsTitle: "Recommended publications",
+  publicationsTitle: "All publications",
   writersTitleAuthed: "Recommended writers for you",
   writersTitle: "Recommended writers",
   followPublicationLabel: "Follow publication",
@@ -707,7 +706,7 @@ export const exploreCopy = {
   publicationsErrorBody: "We couldn't load publications right now. Please try again.",
   writersErrorBody: "We couldn't load writers right now. Please try again.",
   emptyHeading: "Nothing to show yet",
-  publicationsEmptyBody: "There aren't any publications to recommend right now.",
+  publicationsEmptyBody: "There aren't any publications yet.",
   writersEmptyBody: "There aren't any writers to recommend right now.",
   backHomeLabel: "Back to home",
   topicsTitle: "Explore all topics",

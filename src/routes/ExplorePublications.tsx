@@ -1,28 +1,25 @@
 import { useState } from "react";
 import Skeleton from "@mui/material/Skeleton";
-import { useAuth } from "../contexts/useAuth";
 import { PageShell, CenteredMessage } from "../components/ui/CenteredMessage";
 import { ExplorePublicationRow } from "../features/explore/sections/ExplorePublicationRow";
-import { useExploreDiscovery } from "../features/explore/hooks/useExploreDiscovery";
+import { useAllPublications } from "../features/explore/hooks/useAllPublications";
 import { exploreCopy } from "../constants/copy";
 
-// NIC-43 — /explore/publications
-// Paginated list of recommended publications, derived from popular/latest
-// post sampling via useExploreDiscovery.
+// NIC-43 / NIC-291 — /explore/publications
+// Paginated list of ALL publications, sourced from the full publication registry
+// via getPublicationCanisters (PostCore), then hydrated via getUsersByHandles.
+// Replaced the earlier popular/latest post-sampling approach (useExploreDiscovery).
 
 const INITIAL_VISIBLE = 6;
 const PAGE_SIZE = 6;
 
 export function ExplorePublications() {
-  const { isAuthenticated } = useAuth();
-  const disc = useExploreDiscovery();
+  const pubsResult = useAllPublications();
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
 
-  const title = isAuthenticated
-    ? exploreCopy.publicationsTitleAuthed
-    : exploreCopy.publicationsTitle;
+  const title = exploreCopy.publicationsTitle;
 
-  if (disc.isError) {
+  if (pubsResult.isError) {
     return (
       <CenteredMessage
         heading={exploreCopy.errorHeading}
@@ -33,9 +30,9 @@ export function ExplorePublications() {
     );
   }
 
-  const pubs = disc.data?.publications ?? [];
+  const pubs = pubsResult.publications;
 
-  if (!disc.isLoading && pubs.length === 0) {
+  if (!pubsResult.isLoading && pubs.length === 0) {
     return (
       <CenteredMessage
         heading={exploreCopy.emptyHeading}
@@ -59,7 +56,7 @@ export function ExplorePublications() {
             className="mt-8 pb-16 md:mt-10 lg:mt-12"
             aria-label={title}
           >
-            {disc.isLoading ? (
+            {pubsResult.isLoading ? (
               <div className="flex flex-col gap-4">
                 {[0, 1, 2, 3, 4, 5].map((i) => (
                   <Skeleton
