@@ -276,6 +276,8 @@ export const myArticlesCopy = {
   loading: "Loading…",
   loadError: "Couldn't load your articles.",
   draftPill: "Draft",
+  inPublicationPrefix: "In",
+  manageInPrefix: "Manage in",
   edit: "Edit",
   view: "View",
   delete: "Delete",

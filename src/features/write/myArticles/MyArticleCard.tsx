@@ -44,6 +44,11 @@ export function MyArticleCard({
               {c.draftPill}
             </span>
           )}
+          {article.publication && (
+            <span className="rounded-[calc(8*var(--fpx))] bg-brand-purple-5 px-2 py-0.5 text-[length:calc(13*var(--fpx))] font-bold text-brand-purple">
+              {c.inPublicationPrefix} {article.publication.name}
+            </span>
+          )}
           {article.publishedOn && (
             <span className="text-[length:calc(14*var(--fpx))] text-ink-60">
               {article.publishedOn}
@@ -51,7 +56,7 @@ export function MyArticleCard({
           )}
         </div>
         <Link
-          to={isNft || !article.isDraft ? viewTo : editTo}
+          to={isNft || !article.isDraft || article.publication !== null ? viewTo : editTo}
           className="mt-1 line-clamp-2 text-lg font-bold text-ink hover:text-brand-purple"
         >
           {article.title}
@@ -62,10 +67,11 @@ export function MyArticleCard({
           </p>
         )}
         <div className="mt-auto flex items-center gap-4 pt-3">
-          {/* Edit is offered only for drafts. A published article is read-only
-              (one state per article): to change it, Unpublish first — it returns
-              to an editable draft (NIC-283). NFT articles are never editable. */}
-          {!isNft && article.isDraft && (
+          {/* Edit is offered only for own-handle drafts. A published article is
+              read-only (one state per article): to change it, Unpublish first —
+              it returns to an editable draft (NIC-283). NFT articles and
+              publication articles are never editable here. */}
+          {!isNft && article.isDraft && article.publication === null && (
             <Link
               to={editTo}
               className="text-body font-medium text-brand-purple hover:underline"
@@ -81,6 +87,14 @@ export function MyArticleCard({
               {c.view}
             </Link>
           )}
+          {article.publication && (
+            <Link
+              to={`/publication/${article.publication.handle}/manage/articles`}
+              className="text-body font-medium text-brand-purple hover:underline"
+            >
+              {c.manageInPrefix} {article.publication.name}
+            </Link>
+          )}
           {/* Unpublish is a personal-post-only action: publication
               publish/unpublish is an editor-only editorial action handled
               in Manage Articles (NIC-86), not in My Articles. */}
@@ -94,14 +108,16 @@ export function MyArticleCard({
               {unpublishing ? c.unpublishing : c.unpublish}
             </button>
           )}
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={deleting}
-            className="text-body font-medium text-error hover:underline disabled:opacity-50"
-          >
-            {deleting ? c.deleting : c.delete}
-          </button>
+          {article.publication === null && (
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={deleting}
+              className="text-body font-medium text-error hover:underline disabled:opacity-50"
+            >
+              {deleting ? c.deleting : c.delete}
+            </button>
+          )}
         </div>
       </div>
     </article>
