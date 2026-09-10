@@ -17,6 +17,7 @@ import { formatCount } from "../lib/formatCount";
 import { useDeletePost } from "../features/write/myArticles/hooks/useDeletePost";
 import { useUnpublishPost } from "../features/write/myArticles/hooks/useUnpublishPost";
 import { MyArticleCard } from "../features/write/myArticles/MyArticleCard";
+import { useMyPublicationsEntry } from "../lib/useMyPublicationsEntry";
 import { AccountShell } from "../components/account/AccountShell";
 
 // My Articles (Figma 5.7) — the authed writer's drafts + published list, with
@@ -37,11 +38,17 @@ export function MyArticles() {
     : "all";
   const query = useMyArticles(filter);
   const countsQuery = useMyArticleCounts();
+  // Manage Articles is editor-only; collect the handles of publications the
+  // user edits so a writer never sees the (unusable) "Manage in …" link.
+  const { publications } = useMyPublicationsEntry();
 
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
   const c = myArticlesCopy;
+  const editorHandles = new Set(
+    publications.filter((p) => p.isEditor).map((p) => p.handle),
+  );
 
   const confirmDelete = (article: MyArticle) => {
     modal.open(
@@ -149,6 +156,11 @@ export function MyArticles() {
           <MyArticleCard
             key={article.id}
             article={article}
+            canManage={
+              article.publication
+                ? editorHandles.has(article.publication.handle.toLowerCase())
+                : false
+            }
             deleting={
               deleteMutation.isPending &&
               deleteMutation.variables?.postId === article.id

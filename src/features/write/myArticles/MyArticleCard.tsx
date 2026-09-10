@@ -11,12 +11,17 @@ export function MyArticleCard({
   deleting,
   onUnpublish,
   unpublishing,
+  canManage,
 }: {
   article: MyArticle;
   onDelete: () => void;
   deleting: boolean;
   onUnpublish: () => void;
   unpublishing: boolean;
+  // Whether the current user is an editor of this article's publication.
+  // Manage Articles is editor-only, so the "Manage in …" link is shown only to
+  // editors — a writer cannot manage and would hit the not-authorized screen.
+  canManage: boolean;
 }) {
   const c = myArticlesCopy;
   const isNft = article.hasNft;
@@ -87,7 +92,7 @@ export function MyArticleCard({
               {c.view}
             </Link>
           )}
-          {article.publication && (
+          {article.publication && canManage && (
             <Link
               to={`/publication/${article.publication.handle}/manage/articles`}
               className="text-body font-medium text-brand-purple hover:underline"
