@@ -446,7 +446,8 @@ export interface UserInterface {
     updateSocialLinks(arg0: string, arg1: Array<string>): Promise<Result>;
     updateUserDetails(arg0: string, arg1: string, arg2: string, arg3: string, arg4: Array<string>): Promise<Result>;
     validate(arg0: any): Promise<Validate>;
-    verifyPoh(arg0: string): Promise<VerifyResult>;
+    verifyPoh(code: string, state: string, redirectUri: string): Promise<VerifyResult>;
+    createDecideIdState(redirectUri: string): Promise<Result_10>;
 }
 import type { AddPublicationReturn as _AddPublicationReturn, CanisterMetrics as _CanisterMetrics, CanisterMetricsData as _CanisterMetricsData, DailyMetricsData as _DailyMetricsData, Followers as _Followers, FollowersPrincipals as _FollowersPrincipals, GetHandleByPrincipalReturn as _GetHandleByPrincipalReturn, GetMetricsParameters as _GetMetricsParameters, GetPrincipalByHandleReturn as _GetPrincipalByHandleReturn, HourlyMetricsData as _HourlyMetricsData, List as _List, MetricsGranularity as _MetricsGranularity, NuaBalanceResult as _NuaBalanceResult, PublicationObject as _PublicationObject, ReaderSubscriptionDetails as _ReaderSubscriptionDetails, RegisterUserReturn as _RegisterUserReturn, RemovePublicationReturn as _RemovePublicationReturn, Result as _Result, Result_1 as _Result_1, Result_10 as _Result_10, Result_11 as _Result_11, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, Result_5 as _Result_5, Result_6 as _Result_6, Result_7 as _Result_7, Result_8 as _Result_8, Result_9 as _Result_9, SubscriptionEvent as _SubscriptionEvent, SubscriptionTimeInterval as _SubscriptionTimeInterval, UniquePersonProof as _UniquePersonProof, UniquePersonProofProvider as _UniquePersonProofProvider, User as _User, UserClaimInfo as _UserClaimInfo, UserListItem as _UserListItem, User__1 as _User__1, Validate as _Validate, VerifyResult as _VerifyResult, WriterSubscriptionDetails as _WriterSubscriptionDetails } from "./declarations/User.did";
 export class User implements UserInterface {
@@ -834,9 +835,13 @@ export class User implements UserInterface {
         const result = await this.actor.validate(arg0);
         return from_candid_Validate_n67(result);
     }
-    async verifyPoh(arg0: string): Promise<VerifyResult> {
-        const result = await this.actor.verifyPoh(arg0);
+    async verifyPoh(code: string, state: string, redirectUri: string): Promise<VerifyResult> {
+        const result = await this.actor.verifyPoh(code, state, redirectUri);
         return from_candid_VerifyResult_n69(result);
+    }
+    async createDecideIdState(redirectUri: string): Promise<Result_10> {
+        const result = await this.actor.createDecideIdState(redirectUri);
+        return from_candid_Result_10_n14(result);
     }
 }
 function from_candid_AddPublicationReturn_n1(value: _AddPublicationReturn): AddPublicationReturn {

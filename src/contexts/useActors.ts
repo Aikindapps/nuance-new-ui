@@ -27,6 +27,8 @@ import type {
   Result_2 as UserSubSpendResult,
   Result_7 as UserListItemResult,
   UserListItem,
+  Result_10,
+  VerifyResult,
 } from "../candid/User/User";
 import type { Content, Result as StorageResult } from "../candid/Storage/Storage";
 import type {
@@ -126,6 +128,11 @@ export type ActorsValue = {
     displayName: string,
     avatar: string,
   ) => Promise<RegisterUserReturn>;
+  // Decide ID / proof-of-humanity flow (NIC-PoH). Both run on the authed
+  // User actor — createDecideIdState generates and stores a server-side OIDC
+  // state value, verifyPoh exchanges the callback code+state for a PoH proof.
+  createDecideIdState: (redirectUri: string) => Promise<Result_10>;
+  verifyPoh: (code: string, state: string, redirectUri: string) => Promise<VerifyResult>;
   // Every tag on the platform — drives the TopicsModal tag list.
   getAllTags: () => Promise<Array<TagModel>>;
   // Follows the given tag IDs for the authed caller (TopicsModal "Done").

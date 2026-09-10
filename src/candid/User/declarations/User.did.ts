@@ -317,8 +317,9 @@ export interface _SERVICE {
     [string, string, string, string, Array<string>],
     Result
   >,
+  'createDecideIdState' : ActorMethod<[string], Result_10>,
   'validate' : ActorMethod<[any], Validate>,
-  'verifyPoh' : ActorMethod<[string], VerifyResult>,
+  'verifyPoh' : ActorMethod<[string, string, string], VerifyResult>,
 }
 export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
   const List = IDL.Rec();
@@ -706,8 +707,9 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
         [Result],
         [],
       ),
+    'createDecideIdState' : IDL.Func([IDL.Text], [Result_10], []),
     'validate' : IDL.Func([IDL.Reserved], [Validate], []),
-    'verifyPoh' : IDL.Func([IDL.Text], [VerifyResult], []),
+    'verifyPoh' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [VerifyResult], []),
   });
 };
 

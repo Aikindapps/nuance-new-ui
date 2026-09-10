@@ -13,6 +13,7 @@ import Skeleton from "@mui/material/Skeleton";
 import { AccountShell } from "../components/account/AccountShell";
 import { Avatar } from "../components/ui/Avatar";
 import { SocialIcon } from "../components/ui/icons/SocialIcon";
+import { IconVerified } from "../components/ui/icons/IconVerified";
 import { ArticleFeed } from "../features/home/sections/ArticleFeed";
 import { formatCount } from "../lib/formatCount";
 import { useMyProfile } from "../lib/useMyProfile";
@@ -21,7 +22,12 @@ import {
   detectSocialPlatform,
   normalizeUrl,
 } from "../features/article/lib/socialChannels";
-import { profileSelfCopy } from "../constants/copy";
+import { profileSelfCopy, verifyProfileCopy } from "../constants/copy";
+import { useModal } from "../services/modal";
+import {
+  VerifyProfileModal,
+  VERIFY_PROFILE_MODAL_TITLE_ID,
+} from "../features/profile/VerifyProfileModal";
 
 // ── Skeleton ─────────────────────────────────────────────────────────────────
 
@@ -55,6 +61,7 @@ function ProfileSelfView() {
   const profile = useMyProfile();
   const handle = profile.data?.handle ?? "";
   const postsQuery = useAuthorPosts(handle);
+  const modal = useModal();
 
   // Error state
   if (profile.isError) {
@@ -193,7 +200,7 @@ function ProfileSelfView() {
                   )}
                 </div>
 
-                {/* Controls: Edit profile + View public profile */}
+                {/* Controls: Edit profile + View public profile + verify/verified */}
                 <div
                   className={[
                     "flex flex-col gap-3",
@@ -228,6 +235,47 @@ function ProfileSelfView() {
                   >
                     {profileSelfCopy.viewPublicProfile}
                   </Link>
+                  {/* Verify profile CTA — only shown when not yet verified */}
+                  {!user.isVerified && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        modal.open(<VerifyProfileModal />, {
+                          ariaLabelledBy: VERIFY_PROFILE_MODAL_TITLE_ID,
+                        })
+                      }
+                      className={[
+                        "inline-flex items-center justify-center self-start",
+                        "rounded-card",
+                        "px-[calc(24*var(--fpx))] py-[calc(10*var(--fpx))]",
+                        "text-[length:calc(18*var(--fpx))]",
+                        "font-medium leading-[calc(28*var(--fpx))]",
+                        "text-brand-purple",
+                        "border border-brand-purple",
+                        "transition-colors hover:bg-brand-purple/5",
+                      ].join(" ")}
+                    >
+                      {verifyProfileCopy.button}
+                    </button>
+                  )}
+                  {/* Verified indicator — shown once proof-of-humanity is confirmed */}
+                  {user.isVerified && (
+                    <span className="inline-flex items-center gap-1.5 self-start text-ink-60">
+                      <IconVerified
+                        className="size-5 text-brand-purple"
+                        label={verifyProfileCopy.verifiedLabel}
+                      />
+                      <span
+                        aria-hidden
+                        className={[
+                          "text-[length:calc(16*var(--fpx))]",
+                          "font-medium leading-[calc(24*var(--fpx))]",
+                        ].join(" ")}
+                      >
+                        {verifyProfileCopy.verifiedLabel}
+                      </span>
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

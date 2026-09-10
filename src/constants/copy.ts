@@ -418,7 +418,8 @@ export const walletCopy = {
   claimReady: "Free NUA available to claim",
   // Shown in place of claimReady/claimCountdown when the user has not completed
   // DecideAI proof-of-humanity — without it, the canister rejects the claim
-  // (PR #13, surfaced in PR #12 UAT). Verification lives outside this app.
+  // (PR #13, surfaced in PR #12 UAT). Verification now runs in-app via the
+  // My Profile page (Verify profile button → Decide ID redirect → /callback).
   claimNeedsVerify: "Verify your account with Decide ID to claim your free NUA",
   claimLabel: "Claim {max} NUA tokens",
   claiming: "Claiming…",
@@ -1050,3 +1051,35 @@ export const profileSelfCopy = {
   editComingSoonHeading: "Edit profile is coming",
   editComingSoonBody: "Profile editing is being built \u2014 check back soon.",
 };
+
+// Decide ID proof-of-humanity flow (NIC-PoH). Strings for the Verify profile
+// button on My Profile, the confirm modal, the /callback result screen, and
+// all related toast messages.
+export const verifyProfileCopy = {
+  button: "Verify profile",
+  verifiedLabel: "Verified",
+  modalTitleId: "verify-profile-modal-title",
+  modalTitle: "Verify your profile",
+  modalBody:
+    "Nuance uses Decide ID to confirm you're a unique human. Sign in to Decide ID with the same Internet Identity you use for Nuance, complete the check, and you'll be brought back here.",
+  modalNote:
+    "If you sign in to Nuance with a linked Internet Identity, use that same identity on Decide ID.",
+  modalCta: "Continue to Decide ID",
+  modalCancel: "Cancel",
+  notConfigured: "Verification isn't available right now. Please try again later.",
+  startError: "We couldn't start verification. Please try again.",
+  callbackLoading: "Confirming your Decide ID verification\u2026",
+  callbackSuccessTitle: "Profile verified",
+  callbackSuccessBody:
+    "Your Decide ID proof of humanity is now linked to your Nuance profile.",
+  callbackErrorTitle: "Verification didn't complete",
+  callbackGenericError: "Verification couldn't be completed. Please try again.",
+  callbackMissingParams:
+    "Something went wrong returning from Decide ID. Please start verification again.",
+  callbackNoSession:
+    "No verification in progress \u2014 please start again from your profile.",
+  callbackStateMismatch:
+    "We couldn't verify this response. Please start again from your profile.",
+  callbackReturnToProfile: "Back to my profile",
+} as const;
+

@@ -153,6 +153,14 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await userPromise;
         return actor.registerUser(handle, displayName, avatar);
       },
+      createDecideIdState: async (redirectUri) => {
+        const actor = await userPromise;
+        return actor.createDecideIdState(redirectUri);
+      },
+      verifyPoh: async (code, state, redirectUri) => {
+        const actor = await userPromise;
+        return actor.verifyPoh(code, state, redirectUri);
+      },
       getAllTags: async () => {
         const actor = await postCorePromise;
         return actor.getAllTags();
