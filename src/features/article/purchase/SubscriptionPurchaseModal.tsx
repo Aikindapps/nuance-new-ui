@@ -193,6 +193,14 @@ export function SubscriptionPurchaseModal({
     purchase.stage === "confirm" ? purchase.details : null,
   );
 
+  // NIC-276: when the writer/publication offers only ONE plan tier the single
+  // card must be CENTERED rather than sitting in the leftmost grid column.
+  // Multi-tier layout is untouched.
+  const singlePlan =
+    (purchase.details
+      ? ORDERED_INTERVALS.filter((i) => purchase.details![feeField(i)]).length
+      : 0) === 1;
+
   return (
     <Popup
       titleId={SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID}
@@ -233,8 +241,14 @@ export function SubscriptionPurchaseModal({
               {c.confirmDurationLabel}
             </p>
 
-            {/* Plan cards — 4-col grid; wraps gracefully if fewer plans */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {/* Plan cards — 4-col grid; single tier is centered (NIC-276) */}
+            <div
+              className={
+                singlePlan
+                  ? "flex justify-center"
+                  : "grid grid-cols-2 gap-4 sm:grid-cols-4"
+              }
+            >
               {ORDERED_INTERVALS.map((interval) => {
                 const raw = purchase.details![feeField(interval)];
                 if (!raw) return null;
@@ -246,6 +260,7 @@ export function SubscriptionPurchaseModal({
                     key={interval}
                     className={[
                       "flex flex-col gap-4 rounded-2xl p-8 transition-colors",
+                      singlePlan ? "w-1/2 sm:w-1/4" : "",
                       isSelected
                         ? "border border-[#5405D4] bg-[rgba(84,5,212,0.05)]"
                         : "border border-[rgba(84,5,212,0.40)]",
