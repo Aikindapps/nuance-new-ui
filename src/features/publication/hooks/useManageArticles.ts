@@ -49,7 +49,12 @@ async function fetchManageArticlesPage(
 
   // hydrateArticles groups by bucket, batch-fetches bodies + user profiles.
   // It throws when ALL posts fail to hydrate (lets React Query retry).
-  const articles = await hydrateArticles(actors, keyProps);
+  // includeDraft=true: the editor-gated manage list must keep an author's own
+  // draft (unpublished) articles visible, so toggling an article off leaves it
+  // in the list with the Live toggle in the off state (NIC-274). The bucket
+  // returns a caller's own drafts because the article's creator is in its
+  // userPostsHashMap.
+  const articles = await hydrateArticles(actors, keyProps, true);
   const articleMap = new Map<string, Article>(articles.map((a) => [a.id, a]));
 
   // ZIP: only include keyProps whose article hydrated successfully.
