@@ -342,6 +342,13 @@ export const registerModalCopy = {
   avatarRemoveLabel: "Remove",
   avatarAlt: "Profile picture preview",
   avatarUploadError: "We couldn't upload your picture. Please try again.",
+  // Avatar crop step (NIC-273) — in-house circular cropper.
+  avatarCropTitle: "Crop your picture",
+  avatarCropInstructions: "Drag to reposition, and use the slider to zoom.",
+  avatarCropZoomLabel: "Zoom",
+  avatarCropCanvasLabel: "Drag to reposition your profile picture",
+  avatarCropCancelLabel: "Cancel",
+  avatarCropSaveLabel: "Save",
 };
 
 // TopicsModal — Figma node 1:1519 ("What Interests You?"). Step two of the

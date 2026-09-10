@@ -9,13 +9,16 @@ import {
 import { registerModalCopy } from "../../constants/copy";
 import { useRegister } from "./useRegister";
 import { AvatarPicker } from "./AvatarPicker";
+import { AvatarCropper } from "./AvatarCropper";
 
 // RegisterModal — Figma node 1:1366 ("Nice to meet you!").
 //
 // Step one of the onboarding flow (decision #30): a user has authenticated
 // but has no Nuance profile. NIC-272 adds the avatar picker block (circular
-// preview, no interactive crop — that is a separate follow-up card). The
-// component is a pure form; the OnboardingGate (Phase 4) owns sequencing —
+// preview, no interactive crop — that is a separate follow-up card). NIC-273
+// adds the interactive crop step between pick and preview: picking an image
+// opens AvatarCropper; Save produces the final cropped File; Cancel backs out.
+// The component is a pure form; the OnboardingGate (Phase 4) owns sequencing —
 // `onRegistered` advances to the TopicsModal, `onCancel` logs the user out
 // (decision #30: no authed-unregistered limbo).
 
@@ -99,6 +102,7 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [cropSource, setCropSource] = useState<File | null>(null);
   // Ref tracks the current object URL so we can revoke it without putting the
   // URL value into the effect's dependency array (avoids calling setState in
   // an effect — react-hooks/set-state-in-effect). The ref is only read in
@@ -115,11 +119,20 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
   }, []);
 
   const handleSelectFile = (file: File) => {
+    setCropSource(file);
+  };
+
+  const handleCropSave = (cropped: File) => {
     if (avatarUrlRef.current) URL.revokeObjectURL(avatarUrlRef.current);
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(cropped);
     avatarUrlRef.current = url;
-    setAvatarFile(file);
+    setAvatarFile(cropped);
     setAvatarPreview(url);
+    setCropSource(null);
+  };
+
+  const handleCropCancel = () => {
+    setCropSource(null);
   };
 
   const handleRemoveAvatar = () => {
@@ -238,6 +251,14 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
         >
           {register.error?.message || registerModalCopy.errorFallback}
         </p>
+      )}
+
+      {cropSource && (
+        <AvatarCropper
+          file={cropSource}
+          onSave={handleCropSave}
+          onCancel={handleCropCancel}
+        />
       )}
     </Popup>
   );
