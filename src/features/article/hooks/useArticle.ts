@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useActors } from "../../../contexts/useActors";
+import { useAuth } from "../../../contexts/useAuth";
 import type { PostBucketType__1 } from "../../../candid/PostBucket/PostBucket";
 import type { UserListItem } from "../../../candid/User/User";
 
@@ -39,9 +40,11 @@ export type ArticleData = {
 // `data === null` → not-found UI; `isError` → error UI.
 export function useArticle(bucketCanisterId: string, postId: string) {
   const { getPostCompositeQuery, getUsersByHandles, getUserByPrincipalId } = useActors();
+  const { principal } = useAuth();
+  const principalText = principal?.toText() ?? "anon";
 
   return useQuery<ArticleData | null>({
-    queryKey: ["article", bucketCanisterId, postId],
+    queryKey: ["article", bucketCanisterId, postId, principalText],
     // Don't fire with empty args — the route component renders a not-found
     // state for malformed URLs but the hook calls run before that render.
     // PR #7 review M1.

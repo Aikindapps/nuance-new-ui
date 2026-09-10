@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "@mui/material/Button";
 import { useNavigate } from "react-router-dom";
 import { Popup } from "../../../components/ui/Popup";
@@ -141,6 +141,7 @@ type Props = {
   handle: string;
   writerPrincipalId: string;
   onClose: () => void;
+  onPurchased?: () => void;
 };
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -150,8 +151,10 @@ export function SubscriptionPurchaseModal({
   handle,
   writerPrincipalId,
   onClose,
+  onPurchased,
 }: Props) {
   const purchase = useSubscriptionPurchase({ writerPrincipalId });
+  useEffect(() => { if (purchase.stage === "success") onPurchased?.(); }, [purchase.stage, onPurchased]);
   const navigate = useNavigate();
   const [terms, setTerms] = useState(false);
 

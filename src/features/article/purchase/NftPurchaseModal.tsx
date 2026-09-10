@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "@mui/material/Button";
 import { useNavigate } from "react-router-dom";
 import { Popup } from "../../../components/ui/Popup";
@@ -86,6 +86,7 @@ type Props = {
   nftCanisterId: string;
   authorHandle: string;
   onClose: () => void;
+  onPurchased?: () => void;
 };
 
 // Full purchase state machine rendered inside a single Popup chrome.
@@ -94,8 +95,10 @@ export function NftPurchaseModal({
   nftCanisterId,
   authorHandle,
   onClose,
+  onPurchased,
 }: Props) {
   const purchase = useNftPurchase(nftCanisterId);
+  useEffect(() => { if (purchase.stage === "success") onPurchased?.(); }, [purchase.stage, onPurchased]);
   const navigate = useNavigate();
   const [terms, setTerms] = useState(false);
 

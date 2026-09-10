@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "../components/ui/Header";
 import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { useAuth } from "../contexts/useAuth";
@@ -106,6 +107,8 @@ export function ReadArticle() {
   // Modal service + auth — must be called unconditionally (hooks rule).
   const modal = useModal();
   const { isAuthenticated, principal } = useAuth();
+  const queryClient = useQueryClient();
+  const handlePurchased = () => { queryClient.invalidateQueries({ queryKey: ["article", bucketCanisterId, postId] }); };
 
 
   if (!parsed) {
@@ -191,6 +194,7 @@ export function ReadArticle() {
         handle={subHandle}
         writerPrincipalId={post.postOwnerPrincipal}
         onClose={modal.close}
+        onPurchased={handlePurchased}
       />,
       {
         ariaLabelledBy: SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID,
@@ -214,6 +218,7 @@ export function ReadArticle() {
         nftCanisterId={post.nftCanisterId!}
         authorHandle={writerHandle}
         onClose={modal.close}
+        onPurchased={handlePurchased}
       />,
       { ariaLabelledBy: NFT_PURCHASE_MODAL_TITLE_ID, dismissable: false },
     );
