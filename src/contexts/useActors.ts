@@ -94,6 +94,15 @@ export type ActorsValue = {
     postIds: string[],
     includeDraft: boolean,
   ) => Promise<Array<PostBucketType__1>>;
+  // Editor-gated PostBucket read: returns the full bodies (drafts included, any
+  // writer) of every post owned by `publicationHandle`. Used ONLY by the editor
+  // Manage Articles list so articles submitted for review by other writers are
+  // visible. Distinct from the PostCore-scoped getPublicationPosts (key-props).
+  getPublicationPostBodies: (
+    bucketCanisterId: string,
+    postIds: string[],
+    publicationHandle: string,
+  ) => Promise<Array<PostBucketType__1>>;
   getUsersByHandles: (handles: string[]) => Promise<Array<UserListItem>>;
   // Hydrate a batch of UserListItem records by principal text. Comments
   // come back from PostBucket with `handle` and `avatar` blanked (only

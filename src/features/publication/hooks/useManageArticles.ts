@@ -49,12 +49,19 @@ async function fetchManageArticlesPage(
 
   // hydrateArticles groups by bucket, batch-fetches bodies + user profiles.
   // It throws when ALL posts fail to hydrate (lets React Query retry).
-  // includeDraft=true: the editor-gated manage list must keep an author's own
-  // draft (unpublished) articles visible, so toggling an article off leaves it
-  // in the list with the Live toggle in the off state (NIC-274). The bucket
-  // returns a caller's own drafts because the article's creator is in its
-  // userPostsHashMap.
-  const articles = await hydrateArticles(actors, keyProps, true);
+  // includeDraft=true so unpublished articles appear with the Live toggle off.
+  // fetchBodies uses the editor-gated bucket getPublicationPosts, which returns
+  // the full body of every post owned by the publication (drafts by ANY writer
+  // included). The generic getPostsByPostIds would silently drop a draft whose
+  // author is a different writer, causing the submitted row to go missing.
+  const articles = await hydrateArticles(
+    actors,
+    keyProps,
+    true,
+    true,
+    (bucketCanisterId, postIds) =>
+      actors.getPublicationPostBodies(bucketCanisterId, postIds, handle),
+  );
   const articleMap = new Map<string, Article>(articles.map((a) => [a.id, a]));
 
   // ZIP: only include keyProps whose article hydrated successfully.

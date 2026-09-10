@@ -130,6 +130,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getBucket(bucketCanisterId);
         return actor.getPostsByPostIds(postIds, includeDraft);
       },
+      getPublicationPostBodies: async (bucketCanisterId, postIds, publicationHandle) => {
+        const actor = await getBucket(bucketCanisterId);
+        return actor.getPublicationPosts(postIds, publicationHandle);
+      },
       getUsersByHandles: async (handles) => {
         const actor = await userPromise;
         return actor.getUsersByHandles(handles);

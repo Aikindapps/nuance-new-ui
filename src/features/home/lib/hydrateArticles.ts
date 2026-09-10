@@ -1,4 +1,5 @@
 import type { PostKeyProperties } from "../../../candid/PostCore/PostCore";
+import type { PostBucketType__1 } from "../../../candid/PostBucket/PostBucket";
 import type { ActorsValue } from "../../../contexts/useActors";
 import type { Article } from "../types";
 
@@ -49,6 +50,15 @@ export async function hydrateArticles(
   // Set to false only for personal lists (My Articles) where all-failed
   // hydration is a normal empty state, not a bucket failure.
   throwOnEmptyHydration = true,
+  // Override the per-bucket body fetch. Defaults to the generic
+  // getPostsByPostIds(includeDraft). The editor Manage Articles list passes a
+  // fetcher backed by the editor-gated bucket getPublicationPosts so drafts
+  // submitted by OTHER writers are returned (they fail the generic method's
+  // author/writer draft gate).
+  fetchBodies?: (
+    bucketCanisterId: string,
+    postIds: string[],
+  ) => Promise<Array<PostBucketType__1>>,
 ): Promise<Article[]> {
   if (keyProps.length === 0) return [];
 
@@ -62,9 +72,14 @@ export async function hydrateArticles(
   // Per-bucket catch: a single failing bucket drops its posts but leaves the
   // rest of the page intact. Top-level PostCore failures stay uncaught so
   // React Query handles the truly-broken case.
+  const fetchBucketBodies =
+    fetchBodies ??
+    ((bucketId: string, ids: string[]) =>
+      actors.getPostsByPostIds(bucketId, ids, includeDraft));
+
   const bucketResults = await Promise.all(
     Array.from(byBucket.entries()).map(([bucketId, ids]) =>
-      actors.getPostsByPostIds(bucketId, ids, includeDraft).catch((e) => {
+      fetchBucketBodies(bucketId, ids).catch((e) => {
         console.warn(`[hydrateArticles] bucket ${bucketId} failed:`, e);
         return [];
       }),
