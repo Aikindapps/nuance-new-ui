@@ -1,4 +1,6 @@
 import { ArticleFeed } from "./ArticleFeed";
+import { PopularWriters } from "./PopularWriters";
+import { PopularPublications } from "./PopularPublications";
 import { useArticles } from "../hooks/useArticles";
 import { homeStatus } from "../../../constants/copy";
 
@@ -23,6 +25,16 @@ export function ArticleTab({ variant }: { variant: Variant }) {
       emptyMessage={`${homeStatus.emptyTitle} ${homeStatus.emptyBody}`}
       feedLabel={FEED_LABEL[variant]}
       collapsePartialRows
+      afterFeatured={
+        <>
+          <div className="mt-12 md:mt-14 lg:mt-16">
+            <PopularWriters />
+          </div>
+          <div className="mt-12 md:mt-14 lg:mt-16">
+            <PopularPublications />
+          </div>
+        </>
+      }
     />
   );
 }

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import Skeleton from "@mui/material/Skeleton";
 import { ArticleGrid } from "./ArticleGrid";
@@ -26,9 +27,12 @@ type Props = {
   // trailing 1-2 article partial row collapses (home Popular/New parity with
   // the logged-out home). Default false = exhaustive (show every article).
   collapsePartialRows?: boolean;
+  // Rendered between the page-0 featured block and the infinite continuation;
+  // used by the logged-in home to host discovery rows, mirroring the logged-out home.
+  afterFeatured?: ReactNode;
 };
 
-export function ArticleFeed({ query, emptyMessage, feedLabel, collapsePartialRows = false }: Props) {
+export function ArticleFeed({ query, emptyMessage, feedLabel, collapsePartialRows = false, afterFeatured }: Props) {
   const {
     data,
     isLoading,
@@ -72,6 +76,8 @@ export function ArticleFeed({ query, emptyMessage, feedLabel, collapsePartialRow
           />
         ))}
       </div>
+
+      {afterFeatured}
 
       <div className="mt-12 flex flex-col gap-12 md:mt-14 md:gap-14 lg:mt-16 lg:gap-16">
         {data.pages.slice(1).map((page, i) => (
