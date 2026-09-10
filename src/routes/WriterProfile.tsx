@@ -101,7 +101,6 @@ function WriterProfileInner({ handle }: { handle: string }) {
   const allLinks = website ? [website, ...socials] : socials;
 
   const emptyMessage = writerProfileCopy.emptyFeed.replace("{handle}", handle);
-  const articleCount = postsQuery.data?.pages?.[0]?.allKeyProps.length ?? null;
 
   return (
     <PageShell>
@@ -205,12 +204,6 @@ function WriterProfileInner({ handle }: { handle: string }) {
           className="mx-auto max-w-[calc(1312*var(--fpx))] px-4 pb-16 md:px-8 lg:px-14"
           aria-label={writerProfileCopy.feedLabel}
         >
-          {articleCount !== null && (
-            <p className="mb-8 text-[length:calc(16*var(--fpx))] font-medium text-ink-60">
-              {formatCount(String(articleCount))}{" "}
-              {articleCount === 1 ? writerProfileCopy.articleLabel : writerProfileCopy.articlesLabel}
-            </p>
-          )}
           <ArticleFeed
             query={postsQuery}
             emptyMessage={emptyMessage}

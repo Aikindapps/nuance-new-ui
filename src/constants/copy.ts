@@ -533,8 +533,6 @@ export const writerProfileCopy = {
   metaTitleSuffix: "— Nuance",
   followersLabel: "followers",
   followingLabel: "following",
-  articlesLabel: "articles",
-  articleLabel: "article",
   followButtonLabel: "Follow author",
   feedLabel: "Articles by this writer",
   // {handle} → the writer's @handle
@@ -1043,8 +1041,6 @@ export const profileSelfCopy = {
   metaTitle: "My profile \u2014 Nuance",
   followersLabel: "followers",
   followingLabel: "following",
-  articlesLabel: "articles",
-  articleLabel: "article",
   editProfile: "Edit profile",
   viewPublicProfile: "View public profile",
   sectionHeading: "Your articles",

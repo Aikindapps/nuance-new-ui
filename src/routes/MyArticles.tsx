@@ -12,6 +12,8 @@ import {
   type MyArticleFilter,
   useMyArticles,
 } from "../features/write/myArticles/hooks/useMyArticles";
+import { useMyArticleCounts } from "../features/write/myArticles/hooks/useMyArticleCounts";
+import { formatCount } from "../lib/formatCount";
 import { useDeletePost } from "../features/write/myArticles/hooks/useDeletePost";
 import { useUnpublishPost } from "../features/write/myArticles/hooks/useUnpublishPost";
 import { MyArticleCard } from "../features/write/myArticles/MyArticleCard";
@@ -34,6 +36,7 @@ export function MyArticles() {
     ? (tabParam as MyArticleFilter)
     : "all";
   const query = useMyArticles(filter);
+  const countsQuery = useMyArticleCounts();
 
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
@@ -123,6 +126,11 @@ export function MyArticles() {
             }`}
           >
             {c.tabs[t]}
+            {countsQuery.data && (
+              <span className="ml-1.5 font-medium text-ink-60">
+                {formatCount(String(countsQuery.data[t]))}
+              </span>
+            )}
           </button>
         ))}
       </nav>

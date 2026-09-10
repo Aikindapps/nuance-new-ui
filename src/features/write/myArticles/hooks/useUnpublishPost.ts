@@ -58,6 +58,7 @@ export function useUnpublishPost() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["my-articles"] });
+      void qc.invalidateQueries({ queryKey: ["my-article-counts"] });
     },
   });
 }

@@ -77,7 +77,6 @@ function ProfileSelfView() {
   const allLinks = website ? [website, ...socials] : socials;
 
   const followingCount = user ? user.followersArray.length : null;
-  const articleCount = postsQuery.data?.pages?.[0]?.allKeyProps.length ?? null;
 
   return (
     <div className="flex flex-col gap-[calc(40*var(--fpx))]">
@@ -259,12 +258,6 @@ function ProfileSelfView() {
         >
           {profileSelfCopy.sectionSubheading}
         </p>
-        {articleCount !== null && (
-          <p className="text-[length:calc(16*var(--fpx))] font-medium text-ink-60">
-            {formatCount(String(articleCount))}{" "}
-            {articleCount === 1 ? profileSelfCopy.articleLabel : profileSelfCopy.articlesLabel}
-          </p>
-        )}
       </div>
 
       {/* Article feed */}
