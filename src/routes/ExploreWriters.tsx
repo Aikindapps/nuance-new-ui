@@ -1,28 +1,24 @@
 import { useState } from "react";
 import Skeleton from "@mui/material/Skeleton";
-import { useAuth } from "../contexts/useAuth";
 import { PageShell, CenteredMessage } from "../components/ui/CenteredMessage";
 import { ExploreWriterCard } from "../features/explore/sections/ExploreWriterCard";
-import { useExploreDiscovery } from "../features/explore/hooks/useExploreDiscovery";
+import { useAllWriters } from "../features/explore/hooks/useAllWriters";
 import { exploreCopy } from "../constants/copy";
 
-// NIC-43 — /explore/writers
-// Responsive grid of recommended writers, derived from popular/latest
-// post sampling via useExploreDiscovery.
+// NIC-292 — /explore/writers
+// Lists ALL writers from the full handle registry (publications excluded).
+// Replaced the earlier popular/latest post-sampling approach (useExploreDiscovery).
 
 const INITIAL_VISIBLE = 12;
 const PAGE_SIZE = 12;
 
 export function ExploreWriters() {
-  const { isAuthenticated } = useAuth();
-  const disc = useExploreDiscovery();
+  const writersResult = useAllWriters();
   const [visible, setVisible] = useState(INITIAL_VISIBLE);
 
-  const title = isAuthenticated
-    ? exploreCopy.writersTitleAuthed
-    : exploreCopy.writersTitle;
+  const title = exploreCopy.writersTitle;
 
-  if (disc.isError) {
+  if (writersResult.isError) {
     return (
       <CenteredMessage
         heading={exploreCopy.errorHeading}
@@ -33,9 +29,9 @@ export function ExploreWriters() {
     );
   }
 
-  const writers = disc.data?.writers ?? [];
+  const writers = writersResult.writers;
 
-  if (!disc.isLoading && writers.length === 0) {
+  if (!writersResult.isLoading && writers.length === 0) {
     return (
       <CenteredMessage
         heading={exploreCopy.emptyHeading}
@@ -59,7 +55,7 @@ export function ExploreWriters() {
             className="mt-8 pb-16 md:mt-10 lg:mt-12"
             aria-label={title}
           >
-            {disc.isLoading ? (
+            {writersResult.isLoading ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <Skeleton

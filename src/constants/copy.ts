@@ -694,8 +694,7 @@ export const tipModalCopy = {
 export const exploreCopy = {
   metaTitleSuffix: "— Nuance",
   publicationsTitle: "All publications",
-  writersTitleAuthed: "Recommended writers for you",
-  writersTitle: "Recommended writers",
+  writersTitle: "All writers",
   followPublicationLabel: "Follow publication",
   followersLabel: "followers",
   loadMore: "Show more",
@@ -708,7 +707,7 @@ export const exploreCopy = {
   writersErrorBody: "We couldn't load writers right now. Please try again.",
   emptyHeading: "Nothing to show yet",
   publicationsEmptyBody: "There aren't any publications yet.",
-  writersEmptyBody: "There aren't any writers to recommend right now.",
+  writersEmptyBody: "There aren't any writers yet.",
   backHomeLabel: "Back to home",
   topicsTitle: "Explore all topics",
   topicsLoadMore: "Show more topics",
