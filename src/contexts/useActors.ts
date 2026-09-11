@@ -493,6 +493,18 @@ export type ActorsValue = {
   ) => Promise<TippingResult>;
   // All handles on the platform (writers + publications), anon-safe query. Client-side name search source (NIC-60).
   getAllHandles: () => Promise<Array<string>>;
+  // NIC-262 -- Edit profile form. Both are authed-only mutations (caller must be
+  // the user). updateUserDetails(bio, avatarUrl, displayName, websiteUrl,
+  // socialChannelsUrls[]) returns the updated User record; updateFontType takes a
+  // font-type string and returns the updated User record.
+  updateUserDetails: (
+    bio: string,
+    avatarUrl: string,
+    displayName: string,
+    websiteUrl: string,
+    socialChannelsUrls: string[],
+  ) => Promise<UserResult>;
+  updateFontType: (fontType: string) => Promise<UserResult>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);

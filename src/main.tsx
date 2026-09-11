@@ -22,7 +22,7 @@ import { ExplorePublications } from "./routes/ExplorePublications";
 import { ExploreWriters } from "./routes/ExploreWriters";
 import { ExploreTopics } from "./routes/ExploreTopics";
 import { NotFound } from "./routes/NotFound";
-import { Profile, ProfileEditPlaceholder } from "./routes/Profile";
+import { Profile, ProfileEdit } from "./routes/Profile";
 import { DecideIdCallback } from "./routes/DecideIdCallback";
 import { ArticleLoadingShell } from "./features/article/sections/ArticleLoadingShell";
 
@@ -153,8 +153,8 @@ const appRoutes = [
   // (AccountShell, ArticleFeed, Avatar). Must appear BEFORE /:handle so
   // /profile and /profile/edit are never swallowed by the dynamic segment.
   { path: "/profile", element: <Profile /> },
-  { path: "/profile/edit", element: <ProfileEditPlaceholder /> },
-  // Decide ID OIDC return route — must be static (before /:handle) so the
+  { path: "/profile/edit", element: <ProfileEdit /> },
+  // Decide ID OIDC return route -- must be static (before /:handle) so the
   // /callback path is never captured by the dynamic writer-profile segment.
   { path: "/callback", element: <DecideIdCallback /> },
   // NIC-42: Writer profile, Publication home, 404 catch-all.

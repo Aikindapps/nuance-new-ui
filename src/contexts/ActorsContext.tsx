@@ -489,6 +489,15 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await userPromise;
         return actor.getAllHandles();
       },
+      // NIC-262 -- Edit profile mutations. Authed-only: the agent is identity-bound.
+      updateUserDetails: async (bio, avatarUrl, displayName, websiteUrl, socialChannelsUrls) => {
+        const actor = await userPromise;
+        return actor.updateUserDetails(bio, avatarUrl, displayName, websiteUrl, socialChannelsUrls);
+      },
+      updateFontType: async (fontType) => {
+        const actor = await userPromise;
+        return actor.updateFontType(fontType);
+      },
     };
   }, [identity]);
 
