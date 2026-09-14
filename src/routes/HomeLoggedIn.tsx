@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { Tag } from "../components/ui/Tag";
 import { usePopularDiscovery } from "../features/home/hooks/usePopularDiscovery";
@@ -6,15 +7,23 @@ import { WriteCtaBanner } from "../features/home/sections/WriteCtaBanner";
 import { HomeTabBar } from "../features/home/sections/HomeTabBar";
 import { FollowingTab } from "../features/home/sections/FollowingTab";
 import { ArticleTab } from "../features/home/sections/ArticleTab";
+import {
+  HomeContentTypeTabs,
+  type HomeContentType,
+} from "../features/home/sections/HomeContentTypeTabs";
+import { HomePublicationsView } from "../features/home/sections/HomePublicationsView";
+import { HomeWritersView } from "../features/home/sections/HomeWritersView";
 import { heroCopy, homeMetadata } from "../constants/copy";
 
 export type HomeLoggedInTab = "popular" | "following" | "new";
 
 // Logged-in home shell. Header + WelcomeBanner + Topics on the brand gradient
-// band; WriteCtaBanner + HomeTabBar + tab content below. Tab selection is
-// URL-driven (decision #26) so `tab` comes from the Home route branch.
+// band; WriteCtaBanner + Tier-1 content-type switch + tab content below.
+// Tier-1 (Articles | Publications | Writers) is in-page state (NIC-325).
+// Tab selection within Articles is URL-driven (decision #26) via `tab` prop.
 
 export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
+  const [contentType, setContentType] = useState<HomeContentType>("articles");
   const { data } = usePopularDiscovery();
   const topics = data?.topics.length ? data.topics : heroCopy.fallbackTopics;
   // Per-tab metadata — the same entry a given URL serves when logged out
@@ -71,14 +80,39 @@ export function HomeLoggedIn({ tab }: { tab: HomeLoggedInTab }) {
 
         <div className="mx-auto max-w-[calc(1440*var(--fpx))] px-4 pb-8 md:px-8 md:pb-12 lg:px-14 lg:pb-16">
           <WriteCtaBanner />
+
+          {/* Tier-1: Articles | Publications | Writers */}
           <div className="mt-12 md:mt-14 lg:mt-16">
-            <HomeTabBar />
+            <HomeContentTypeTabs value={contentType} onChange={setContentType} />
           </div>
-          <div className="mt-10 md:mt-12">
-            {tab === "popular" && <ArticleTab variant="popular" />}
-            {tab === "following" && <FollowingTab />}
-            {tab === "new" && <ArticleTab variant="new" />}
-          </div>
+
+          {/* Articles: Tier-2 sort row + feed */}
+          {contentType === "articles" && (
+            <>
+              <div className="mt-6">
+                <HomeTabBar />
+              </div>
+              <div className="mt-10 md:mt-12">
+                {tab === "popular" && <ArticleTab variant="popular" />}
+                {tab === "following" && <FollowingTab />}
+                {tab === "new" && <ArticleTab variant="new" />}
+              </div>
+            </>
+          )}
+
+          {/* Publications body */}
+          {contentType === "publications" && (
+            <div className="mt-10 md:mt-12">
+              <HomePublicationsView />
+            </div>
+          )}
+
+          {/* Writers body */}
+          {contentType === "writers" && (
+            <div className="mt-10 md:mt-12">
+              <HomeWritersView />
+            </div>
+          )}
         </div>
       </main>
     </>

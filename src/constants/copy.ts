@@ -718,6 +718,17 @@ export const exploreCopy = {
   topicsRetryLabel: "Try again",
 };
 
+// NIC-325 — Home Tier-1 content-type switch (Articles | Publications | Writers).
+// State copy (error/empty/retry) is reused from exploreCopy above.
+export const homeSwitchCopy = {
+  ariaLabel: "Content type",
+  articlesTab: "Articles",
+  publicationsTab: "Publications",
+  writersTab: "Writers",
+  showMorePublications: "Show more publications",
+  showMoreWriters: "Show more writers",
+};
+
 // NIC-41 Search Phase 1.
 export const searchCopy = {
   metaTitleSuffix: "| Nuance",
