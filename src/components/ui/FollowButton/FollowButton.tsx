@@ -35,9 +35,11 @@ type Props = {
   // Omitting `label` preserves today's "Follow" behaviour so existing
   // consumers (ArticleAuthorBlock, PublicationPopover) are untouched.
   label?: string;
+  // Extra classes merged onto the button, e.g. `w-full sm:w-auto`. Omit to keep the default hug width.
+  className?: string;
 };
 
-export function FollowButton({ targetHandle, label }: Props) {
+export function FollowButton({ targetHandle, label, className }: Props) {
   const state = useIsFollowing(targetHandle);
   const { isAuthenticated } = useAuth();
   const { data: me } = useMyProfile();
@@ -94,7 +96,12 @@ export function FollowButton({ targetHandle, label }: Props) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-label={isFollowing ? `Unfollow @${targetHandle}` : `${followText} @${targetHandle}`}
-      className="bg-brand-gradient-button min-w-[calc(108*var(--fpx))] shrink-0 rounded-card px-6 py-2.5 text-body font-medium text-white shadow-[var(--shadow-purple-glow-medium)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+      className={[
+        "bg-brand-gradient-button min-w-[calc(108*var(--fpx))] shrink-0 rounded-card px-6 py-2.5 text-body font-medium text-white shadow-[var(--shadow-purple-glow-medium)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       {buttonLabel}
     </button>

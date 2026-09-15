@@ -3,10 +3,14 @@ import { NavLink } from "react-router-dom";
 type TabProps = {
   to: string;
   end?: boolean;
+  // Extra classes merged onto the NavLink, e.g. `shrink-0 whitespace-nowrap`
+  // for a tab used inside a horizontal-scroll strip. Omit to keep today's
+  // shrink-to-fit behaviour (SearchResults / PublicationHome unchanged).
+  className?: string;
   children: React.ReactNode;
 };
 
-export function Tab({ to, end, children }: TabProps) {
+export function Tab({ to, end, className, children }: TabProps) {
   return (
     <NavLink
       to={to}
@@ -18,6 +22,7 @@ export function Tab({ to, end, children }: TabProps) {
             ? "font-bold text-brand-purple"
             : "font-medium text-ink-80 hover:text-ink",
           isActive && "after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-brand-purple",
+          className,
         ]
           .filter(Boolean)
           .join(" ")

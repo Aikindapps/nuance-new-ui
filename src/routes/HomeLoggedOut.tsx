@@ -1,6 +1,11 @@
+import { useState } from "react";
 import Skeleton from "@mui/material/Skeleton";
 import { Hero } from "../features/home/sections/Hero";
-import { TabBar } from "../features/home/sections/TabBar";
+import { HomeContentTypeTabs, type HomeContentType } from "../features/home/sections/HomeContentTypeTabs";
+import { HomeTabBar } from "../features/home/sections/HomeTabBar";
+import { HomePublicationsView } from "../features/home/sections/HomePublicationsView";
+import { HomeWritersView } from "../features/home/sections/HomeWritersView";
+import { HomeFollowingSignInPrompt } from "../features/home/sections/HomeFollowingSignInPrompt";
 import { ArticleGrid } from "../features/home/sections/ArticleGrid";
 import { CtaBanner } from "../features/home/sections/CtaBanner";
 import { PopularWriters } from "../features/home/sections/PopularWriters";
@@ -10,11 +15,14 @@ import { useInView } from "../lib/useInView";
 import { homeMetadata, homeStatus } from "../constants/copy";
 import { splitFeaturedRows } from "../features/home/sections/featuredRows";
 
-type Variant = "popular" | "new";
+type Variant = "popular" | "new" | "following";
 
 export function HomeLoggedOut({ variant }: { variant: Variant }) {
   const meta = homeMetadata[variant];
-  const query = useArticles(variant);
+  // useArticles is typed to "popular" | "new" — "following" maps to "popular"
+  // for the article fetch (the feed is replaced by the sign-in gate anyway).
+  const feedVariant: "popular" | "new" = variant === "new" ? "new" : "popular";
+  const query = useArticles(feedVariant);
   const {
     data,
     isLoading,
@@ -29,6 +37,8 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   });
 
+  const [contentType, setContentType] = useState<HomeContentType>("articles");
+
   return (
     <>
       <title>{meta.title}</title>
@@ -42,54 +52,82 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
         <Hero />
 
         <div className="mx-auto max-w-[calc(1440*var(--fpx))] px-4 py-8 md:px-8 md:py-12 lg:px-14 lg:py-16">
-          <TabBar />
+          {/* Tier-1: Articles | Publications | Writers */}
+          <HomeContentTypeTabs value={contentType} onChange={setContentType} />
 
-          <div className="mt-10 md:mt-12">
-            {isLoading && <LoadingSkeleton />}
-            {isError && <ErrorState message={String(error)} />}
-            {data && data.pages[0]?.articles.length === 0 && <EmptyState />}
-            {data && data.pages[0] && data.pages[0].articles.length > 0 && (
-              <>
-                <FeaturedSection articles={data.pages[0].articles} />
-                <div className="mt-12 md:mt-14 lg:mt-16">
-                  <CtaBanner />
-                </div>
-                <div className="mt-12 md:mt-14 lg:mt-16">
-                  <PopularWriters />
-                </div>
-                <div className="mt-12 md:mt-14 lg:mt-16">
-                  <PopularPublications />
-                </div>
-                <div className="mt-12 flex flex-col gap-12 md:mt-14 md:gap-14 lg:mt-16 lg:gap-16">
-                  {data.pages.slice(1).map((page, i) => (
-                    <ArticleGrid
-                      key={`page-${i + 1}`}
-                      articles={page.articles}
-                      layout="grid"
-                      ariaLabel={`More articles, page ${i + 2}`}
-                    />
-                  ))}
-                </div>
+          {contentType === "articles" && (
+            <>
+              {/* Tier-2 sort tabs — Following is gated when logged out */}
+              <div className="mt-6">
+                <HomeTabBar />
+              </div>
 
-                {hasNextPage && (
-                  <div
-                    ref={sentinelRef}
-                    className="mt-12 flex items-center justify-center py-10 text-body text-ink-60"
-                    aria-live="polite"
-                  >
-                    {isFetchingNextPage
-                      ? homeStatus.loadingMore
-                      : homeStatus.scrollForMore}
-                  </div>
+              <div className="mt-10 md:mt-12">
+                {variant === "following" ? (
+                  <HomeFollowingSignInPrompt />
+                ) : (
+                  <>
+                    {isLoading && <LoadingSkeleton />}
+                    {isError && <ErrorState message={String(error)} />}
+                    {data && data.pages[0]?.articles.length === 0 && <EmptyState />}
+                    {data && data.pages[0] && data.pages[0].articles.length > 0 && (
+                      <>
+                        <FeaturedSection articles={data.pages[0].articles} />
+                        <div className="mt-12 md:mt-14 lg:mt-16">
+                          <CtaBanner />
+                        </div>
+                        <div className="mt-12 md:mt-14 lg:mt-16">
+                          <PopularWriters />
+                        </div>
+                        <div className="mt-12 md:mt-14 lg:mt-16">
+                          <PopularPublications />
+                        </div>
+                        <div className="mt-12 flex flex-col gap-12 md:mt-14 md:gap-14 lg:mt-16 lg:gap-16">
+                          {data.pages.slice(1).map((page, i) => (
+                            <ArticleGrid
+                              key={`page-${i + 1}`}
+                              articles={page.articles}
+                              layout="grid"
+                              ariaLabel={`More articles, page ${i + 2}`}
+                            />
+                          ))}
+                        </div>
+
+                        {hasNextPage && (
+                          <div
+                            ref={sentinelRef}
+                            className="mt-12 flex items-center justify-center py-10 text-body text-ink-60"
+                            aria-live="polite"
+                          >
+                            {isFetchingNextPage
+                              ? homeStatus.loadingMore
+                              : homeStatus.scrollForMore}
+                          </div>
+                        )}
+                        {!hasNextPage && data.pages.length > 1 && (
+                          <p className="mt-12 py-10 text-center text-body text-ink-60">
+                            {homeStatus.allCaughtUp}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </>
                 )}
-                {!hasNextPage && data.pages.length > 1 && (
-                  <p className="mt-12 py-10 text-center text-body text-ink-60">
-                    {homeStatus.allCaughtUp}
-                  </p>
-                )}
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
+
+          {contentType === "publications" && (
+            <div className="mt-10 md:mt-12">
+              <HomePublicationsView />
+            </div>
+          )}
+
+          {contentType === "writers" && (
+            <div className="mt-10 md:mt-12">
+              <HomeWritersView />
+            </div>
+          )}
         </div>
       </main>
     </>

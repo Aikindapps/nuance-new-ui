@@ -718,6 +718,14 @@ export const exploreCopy = {
   topicsRetryLabel: "Try again",
 };
 
+// NIC-326 — Logged-out Following sort gate (sign-in prompt block).
+export const homeFollowingGate = {
+  heading: "See the latest from people you follow",
+  body: "Log in or sign up to follow writers, publications and topics and build a feed that is all yours.",
+  loginLabel: "Log in",
+  signupLabel: "Sign up",
+};
+
 // NIC-325 — Home Tier-1 content-type switch (Articles | Publications | Writers).
 // State copy (error/empty/retry) is reused from exploreCopy above.
 export const homeSwitchCopy = {

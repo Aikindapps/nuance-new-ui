@@ -1,4 +1,5 @@
 import { homeSwitchCopy } from "../../../constants/copy";
+import { ScrollTabStrip } from "./ScrollTabStrip";
 
 export type HomeContentType = "articles" | "publications" | "writers";
 
@@ -13,16 +14,15 @@ type Props = {
   onChange: (t: HomeContentType) => void;
 };
 
-// Tier-1 content-type switch for the logged-in Home (NIC-325).
-// 24px underline-tab variant of the Tab.tsx idiom — uses buttons (in-page
-// state) rather than NavLinks (URL-driven). Active = bold brand-purple + 2px
-// underline overlay; inactive = medium ink-80 + hover:text-ink.
+// Tier-1 content-type switch for the logged-in and logged-out Home (NIC-325,
+// NIC-326). 24px desktop / 20px mobile underline-tab variant of the Tab.tsx
+// idiom — uses buttons (in-page state) rather than NavLinks (URL-driven).
+// Active = bold brand-purple + 2px underline overlay; inactive = medium ink-80
+// + hover:text-ink. Rendered through ScrollTabStrip for horizontal scroll +
+// right-edge fade on narrow viewports.
 export function HomeContentTypeTabs({ value, onChange }: Props) {
   return (
-    <nav
-      aria-label={homeSwitchCopy.ariaLabel}
-      className="flex items-center border-b border-ink-border/20"
-    >
+    <ScrollTabStrip ariaLabel={homeSwitchCopy.ariaLabel}>
       {TABS.map((tab) => {
         const isActive = value === tab.id;
         return (
@@ -32,9 +32,9 @@ export function HomeContentTypeTabs({ value, onChange }: Props) {
             aria-current={isActive ? "true" : undefined}
             onClick={() => onChange(tab.id)}
             className={[
-              // Base — mirrors Tab.tsx but with text-title-sm (24px) and
-              // rounded-sm for the focus ring clip.
-              "relative flex items-center justify-center px-[calc(25*var(--fpx))] py-3 text-title-sm transition-colors rounded-sm",
+              // Base — mirrors Tab.tsx but with text-title-sm (24px desktop,
+              // 20px mobile) and rounded-sm for the focus ring clip.
+              "relative flex shrink-0 whitespace-nowrap items-center justify-center px-[calc(25*var(--fpx))] py-3 text-[length:calc(20*var(--fpx))] md:text-title-sm transition-colors rounded-sm",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple",
               // State
               isActive
@@ -48,6 +48,6 @@ export function HomeContentTypeTabs({ value, onChange }: Props) {
           </button>
         );
       })}
-    </nav>
+    </ScrollTabStrip>
   );
 }

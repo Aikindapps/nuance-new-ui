@@ -50,10 +50,11 @@ export function ExplorePublicationRow({ publication }: Props) {
       {/* Divider — hidden on mobile */}
       <div className="hidden w-px shrink-0 self-stretch bg-ink-border/20 md:block" />
 
-      {/* Specs + Follow */}
-      <div className="flex shrink-0 flex-row items-center gap-6 sm:flex-col sm:items-end">
-        <div className="flex flex-col gap-1">
-          <span className="flex items-center gap-1 text-[length:calc(16*var(--fpx))] text-ink-80">
+      {/* Specs + Follow. Mobile 393 (NIC-326): stats on a wrapping line, then a
+          full-width Follow. sm+: right-aligned specs column beside the divider. */}
+      <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:items-end">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[length:calc(16*var(--fpx))] text-ink-80">
+          <span className="flex items-center gap-1">
             <IconChevronRight className="size-[calc(10*var(--fpx))] shrink-0 text-ink-60" />
             {followersLabel} {exploreCopy.followersLabel}
           </span>
@@ -61,6 +62,7 @@ export function ExplorePublicationRow({ publication }: Props) {
         <FollowButton
           targetHandle={publication.handle}
           label={exploreCopy.followPublicationLabel}
+          className="w-full sm:w-auto"
         />
       </div>
     </article>
