@@ -14,6 +14,7 @@ import { Home } from "./routes/Home";
 import { WriterProfile } from "./routes/WriterProfile";
 import { PublicationHome } from "./routes/PublicationHome";
 import { ManageArticles } from "./routes/ManageArticles";
+import { PublicationPerformance } from "./routes/PublicationPerformance";
 import { ManageSubscriptions } from "./routes/ManageSubscriptions";
 import { ManageSubscribers } from "./routes/ManageSubscribers";
 import { SearchResults, SearchRedirect } from "./routes/SearchResults";
@@ -164,6 +165,7 @@ const appRoutes = [
   // /following, /write, /my-articles, /notifications never reach /:handle.
   { path: "/:handle", element: <WriterProfile /> },
   { path: "/publication/:handle/manage/articles", element: <ManageArticles /> },
+  { path: "/publication/:handle/manage/performance", element: <PublicationPerformance /> },
   { path: "/publication/:handle/manage/subscriptions", element: <ManageSubscriptions /> },
   { path: "/publication/:handle/manage/subscribers", element: <ManageSubscribers /> },
   { path: "/publication/:h", element: <PublicationHome /> },

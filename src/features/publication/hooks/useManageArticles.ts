@@ -28,6 +28,8 @@ export type ManageArticleRow = {
   modified: string;           // formatted from kp.modified
   bucketCanisterId: string;   // kp.bucketCanisterId (for toggle mutation)
   postId: string;             // kp.postId
+  views: number;             // Number(kp.views) || 0
+  claps: number;             // Number(kp.claps) || 0
 };
 
 export type ManageArticlePage = {
@@ -77,6 +79,8 @@ async function fetchManageArticlesPage(
       modified: formatDate(kp.modified),
       bucketCanisterId: kp.bucketCanisterId,
       postId: kp.postId,
+      views: Number(kp.views) || 0,
+      claps: Number(kp.claps) || 0,
     });
   }
 

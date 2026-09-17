@@ -1,8 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 import Skeleton from "@mui/material/Skeleton";
 import { usePublicationMembership } from "../features/publication/hooks/usePublicationMembership";
-import { ManageArticlesList } from "../features/publication/sections/ManageArticlesList";
-import { manageArticlesCopy, performanceCopy } from "../constants/copy";
+import { PerformanceDashboard } from "../features/publication/sections/PerformanceDashboard";
+import { performanceCopy } from "../constants/copy";
 import { AccountShell } from "../components/account/AccountShell";
 
 // Normalise a handle param: strip a leading "@" and lowercase.
@@ -19,26 +19,26 @@ function CenteredBlock({ heading, body }: { heading: string; body: string }) {
   );
 }
 
-export function ManageArticles() {
+export function PublicationPerformance() {
   const { handle: raw = "" } = useParams<{ handle: string }>();
   const handle = normalizeHandle(raw);
 
   return (
     <AccountShell active="publications">
-      <ManageArticlesInner handle={handle} />
+      <PublicationPerformanceInner handle={handle} />
     </AccountShell>
   );
 }
 
-function ManageArticlesInner({ handle }: { handle: string }) {
+function PublicationPerformanceInner({ handle }: { handle: string }) {
   const membership = usePublicationMembership(handle);
 
   // Canister/network error checking membership.
   if (membership.isError) {
     return (
       <CenteredBlock
-        heading={manageArticlesCopy.errorHeading}
-        body={manageArticlesCopy.errorBody}
+        heading={performanceCopy.errorHeading}
+        body={performanceCopy.errorBody}
       />
     );
   }
@@ -47,8 +47,8 @@ function ManageArticlesInner({ handle }: { handle: string }) {
   if (!membership.isAuthenticated || (!membership.isLoading && !membership.isMember)) {
     return (
       <CenteredBlock
-        heading={manageArticlesCopy.notAuthorizedHeading}
-        body={manageArticlesCopy.notAuthorizedBody}
+        heading={performanceCopy.notAuthorizedHeading}
+        body={performanceCopy.notAuthorizedBody}
       />
     );
   }
@@ -62,23 +62,23 @@ function ManageArticlesInner({ handle }: { handle: string }) {
     );
   }
 
-  // Authenticated member — 6.1 article list + publish toggle (NIC-63).
+  // Authenticated member.
   return (
     <>
       <title>
-        {manageArticlesCopy.title} {manageArticlesCopy.metaTitleSuffix}
+        {performanceCopy.title} {performanceCopy.metaTitleSuffix}
       </title>
       <h1 className="text-[length:calc(36*var(--fpx))] font-bold text-ink">
-        {manageArticlesCopy.title}
+        {performanceCopy.title}
       </h1>
       <Link
-        to={`/publication/${handle}/manage/performance`}
+        to={`/publication/${handle}/manage/articles`}
         className="mt-2 inline-flex items-center text-sm font-medium text-brand-purple hover:underline"
       >
-        {performanceCopy.viewPerformance}
+        ← {performanceCopy.backToArticles}
       </Link>
       <div className="mt-8">
-        <ManageArticlesList handle={handle} />
+        <PerformanceDashboard handle={handle} />
       </div>
     </>
   );

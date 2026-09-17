@@ -658,6 +658,53 @@ export const manageArticlesCopy = {
   toastToggleError: "Failed to update publish status.",
 };
 
+export const performanceCopy = {
+  metaTitleSuffix: "— Nuance",
+  title: "Article performance",
+  notAuthorizedHeading: "Access restricted",
+  notAuthorizedBody:
+    "You need to be an editor or writer of this publication to see its performance.",
+  errorHeading: "Something went wrong",
+  errorBody:
+    "We couldn't verify your access to this publication. Please try again.",
+  // KPI tiles
+  kpiTotalViews: "Total views",
+  kpiTotalClaps: "Total claps",
+  kpiUniqueReaders: "Unique readers",
+  kpiPublished: "Published",
+  // By-article card
+  byArticleHeading: "By article",
+  sortLabel: "Sort",
+  sortViews: "Views",
+  sortClaps: "Claps",
+  // Table columns
+  colTitle: "Title",
+  colCategory: "Category",
+  colPublished: "Published",
+  colViews: "Views",
+  colClaps: "Claps",
+  emptyCell: "—",
+  // Zero-data (new publication, no views)
+  noViewsHelper: "No views yet — stats update as readers arrive.",
+  // No published articles (empty)
+  emptyHeading: "No performance yet",
+  emptyBody: "Publish your first article to see how it performs.",
+  writeArticleCta: "Write an article",
+  // List-level error
+  listErrorHeading: "Couldn't load performance",
+  listErrorBody:
+    "There was a problem loading this publication's performance. Please try again.",
+  retryLabel: "Retry",
+  // Pagination
+  showMore: "Show more",
+  showingMore: "Loading…",
+  // Loading label
+  loading: "Loading performance…",
+  // Reach path
+  backToArticles: "Manage articles",
+  viewPerformance: "Article performance",
+} as const;
+
 // 404 catch-all (* route) and shared not-found pattern (NIC-42).
 export const notFoundCopy = {
   heading: "Page not found",
