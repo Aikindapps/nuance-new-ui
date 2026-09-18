@@ -94,13 +94,19 @@ export function ActivityError({
   );
 }
 
-// Empty state.
+// Empty state. Optionally renders a CTA link below the body when both
+// ctaLabel and ctaHref are supplied (e.g. Following's "Discover writers"
+// Explore link); omit both for a plain empty block (e.g. Followers).
 export function ActivityEmpty({
   heading,
   body,
+  ctaLabel,
+  ctaHref,
 }: {
   heading: string;
   body: string;
+  ctaLabel?: string;
+  ctaHref?: string;
 }) {
   return (
     <div className="py-16 text-center">
@@ -108,6 +114,14 @@ export function ActivityEmpty({
         {heading}
       </p>
       <p className="mt-2 text-[length:calc(16*var(--fpx))] text-ink-80">{body}</p>
+      {ctaLabel && ctaHref && (
+        <Link
+          to={ctaHref}
+          className="mt-4 inline-block text-[length:calc(16*var(--fpx))] font-medium text-brand-purple underline underline-offset-2 hover:no-underline"
+        >
+          {ctaLabel}
+        </Link>
+      )}
     </div>
   );
 }
@@ -130,17 +144,25 @@ export function ShowMoreButton({
 }
 
 // A single user row: avatar + name + optional sub-line + optional right slot.
+// `isPublication` switches the row to publication treatment: a card-shaped
+// avatar and a `/publication/<handle>` profile link (writers keep the round
+// avatar and `/<handle>` link). Optional + defaulted, so read-only callers
+// (Followers) that omit it are unchanged.
 export function ActivityUserRow({
   user,
   subLine,
   right,
+  isPublication = false,
 }: {
   user: UserListItem;
   subLine?: string;
   right?: ReactNode;
+  isPublication?: boolean;
 }) {
   const name = user.displayName || user.handle;
-  const profilePath = `/${user.handle.toLowerCase()}`;
+  const profilePath = isPublication
+    ? `/publication/${user.handle.toLowerCase()}`
+    : `/${user.handle.toLowerCase()}`;
 
   return (
     <div className="flex items-center gap-[calc(16*var(--fpx))] py-[calc(16*var(--fpx))]">
@@ -150,6 +172,7 @@ export function ActivityUserRow({
           label={name}
           sizeClass="size-[calc(48*var(--fpx))]"
           textClass="text-[length:calc(20*var(--fpx))]"
+          rounded={isPublication ? "card" : "full"}
         />
       </Link>
 

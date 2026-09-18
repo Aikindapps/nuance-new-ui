@@ -1134,7 +1134,26 @@ export const followersCopy = {
   unfollowingLabel: "Unfollowing\u2026",
 };
 
-// NIC-261 — My Profile self-view (/profile).
+// NIC-354 - Activity hub Following section (writers + publications the current
+// user follows). Combined list with per-row unfollow + Undo toaster.
+export const followingCopy = {
+  emptyHeading: "You\u2019re not following anyone yet",
+  emptyBody: "Writers and publications you follow will show up here.",
+  emptyCtaLabel: "Discover writers \u2192",
+  emptyCtaHref: "/explore/writers",
+  errorTitle: "Couldn\u2019t load who you follow",
+  errorBody: "Something went wrong. Please try again.",
+  retryLabel: "Try again",
+  showMore: "Show more",
+  listAriaLabel: "Following",
+  followingLabel: "Following",
+  unfollowedAuthor: "Unfollowed @{handle}",
+  undoLabel: "Undo",
+  unfollowError: "Couldn\u2019t unfollow @{handle}. Please try again.",
+  readersLabel: "readers",
+};
+
+// NIC-261 -- My Profile self-view (/profile).
 export const profileSelfCopy = {
   metaTitle: "My profile \u2014 Nuance",
   followersLabel: "followers",

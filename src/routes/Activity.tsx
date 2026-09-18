@@ -5,8 +5,9 @@ import { ScrollTabStrip } from "../features/home/sections/ScrollTabStrip";
 import { Tab } from "../components/ui/Tab";
 import { activityCopy } from "../constants/copy";
 import { FollowersSection } from "../features/activity/sections/FollowersSection";
+import { FollowingSection } from "../features/activity/sections/FollowingSection";
 
-// NIC-358 — Activity hub foundation scaffold.
+// NIC-358 -- Activity hub foundation scaffold.
 //
 // Four sections (Following / Followers / Subscribers / Subscriptions) reachable
 // from the account rail accordion (desktop, via AccountShell) and the mobile
@@ -52,9 +53,12 @@ export function Activity() {
         </ScrollTabStrip>
       </div>
 
-      {/* Followers is built (NIC-359 / NIC-372); the other three sections
-          keep the bounded "Coming soon" placeholder until they land. */}
-      {section === "followers" ? (
+      {/* Following (NIC-354) and Followers (NIC-359 / NIC-372) are built; the
+          other two sections keep the bounded "Coming soon" placeholder until
+          they land. */}
+      {section === "following" ? (
+        <FollowingSection />
+      ) : section === "followers" ? (
         <FollowersSection />
       ) : (
         <div className="py-16 text-center">
