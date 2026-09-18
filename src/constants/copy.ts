@@ -117,6 +117,8 @@ export const navDrawerCopy = {
   // NIC-174: top-level account nav rows (distinct from navFollowing which is
   // the Home feed sub-row pointing at /following).
   accountFollowing: "Following",
+  // NIC-358: Activity hub entry (drawer row → /activity/following).
+  activity: "Activity",
   publications: "Publications",
   notifications: "Notifications",
   logout: "Logout",
@@ -1099,6 +1101,22 @@ export const accountCopy = {
   navPublications: "Publications",
   navMyWallet: "My wallet",
   activityComingSoon: "Coming soon",
+};
+
+// NIC-358 — Activity hub scaffold. Section labels for the rail accordion +
+// mobile tab strip; bounded "Coming soon" placeholder copy for all four
+// sections (Following / Followers / Subscribers / Subscriptions) until the
+// real section content lands (sibling card).
+export const activityCopy = {
+  navActivity: "Activity",
+  ariaLabel: "Activity sections",
+  sectionFollowing: "Following",
+  sectionFollowers: "Followers",
+  sectionSubscribers: "Subscribers",
+  sectionSubscriptions: "Subscriptions",
+  comingSoonHeading: "Coming soon",
+  comingSoonBody: "This section is being built \u2014 check back soon.",
+  metaTitle: "Activity \u2014 Nuance",
 };
 
 // NIC-261 — My Profile self-view (/profile).

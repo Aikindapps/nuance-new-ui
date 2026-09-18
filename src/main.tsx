@@ -1,6 +1,6 @@
 import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@mui/material/styles";
 import "./index.css";
@@ -51,6 +51,9 @@ const NotificationsPage = lazy(() => import("./routes/NotificationsPage"));
 const Wallet = lazy(() => import("./routes/Wallet"));
 // eslint-disable-next-line react-refresh/only-export-components
 const FollowingManage = lazy(() => import("./routes/FollowingManage"));
+// Activity hub (NIC-358) — lazy; the account section only loads on /activity/*.
+// eslint-disable-next-line react-refresh/only-export-components
+const Activity = lazy(() => import("./routes/Activity"));
 
 // Root layout route — hosts the app-wide overlays (modal service, toasts) and
 // the onboarding controller INSIDE the router so modal content rendered by the
@@ -158,6 +161,18 @@ const appRoutes = [
   // Decide ID OIDC return route -- must be static (before /:handle) so the
   // /callback path is never captured by the dynamic writer-profile segment.
   { path: "/callback", element: <DecideIdCallback /> },
+  // Activity hub (NIC-358) — static routes placed before /:handle so /activity
+  // and /activity/:section never fall through to the dynamic writer-profile
+  // segment. /activity redirects to the Following section.
+  { path: "/activity", element: <Navigate to="/activity/following" replace /> },
+  {
+    path: "/activity/:section",
+    element: (
+      <Suspense fallback={<ArticleLoadingShell />}>
+        <Activity />
+      </Suspense>
+    ),
+  },
   // NIC-42: Writer profile, Publication home, 404 catch-all.
   // Non-lazy — these reuse home-bundle components (ArticleFeed, Avatar,
   // FollowButton) and pull in no heavy deps, so a separate chunk buys nothing.

@@ -260,6 +260,15 @@ function LoggedInPanel({ onClose }: { onClose: () => void }) {
           {navDrawerCopy.accountFollowing}
         </NavLink>
 
+        {/* NIC-358: Activity hub → /activity/following */}
+        <NavLink
+          to="/activity/following"
+          onClick={onClose}
+          className={({ isActive }) => navRowClass(isActive)}
+        >
+          {navDrawerCopy.activity}
+        </NavLink>
+
         {/* NIC-174/NIC-248: Publications → single-pub deep-links; multi-pub expands */}
         {showPubs && firstPubHandle && count === 1 && (
           <NavLink

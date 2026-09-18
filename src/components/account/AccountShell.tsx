@@ -9,7 +9,8 @@
 // (MobileNavDrawer). The single responsive seam is lg = 1024px per decision.
 
 import type { ReactNode } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
 import { Header } from "../ui/Header";
 import { HeaderLoggedIn } from "../ui/HeaderLoggedIn";
@@ -19,7 +20,7 @@ import {
   PublicationChooser,
   PUBLICATION_CHOOSER_TITLE_ID,
 } from "../ui/PublicationChooser";
-import { accountCopy } from "../../constants/copy";
+import { accountCopy, activityCopy } from "../../constants/copy";
 
 export type AccountNavItem =
   | "profile"
@@ -55,10 +56,25 @@ function railItemClass(isActive: boolean, disabled?: boolean): string {
 
 // ── NavRail ──────────────────────────────────────────────────────────────────
 
+// NIC-358: Activity hub sub-sections. All four render a bounded "Coming soon"
+// placeholder for now; the real content lands in the sibling card.
+const ACTIVITY_SECTIONS: { slug: string; label: string }[] = [
+  { slug: "following", label: activityCopy.sectionFollowing },
+  { slug: "followers", label: activityCopy.sectionFollowers },
+  { slug: "subscribers", label: activityCopy.sectionSubscribers },
+  { slug: "subscriptions", label: activityCopy.sectionSubscriptions },
+];
+
 function NavRail({ active }: { active: AccountNavItem }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const modal = useModal();
   const { show: showPubs, firstPubHandle, count } = useMyPublicationsEntry();
+
+  // Auto-expand the Activity accordion when the current route is under /activity.
+  const [activityExpanded, setActivityExpanded] = useState(
+    location.pathname.startsWith("/activity"),
+  );
 
   const handlePublications = () => {
     if (!firstPubHandle) return;
@@ -92,15 +108,50 @@ function NavRail({ active }: { active: AccountNavItem }) {
         {accountCopy.navMyArticles}
       </NavLink>
 
-      {/* Activity — coming soon; non-link greyed row */}
-      <span
-        role="menuitem"
-        aria-disabled="true"
-        title={accountCopy.activityComingSoon}
-        className={railItemClass(false, true)}
-      >
-        {accountCopy.navActivity}
-      </span>
+      {/* Activity — accordion revealing the four section sub-rows (NIC-358) */}
+      <div className="flex flex-col">
+        <button
+          type="button"
+          aria-expanded={activityExpanded}
+          aria-controls="activity-subnav"
+          onClick={() => setActivityExpanded((v) => !v)}
+          className={`${railItemClass(active === "activity")} justify-between`}
+        >
+          <span>{accountCopy.navActivity}</span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            className={`transition-transform ${activityExpanded ? "rotate-180" : ""}`}
+          >
+            {/* Chevron-down (∨); rotated 180° (∧) when expanded */}
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+
+        {activityExpanded && (
+          <div
+            id="activity-subnav"
+            className="mt-1 flex flex-col gap-1 pl-[calc(16*var(--fpx))]"
+          >
+            {ACTIVITY_SECTIONS.map((section) => (
+              <NavLink
+                key={section.slug}
+                to={`/activity/${section.slug}`}
+                className={({ isActive }) => railItemClass(isActive)}
+              >
+                {section.label}
+              </NavLink>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Publications — role-gated; hidden when user has no pubs */}
       {showPubs && firstPubHandle && (
