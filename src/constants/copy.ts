@@ -1153,6 +1153,36 @@ export const followingCopy = {
   readersLabel: "readers",
 };
 
+// NIC-353 -- SS8.3 Subscribers section (people who subscribe to the current
+// user). Read-only; no earnings or plan management (NIC-44).
+export const subscribersCopy = {
+  emptyHeading: "No subscribers yet",
+  emptyBody: "People who subscribe to you will show up here.",
+  errorTitle: "Couldn\u2019t load your subscribers",
+  errorBody: "Something went wrong. Please try again.",
+  retryLabel: "Try again",
+  showMore: "Show more",
+  listAriaLabel: "Subscribers",
+  sincePrefix: "since",
+  walletNote:
+    "Managing subscriber plans and payouts lives in your Wallet \u2014 arriving with monetization.",
+};
+
+// NIC-353 -- SS8.3 Subscriptions section (writers + publications the current
+// user subscribes to). Read-only; no billing management (NIC-44).
+export const subscriptionsCopy = {
+  emptyHeading: "You\u2019re not subscribed to anyone yet",
+  emptyBody: "Writers and publications you subscribe to will show up here.",
+  errorTitle: "Couldn\u2019t load your subscriptions",
+  errorBody: "Something went wrong. Please try again.",
+  retryLabel: "Try again",
+  showMore: "Show more",
+  listAriaLabel: "Subscriptions",
+  renewsPrefix: "renews",
+  walletNote:
+    "Managing your subscriptions and billing lives in your Wallet \u2014 arriving with monetization.",
+};
+
 // NIC-261 -- My Profile self-view (/profile).
 export const profileSelfCopy = {
   metaTitle: "My profile \u2014 Nuance",

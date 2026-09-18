@@ -5,8 +5,9 @@ import Button from "@mui/material/Button";
 import { Avatar } from "../../../components/ui/Avatar";
 import { secondaryButtonSx } from "../../../components/ui/modalButtons";
 import type { UserListItem } from "../../../candid/User/User";
+import { SubscriptionTimeInterval } from "../../../candid/Subscription/Subscription";
 
-// NIC-359 / NIC-372 — shared Activity hub primitives.
+// NIC-359 / NIC-372 -- shared Activity hub primitives.
 //
 // The four Activity sections (Following / Followers / Subscribers /
 // Subscriptions) share one visual language: a loading skeleton, an
@@ -191,6 +192,114 @@ export function ActivityUserRow({
       </div>
 
       {right && <div className="shrink-0">{right}</div>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SS8.3 / NIC-353 Subscribers + Subscriptions primitives
+// ---------------------------------------------------------------------------
+
+// Human-readable cadence labels for each SubscriptionTimeInterval variant.
+// Module-private -- callers receive the formatted string via SubscriptionMeta.
+const CADENCE_LABEL: Record<SubscriptionTimeInterval, string> = {
+  [SubscriptionTimeInterval.Weekly]: "Weekly",
+  [SubscriptionTimeInterval.Monthly]: "Monthly",
+  [SubscriptionTimeInterval.Annually]: "Annually",
+  [SubscriptionTimeInterval.LifeTime]: "Lifetime",
+};
+
+// Format a millisecond timestamp as "Mon YYYY" (e.g. "Mar 2025").
+// Returns null when ms is falsy or the Date is invalid.
+function fmtMonthYear(ms: number | undefined): string | null {
+  if (!ms || ms <= 0) return null;
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleString("en-US", { month: "short", year: "numeric" });
+}
+
+// SS8.3 cadence chip: responsive fill + radius per frames.
+// mobile = purple 5% fill + radius 12; desktop = purple 10% fill + fully rounded.
+export function CadenceChip({ label }: { label: string }) {
+  return (
+    <span className="inline-flex shrink-0 rounded-[calc(12*var(--fpx))] lg:rounded-full bg-brand-purple-5 lg:bg-brand-purple-10 px-[calc(12*var(--fpx))] py-[calc(4*var(--fpx))] text-label text-brand-purple">
+      {label}
+    </span>
+  );
+}
+
+// Right-aligned meta column shown on each subscription row.
+// Stacks: CadenceChip (from interval) above an optional "since / renews" line.
+// Lifetime subscriptions never show a renews date.
+// Accepts sinceMs/renewsMs as raw ms timestamps; prefix strings override the
+// leading word (e.g. sincePrefix="since", renewsPrefix="renews").
+export function SubscriptionMeta({
+  interval,
+  sinceMs,
+  renewsMs,
+  sincePrefix,
+  renewsPrefix,
+}: {
+  interval: SubscriptionTimeInterval;
+  sinceMs?: number;
+  renewsMs?: number;
+  sincePrefix?: string;
+  renewsPrefix?: string;
+}) {
+  const chipLabel = CADENCE_LABEL[interval];
+  const isLifetime = interval === SubscriptionTimeInterval.LifeTime;
+
+  // "since Mon YYYY" -- uses short month+year format.
+  const sincePart =
+    sincePrefix && sinceMs ? fmtMonthYear(sinceMs) : null;
+  const sinceText = sincePart ? `${sincePrefix} ${sincePart}` : null;
+
+  // "renews Mon YYYY" -- uses short month+year. Suppressed for Lifetime.
+  const renewsPart =
+    !isLifetime && renewsPrefix && renewsMs
+      ? fmtMonthYear(renewsMs)
+      : null;
+  const renewsText = renewsPart ? `${renewsPrefix} ${renewsPart}` : null;
+
+  // For Lifetime with no sinceText, show "no renewal" line per design.
+  const noRenewalText = isLifetime && !sinceText ? "no renewal" : null;
+
+  // Compose the secondary line: join the two parts with " \u00b7 " if both
+  // exist; otherwise use whichever is present.
+  let metaLine: string | null = null;
+  if (sinceText && renewsText) {
+    metaLine = `${sinceText} \u00b7 ${renewsText}`;
+  } else if (sinceText) {
+    metaLine = sinceText;
+  } else if (renewsText) {
+    metaLine = renewsText;
+  } else if (noRenewalText) {
+    metaLine = noRenewalText;
+  } else if (isLifetime) {
+    metaLine = "no renewal";
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-[calc(6*var(--fpx))] text-right">
+      <CadenceChip label={chipLabel} />
+      {metaLine && (
+        <span className="text-[length:calc(16*var(--fpx))] leading-[calc(19/16)] text-ink-60">
+          {metaLine}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Tinted note band leading the list (and empty state) to communicate the
+// read-only boundary (wallet management arriving with monetization).
+// Leads the content so mb- spacing separates it from the list below.
+// mobile = purple 5% fill, 100% ink text;
+// desktop = grey 5% fill + 1px grey-10% border + 60% ink text.
+export function ActivityNoteBand({ text }: { text: string }) {
+  return (
+    <div className="mb-[calc(24*var(--fpx))] rounded-card px-[calc(16*var(--fpx))] py-[calc(12*var(--fpx))] bg-brand-purple-5 lg:bg-ink-border-5 lg:border lg:border-ink-border-10 text-[length:calc(16*var(--fpx))] leading-[calc(19/16)] text-ink lg:text-ink-60">
+      {text}
     </div>
   );
 }

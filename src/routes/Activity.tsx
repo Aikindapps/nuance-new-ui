@@ -6,14 +6,18 @@ import { Tab } from "../components/ui/Tab";
 import { activityCopy } from "../constants/copy";
 import { FollowersSection } from "../features/activity/sections/FollowersSection";
 import { FollowingSection } from "../features/activity/sections/FollowingSection";
+import { SubscribersSection } from "../features/activity/sections/SubscribersSection";
+import { SubscriptionsSection } from "../features/activity/sections/SubscriptionsSection";
 
 // NIC-358 -- Activity hub foundation scaffold.
 //
-// Four sections (Following / Followers / Subscribers / Subscriptions) reachable
-// from the account rail accordion (desktop, via AccountShell) and the mobile
-// drawer. Each section renders a bounded "Coming soon" placeholder until the
-// real content lands (sibling card). Desktop section switching is the rail
-// accordion; phone (< lg) switches via a horizontal ScrollTabStrip.
+// All four sections are now built:
+//   following    -> FollowingSection     (NIC-354)
+//   followers    -> FollowersSection     (NIC-359 / NIC-372)
+//   subscribers  -> SubscribersSection   (NIC-353)
+//   subscriptions-> SubscriptionsSection (NIC-353)
+// Desktop section switching is the rail accordion; phone (< lg) switches via
+// a horizontal ScrollTabStrip.
 
 const SECTIONS: { slug: string; label: string }[] = [
   { slug: "following", label: activityCopy.sectionFollowing },
@@ -30,7 +34,7 @@ export function Activity() {
   if (authLoading) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
-  // Unknown/missing section slug → normalise to the Following section.
+  // Unknown/missing section slug -> normalise to the Following section.
   const known = SECTIONS.some((s) => s.slug === section);
   if (!known) return <Navigate to="/activity/following" replace />;
 
@@ -53,13 +57,16 @@ export function Activity() {
         </ScrollTabStrip>
       </div>
 
-      {/* Following (NIC-354) and Followers (NIC-359 / NIC-372) are built; the
-          other two sections keep the bounded "Coming soon" placeholder until
-          they land. */}
+      {/* All four sections are built (NIC-354 / NIC-359 / NIC-372 / NIC-353).
+          The defensive else keeps a Coming-soon fallback for any future slug. */}
       {section === "following" ? (
         <FollowingSection />
       ) : section === "followers" ? (
         <FollowersSection />
+      ) : section === "subscribers" ? (
+        <SubscribersSection />
+      ) : section === "subscriptions" ? (
+        <SubscriptionsSection />
       ) : (
         <div className="py-16 text-center">
           <p className="text-[length:calc(18*var(--fpx))] font-semibold text-ink">
