@@ -1119,6 +1119,21 @@ export const activityCopy = {
   metaTitle: "Activity \u2014 Nuance",
 };
 
+// NIC-359 / NIC-372 — Followers section (people who follow the current user).
+export const followersCopy = {
+  emptyHeading: "No followers yet",
+  emptyBody: "People who follow you will show up here.",
+  errorTitle: "Couldn't load your followers",
+  errorBody: "Something went wrong. Please try again.",
+  retryLabel: "Try again",
+  showMore: "Show more",
+  listAriaLabel: "Followers",
+  followBackLabel: "Follow back",
+  followingLabel: "Following",
+  followingProgressLabel: "Following\u2026",
+  unfollowingLabel: "Unfollowing\u2026",
+};
+
 // NIC-261 — My Profile self-view (/profile).
 export const profileSelfCopy = {
   metaTitle: "My profile \u2014 Nuance",

@@ -498,6 +498,16 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await userPromise;
         return actor.updateFontType(fontType);
       },
+      // NIC-359 / NIC-372 -- Activity hub Followers. Authed-only: returns the
+      // caller's followers (people who follow them). Unwraps Result_8 ok ->
+      // UserListItem[] and throws on the err variant so React Query surfaces
+      // the error state.
+      getMyFollowers: async () => {
+        const actor = await userPromise;
+        const result = await actor.getMyFollowers();
+        if (result.__kind__ === "err") throw new Error(result.err);
+        return result.ok;
+      },
     };
   }, [identity]);
 

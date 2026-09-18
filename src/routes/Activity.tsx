@@ -4,6 +4,7 @@ import { AccountShell } from "../components/account/AccountShell";
 import { ScrollTabStrip } from "../features/home/sections/ScrollTabStrip";
 import { Tab } from "../components/ui/Tab";
 import { activityCopy } from "../constants/copy";
+import { FollowersSection } from "../features/activity/sections/FollowersSection";
 
 // NIC-358 — Activity hub foundation scaffold.
 //
@@ -51,16 +52,20 @@ export function Activity() {
         </ScrollTabStrip>
       </div>
 
-      {/* Bounded "Coming soon" placeholder — identical for all four sections
-          until the real content lands (sibling card). */}
-      <div className="py-16 text-center">
-        <p className="text-[length:calc(18*var(--fpx))] font-semibold text-ink">
-          {activityCopy.comingSoonHeading}
-        </p>
-        <p className="mt-2 text-[length:calc(16*var(--fpx))] text-ink-80">
-          {activityCopy.comingSoonBody}
-        </p>
-      </div>
+      {/* Followers is built (NIC-359 / NIC-372); the other three sections
+          keep the bounded "Coming soon" placeholder until they land. */}
+      {section === "followers" ? (
+        <FollowersSection />
+      ) : (
+        <div className="py-16 text-center">
+          <p className="text-[length:calc(18*var(--fpx))] font-semibold text-ink">
+            {activityCopy.comingSoonHeading}
+          </p>
+          <p className="mt-2 text-[length:calc(16*var(--fpx))] text-ink-80">
+            {activityCopy.comingSoonBody}
+          </p>
+        </div>
+      )}
     </AccountShell>
   );
 }

@@ -505,6 +505,10 @@ export type ActorsValue = {
     socialChannelsUrls: string[],
   ) => Promise<UserResult>;
   updateFontType: (fontType: string) => Promise<UserResult>;
+  // NIC-359 / NIC-372 -- Activity hub Followers. Authed-only: the caller's
+  // followers (people who follow them), unwrapped from Result_8 to a plain
+  // UserListItem[] (throws on the err variant).
+  getMyFollowers: () => Promise<Array<UserListItem>>;
 };
 
 export const ActorsContext = createContext<ActorsValue | null>(null);
