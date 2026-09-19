@@ -6,10 +6,10 @@
 // PublicationDetailsForm once data is available.
 
 import { useParams } from "react-router-dom";
-import Skeleton from "@mui/material/Skeleton";
 import { usePublicationMembership } from "../features/publication/hooks/usePublicationMembership";
 import { usePublicationSettings } from "../features/publication/hooks/usePublicationSettings";
 import { PublicationDetailsForm } from "../features/publication/sections/PublicationDetailsForm";
+import { PublicationSettingsSkeleton } from "../features/publication/sections/PublicationSettingsSkeleton";
 import { publicationSettingsCopy as copy } from "../constants/copy";
 import { AccountShell } from "../components/account/AccountShell";
 
@@ -61,13 +61,10 @@ function PublicationSettingsInner({ handle }: { handle: string }) {
     );
   }
 
-  // Membership query in flight.
+  // Membership query in flight — show the full-form skeleton (State 1) so there
+  // is no tiny→full flash when the settings read follows.
   if (membership.isLoading) {
-    return (
-      <div className="flex justify-center py-24" aria-busy="true">
-        <Skeleton variant="text" sx={{ width: 240, height: 32 }} />
-      </div>
-    );
+    return <PublicationSettingsSkeleton />;
   }
 
   // Authenticated editor — load publication data and render form.
@@ -87,12 +84,9 @@ function PublicationSettingsDataInner({ handle }: { handle: string }) {
     );
   }
 
+  // getPublicationQuery in flight (State 1, Figma 1887:7905) → full-form skeleton.
   if (isLoading || publication === null || canisterId === null) {
-    return (
-      <div className="flex justify-center py-24" aria-busy="true">
-        <Skeleton variant="text" sx={{ width: 240, height: 32 }} />
-      </div>
-    );
+    return <PublicationSettingsSkeleton />;
   }
 
   return (

@@ -16,11 +16,18 @@
 // 16 / Bold / black · line-height 24px (token --text-label--line-height).
 // Inputs: radius 6 (rounded-[calc(6*var(--fpx))]), border ink-border/10.
 
-import { useState, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { Link, useBlocker } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import Button from "@mui/material/Button";
 import { useActors } from "../../../contexts/useActors";
 import { useToast } from "../../../services/toast";
+import { useModal } from "../../../services/modal/useModal";
+import { Popup } from "../../../components/ui/Popup";
+import {
+  primaryButtonSx,
+  secondaryButtonSx,
+} from "../../../components/ui/modalButtons";
 import type {
   Publication,
   SocialLinksObject,
@@ -39,6 +46,9 @@ import { IconImage } from "../../../components/ui/icons/IconImage";
 // The shared useImageUpload hook has its own 10 MB cap (for article images);
 // that cap is intentionally left at 10 MB.
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+// aria-labelledby target for the unsaved-changes guard popup (State 3).
+const LEAVE_GUARD_TITLE_ID = "pub-settings-leave-guard-title";
 
 // The two named social platforms this form exposes as labelled inputs.
 // All other detected platforms are carried through untouched (otherLinks).
@@ -76,6 +86,35 @@ function ChevronIcon() {
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// 18px ring spinner for the Save button busy state (State 4, Figma 1888:8370).
+// Mirrors the inline spinner idiom in TopicFollowPill.tsx; currentColor = the
+// button's white text.
+function SaveSpinner() {
+  return (
+    <svg
+      className="size-[calc(18*var(--fpx))] animate-spin"
+      viewBox="0 0 18 18"
+      fill="none"
+      aria-hidden
+    >
+      <circle
+        cx="9"
+        cy="9"
+        r="7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeOpacity="0.35"
+      />
+      <path
+        d="M9 2a7 7 0 0 1 7 7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
       />
     </svg>
   );
@@ -136,6 +175,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const uploadImage = useImageUpload();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const modal = useModal();
 
   // ── Seed values (synchronous — component mounts only when publication is set) ──
 
@@ -210,6 +250,10 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Stable ref so the error toast's Retry action can re-invoke the latest
+  // handleSave without creating a circular useCallback dependency.
+  const handleSaveRef = useRef<() => void>(() => {});
 
   // ── Dirty guard ─────────────────────────────────────────────────────────────
 
@@ -449,7 +493,12 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     } catch (err) {
       const msg = err instanceof Error ? err.message : copy.toastError;
       setSaveError(msg);
-      toast.show(copy.toastError, "error");
+      // State 5 (Figma 1888:8498): dark-pill error toast + Retry re-submits.
+      // (Retry calls the latest handleSave via handleSaveRef — see below.)
+      toast.show(copy.toastError, "error", {
+        actionLabel: copy.retry,
+        onAction: () => handleSaveRef.current(),
+      });
     } finally {
       setSaving(false);
     }
@@ -475,6 +524,68 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     queryClient,
     toast,
   ]);
+
+  // Keep the ref pointed at the latest handleSave (for the Retry toast action).
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  }, [handleSave]);
+
+  // ── Unsaved-changes guard (State 3, Figma 1887:8140) ─────────────────────────
+  // Block in-app navigation while the form is dirty and no save is in flight
+  // (don't interrupt a save that's finishing). react-router v7 data-router
+  // blocker; the guard popup is surfaced via the shared modal service.
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && !saving && currentLocation.pathname !== nextLocation.pathname,
+  );
+
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    const keepEditing = () => {
+      modal.close();
+      blocker.reset?.();
+    };
+    const leavePage = () => {
+      modal.close();
+      blocker.proceed?.();
+    };
+    modal.open(
+      <Popup
+        titleId={LEAVE_GUARD_TITLE_ID}
+        title={copy.guardTitle}
+        onClose={keepEditing}
+        closeAriaLabel={copy.guardCloseAria}
+        footer={
+          <>
+            <Button sx={secondaryButtonSx} onClick={keepEditing}>
+              {copy.guardKeepEditing}
+            </Button>
+            <Button sx={primaryButtonSx} onClick={leavePage}>
+              {copy.guardLeave}
+            </Button>
+          </>
+        }
+      >
+        <p className="mt-2 text-body text-ink-80">{copy.guardBody}</p>
+      </Popup>,
+      { ariaLabelledBy: LEAVE_GUARD_TITLE_ID, dismissable: false },
+    );
+    // Re-run only when the blocked/unblocked state flips; modal + blocker are
+    // captured from the render that entered the blocked state (house pattern —
+    // see MobileNavDrawer for the same targeted-deps exception).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocker.state]);
+
+  // Hard navigation (reload / close tab) guard while dirty and not saving.
+  useEffect(() => {
+    if (!isDirty || saving) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty, saving]);
 
   // ── Style helpers ────────────────────────────────────────────────────────────
 
@@ -525,8 +636,15 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         </p>
       </div>
 
-      {/* Form — 448px column, 24px gap between field groups */}
-      <div className="flex flex-col gap-[calc(24*var(--fpx))] w-[calc(448*var(--fpx))] max-w-full">
+      {/* Form — 448px column, 24px gap between field groups.
+          <fieldset disabled={saving}> locks every control in the form during a
+          save (State 4, Figma 1888:8370) — native cascade to inputs, textarea,
+          select, buttons and the colour-picker trigger. Styled as the flex
+          container (border/padding/margin reset) so layout is unchanged. */}
+      <fieldset
+        disabled={saving}
+        className="flex flex-col gap-[calc(24*var(--fpx))] w-[calc(448*var(--fpx))] max-w-full min-w-0 border-0 p-0 m-0"
+      >
 
         {/* (a) Handle — read-only, styled like a dropdown box */}
         <div className={fieldClass}>
@@ -932,7 +1050,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
             disabled={saving || (!isDirty && !saving)}
             onClick={handleSave}
             className={[
-              "inline-flex items-center justify-center",
+              "inline-flex items-center justify-center gap-[calc(8*var(--fpx))]",
               "rounded-[calc(8*var(--fpx))]",
               "px-[calc(24*var(--fpx))] h-[calc(48*var(--fpx))]",
               "text-[length:calc(18*var(--fpx))] font-medium leading-[calc(28*var(--fpx))] text-white",
@@ -941,10 +1059,22 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               "transition-opacity hover:opacity-90 disabled:opacity-50",
             ].join(" ")}
           >
-            {saving ? copy.saving : copy.save}
+            {saving ? (
+              <>
+                <SaveSpinner />
+                {copy.saving}
+              </>
+            ) : (
+              copy.save
+            )}
           </button>
+          {/* Secondary — dimmed + non-interactive while a save is in flight
+              (State 4, Figma 1888:8370). */}
           <Link
             to={`/publication/${handle}`}
+            aria-disabled={saving || undefined}
+            tabIndex={saving ? -1 : undefined}
+            onClick={saving ? (e) => e.preventDefault() : undefined}
             className={[
               "inline-flex items-center justify-center",
               "rounded-[calc(8*var(--fpx))]",
@@ -952,11 +1082,20 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               "text-[length:calc(18*var(--fpx))] font-medium leading-[calc(28*var(--fpx))]",
               "text-brand-purple border border-brand-purple bg-white",
               "transition-opacity hover:opacity-80",
+              saving ? "opacity-40 pointer-events-none" : "",
             ].join(" ")}
           >
             {copy.goToPublication}
           </Link>
         </div>
+
+        {/* Unsaved-changes note (State 2, Figma 1887:8015) — shown while dirty
+            and not mid-save. */}
+        {isDirty && !saving && (
+          <p className="text-[length:calc(14*var(--fpx))] leading-[calc(20*var(--fpx))] text-ink/60">
+            {copy.unsavedChanges}
+          </p>
+        )}
 
         {/* Inline save error (supplements toast) */}
         {saveError && (
@@ -967,7 +1106,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
             {saveError}
           </p>
         )}
-      </div>
+      </fieldset>
     </div>
   );
 }

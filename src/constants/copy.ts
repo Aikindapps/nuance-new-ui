@@ -1273,8 +1273,17 @@ export const publicationSettingsCopy = {
   imageTooLarge: "Image must be under 5 MB",
   imageUploadError: "Image upload failed. Please try again.",
   // Toasts.
-  toastSaved: "Publication settings saved.",
-  toastError: "Couldn\u2019t save publication settings. Please try again.",
+  toastSaved: "Changes saved",
+  toastError: "Couldn\u2019t save changes.",
+  retry: "Retry",
+  // Dirty-state note + unsaved-changes guard (NIC-376 \u00a76.6).
+  unsavedChanges: "Unsaved changes",
+  guardTitle: "Discard unsaved changes?",
+  guardBody:
+    "You have edits that haven\u2019t been saved. If you leave now, your changes will be lost.",
+  guardLeave: "Leave without saving",
+  guardKeepEditing: "Keep editing",
+  guardCloseAria: "Keep editing",
   // Page heading + intro (NIC-370 \u00a76.6 \u2014 replaces the old h1 "Publication settings").
   heading: "Publication details & styling",
   intro: "Give your publication its identity \u2014 the title, description, imagery, colour and typeface that appear across your homepage and every article.",
