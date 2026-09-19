@@ -10,6 +10,10 @@ export function detectSocialPlatform(url: string): SocialPlatform {
   if (u.includes("reddit.")) return "reddit";
   if (u.includes("facebook.") || u.includes("fb.com")) return "facebook";
   if (u.includes("google.")) return "google";
+  // Publication-platform additions (NIC-381). The \bx\.com boundary avoids
+  // false matches like "netflix.com"; twitter. covers legacy twitter.com URLs.
+  if (u.includes("twitter.") || /\bx\.com/.test(u)) return "x";
+  if (u.includes("distrikt.")) return "distrikt";
   return "other";
 }
 

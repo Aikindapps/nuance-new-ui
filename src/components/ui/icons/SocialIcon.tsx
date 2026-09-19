@@ -10,6 +10,8 @@ export type SocialPlatform =
   | "linkedin"
   | "reddit"
   | "facebook"
+  | "x"
+  | "distrikt"
   | "other";
 
 const INK = "#202123";
@@ -43,6 +45,29 @@ const GLYPHS: Record<SocialPlatform, React.ReactNode> = {
     </g>
   ),
   other: (
+    <g
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+    >
+      <circle cx="9" cy="9" r="6.25" />
+      <ellipse cx="9" cy="9" rx="2.5" ry="6.25" />
+      <line x1="2.9" y1="9" x2="15.1" y2="9" />
+    </g>
+  ),
+  // X (formerly Twitter) — standard X letterform path on a 24-unit grid,
+  // scaled to fit the 18-unit viewBox via transform="scale(0.75)".
+  x: (
+    <g transform="scale(0.75)">
+      <path
+        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+        {...INK_60}
+      />
+    </g>
+  ),
+  // Distrikt — no faithful brand SVG; reuse the neutral globe glyph ("other").
+  distrikt: (
     <g
       fill="none"
       stroke="currentColor"

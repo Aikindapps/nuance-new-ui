@@ -1230,3 +1230,39 @@ export const verifyProfileCopy = {
   callbackReturnToProfile: "Back to my profile",
 } as const;
 
+
+// NIC-381 §6.4 — Publication settings page (editor-only route).
+export const publicationSettingsCopy = {
+  metaTitleSuffix: "— Nuance",
+  title: "Publication settings",
+  notAuthorizedHeading: "Access restricted",
+  notAuthorizedBody:
+    "You need to be an editor of this publication to manage its settings.",
+  errorHeading: "Something went wrong",
+  errorBody:
+    "We couldn't verify your access to this publication. Please try again.",
+  loadErrorHeading: "Couldn't load publication settings",
+  loadErrorBody:
+    "We couldn't load this publication's details. Please try again.",
+  // Reach link shown in ManageArticles header (editor-only).
+  reachLink: "Publication settings",
+  // Back-link in the form header.
+  backToArticles: "Manage articles",
+  // Field labels.
+  labelHandle: "Handle",
+  handleHint: "@reference name of your publication (fixed)",
+  labelTitle: "Publication title",
+  labelSubtitle: "Publication subtitle",
+  labelDescription: "Short description of your publication",
+  labelWebsite: "Link to website",
+  labelX: "Link to X",
+  labelDistrikt: "Link to Distrikt",
+  urlPlaceholder: "https://...",
+  // Save row.
+  save: "Save settings",
+  saving: "Saving\u2026",
+  goToPublication: "Go to publication page",
+  // Toasts.
+  toastSaved: "Publication settings saved.",
+  toastError: "Couldn\u2019t save publication settings. Please try again.",
+} as const;
