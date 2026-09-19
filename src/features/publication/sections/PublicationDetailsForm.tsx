@@ -129,28 +129,22 @@ function ChevronIcon() {
 // 18px ring spinner for the Save button busy state (State 4, Figma 1888:8370).
 // Mirrors the inline spinner idiom in TopicFollowPill.tsx; currentColor = the
 // button's white text.
-function SaveSpinner() {
+// Optional color props allow the tile uploading state to render Purple/100 arc
+// on Black/10% track (Figma 1891:2963) while the Save-button call site stays
+// unchanged (bare <SaveSpinner /> — defaults to currentColor / 0.35 opacity).
+function SaveSpinner({
+  arcColor = "currentColor",
+  trackColor = "currentColor",
+  trackOpacity = "0.35",
+}: {
+  arcColor?: string;
+  trackColor?: string;
+  trackOpacity?: string;
+} = {}) {
   return (
-    <svg
-      className="size-[calc(18*var(--fpx))] animate-spin"
-      viewBox="0 0 18 18"
-      fill="none"
-      aria-hidden
-    >
-      <circle
-        cx="9"
-        cy="9"
-        r="7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeOpacity="0.35"
-      />
-      <path
-        d="M9 2a7 7 0 0 1 7 7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+    <svg className="size-[calc(18*var(--fpx))] animate-spin" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <circle cx="9" cy="9" r="7" stroke={trackColor} strokeWidth="2" strokeOpacity={trackOpacity} />
+      <path d="M9 2a7 7 0 0 1 7 7" stroke={arcColor} strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -195,7 +189,11 @@ function EmptyImageDropzone({
     >
       {uploading ? (
         <span className="flex w-full flex-row items-center justify-center gap-[calc(12*var(--fpx))] text-ink/60">
-          <SaveSpinner />
+          <SaveSpinner
+            arcColor="var(--color-brand-purple)"
+            trackColor="var(--color-ink-border-10)"
+            trackOpacity="1"
+          />
           <span className="text-[length:calc(16*var(--fpx))] font-medium leading-[calc(24*var(--fpx))]">
             {copy.uploading}
           </span>
@@ -695,10 +693,12 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const errorClass =
     "text-[length:calc(14*var(--fpx))] font-normal leading-[calc(17*var(--fpx))] text-ink/80";
 
-  // Input: 448w, radius 6, border ink-border/10, bg ink/5, 48h.
-  const inputClass = [
+  // Input: 448w, radius 6, border ink-border/10 (purple when invalid), bg ink/5, 48h.
+  // Pass invalid=true to swap the border to Purple/100 (Figma 1891:2830).
+  const inputClassFor = (invalid = false) => [
     "w-full rounded-[calc(6*var(--fpx))]",
-    "border border-ink-border/10",
+    "border",
+    invalid ? "border-brand-purple" : "border-ink-border/10",
     "px-[calc(16*var(--fpx))] h-[calc(48*var(--fpx))]",
     "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink",
     "bg-ink/5 outline-none",
@@ -780,7 +780,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className={inputClass}
+            className={inputClassFor(showErrors && !!fieldErrors.title)}
+            aria-invalid={showErrors && !!fieldErrors.title || undefined}
             autoComplete="off"
           />
           {showErrors && fieldErrors.title && (
@@ -798,7 +799,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
             type="text"
             value={subtitle}
             onChange={(e) => setSubtitle(e.target.value)}
-            className={inputClass}
+            className={inputClassFor()}
             autoComplete="off"
           />
         </div>
@@ -1103,7 +1104,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder={copy.urlPlaceholder}
-              className={[inputClass, "pl-[calc(40*var(--fpx))]"].join(" ")}
+              className={[inputClassFor(showErrors && !!fieldErrors.website), "pl-[calc(40*var(--fpx))]"].join(" ")}
+              aria-invalid={showErrors && !!fieldErrors.website || undefined}
             />
           </div>
           {showErrors && fieldErrors.website && (
@@ -1128,7 +1130,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
                 setNamedSocial((s) => ({ ...s, x: e.target.value }))
               }
               placeholder={copy.urlPlaceholder}
-              className={[inputClass, "pl-[calc(40*var(--fpx))]"].join(" ")}
+              className={[inputClassFor(showErrors && !!fieldErrors.x), "pl-[calc(40*var(--fpx))]"].join(" ")}
+              aria-invalid={showErrors && !!fieldErrors.x || undefined}
             />
           </div>
           {showErrors && fieldErrors.x && (
@@ -1153,7 +1156,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
                 setNamedSocial((s) => ({ ...s, distrikt: e.target.value }))
               }
               placeholder={copy.urlPlaceholder}
-              className={[inputClass, "pl-[calc(40*var(--fpx))]"].join(" ")}
+              className={[inputClassFor(showErrors && !!fieldErrors.distrikt), "pl-[calc(40*var(--fpx))]"].join(" ")}
+              aria-invalid={showErrors && !!fieldErrors.distrikt || undefined}
             />
           </div>
           {showErrors && fieldErrors.distrikt && (
