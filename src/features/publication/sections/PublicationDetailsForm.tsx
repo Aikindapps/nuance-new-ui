@@ -16,7 +16,7 @@
 // 16 / Bold / black · line-height 24px (token --text-label--line-height).
 // Inputs: radius 6 (rounded-[calc(6*var(--fpx))]), border ink-border/10.
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Link, useBlocker } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import Button from "@mui/material/Button";
@@ -46,6 +46,41 @@ import { IconImage } from "../../../components/ui/icons/IconImage";
 // The shared useImageUpload hook has its own 10 MB cap (for article images);
 // that cap is intentionally left at 10 MB.
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+// Header image minimum width (State 3, Figma 1891:3080).
+const HEADER_IMAGE_MIN_WIDTH = 1312;
+
+// URL validation for the social-link fields (State 1, Figma 1891:2830).
+// Non-empty values must be an absolute http(s) URL WITH an explicit scheme:
+// the frame shows "raven.x" / "htp:/raven" as errors, so a bare domain is
+// rejected (no auto-prepend of https://). Empty is allowed (caller-gated).
+function isValidUrl(value: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(value.trim());
+  } catch {
+    return false;
+  }
+  return u.protocol === "http:" || u.protocol === "https:";
+}
+
+// Read a selected image's natural width without uploading it (State 3).
+// Mirrors the new Image() + createObjectURL idiom in AvatarCropper.tsx.
+function readImageWidth(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img.naturalWidth);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read image"));
+    };
+    img.src = url;
+  });
+}
 
 // aria-labelledby target for the unsaved-changes guard popup (State 3).
 const LEAVE_GUARD_TITLE_ID = "pub-settings-leave-guard-title";
@@ -127,6 +162,7 @@ type EmptyDropzoneProps = {
   onDrop: (e: React.DragEvent<HTMLButtonElement>) => void;
   uploading: boolean;
   ariaLabel: string;
+  hasError?: boolean;
 };
 
 function EmptyImageDropzone({
@@ -134,6 +170,7 @@ function EmptyImageDropzone({
   onDrop,
   uploading,
   ariaLabel,
+  hasError = false,
 }: EmptyDropzoneProps) {
   return (
     <button
@@ -141,11 +178,14 @@ function EmptyImageDropzone({
       onClick={onClick}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
+      aria-busy={uploading || undefined}
+      aria-invalid={hasError || undefined}
       className={[
         "flex flex-row items-center",
         "w-full h-[calc(119*var(--fpx))]",
         "rounded-[calc(16*var(--fpx))]",
-        "bg-ink-border/5 border-2 border-ink-border/10",
+        "bg-ink-border/5",
+        hasError ? "border border-brand-purple" : "border-2 border-ink-border/10",
         "gap-[calc(22*var(--fpx))]",
         "pt-[calc(16*var(--fpx))] pr-[calc(48*var(--fpx))]",
         "pb-[calc(16*var(--fpx))] pl-[calc(24*var(--fpx))]",
@@ -153,19 +193,24 @@ function EmptyImageDropzone({
       ].join(" ")}
       aria-label={ariaLabel}
     >
-      <span className="shrink-0 text-ink-border" aria-hidden>
-        <IllustrationNoImages className="w-[calc(108.75*var(--fpx))] h-[calc(87*var(--fpx))]" />
-      </span>
-      <span className="text-[length:calc(16*var(--fpx))] font-medium leading-[calc(24*var(--fpx))] text-ink/60">
-        {uploading ? (
-          copy.uploading
-        ) : (
-          <>
+      {uploading ? (
+        <span className="flex w-full flex-row items-center justify-center gap-[calc(12*var(--fpx))] text-ink/60">
+          <SaveSpinner />
+          <span className="text-[length:calc(16*var(--fpx))] font-medium leading-[calc(24*var(--fpx))]">
+            {copy.uploading}
+          </span>
+        </span>
+      ) : (
+        <>
+          <span className="shrink-0 text-ink-border" aria-hidden>
+            <IllustrationNoImages className="w-[calc(108.75*var(--fpx))] h-[calc(87*var(--fpx))]" />
+          </span>
+          <span className="text-[length:calc(16*var(--fpx))] font-medium leading-[calc(24*var(--fpx))] text-ink/60">
             {copy.dropPrompt}{" "}
             <span className="text-brand-purple underline">{copy.chooseFile}</span>
-          </>
-        )}
-      </span>
+          </span>
+        </>
+      )}
     </button>
   );
 }
@@ -228,6 +273,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const [headerImageFileName, setHeaderImageFileName] = useState("");
   const [headerImageUploading, setHeaderImageUploading] = useState(false);
   const [headerImageTooLarge, setHeaderImageTooLarge] = useState(false);
+  const [headerImageTooSmall, setHeaderImageTooSmall] = useState(false);
 
   const [avatar, setAvatar] = useState(seedAvatar);
   const [avatarFileName, setAvatarFileName] = useState("");
@@ -250,6 +296,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   // Stable ref so the error toast's Retry action can re-invoke the latest
   // handleSave without creating a circular useCallback dependency.
@@ -273,6 +320,21 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
   const isDirty = detailsDirty || stylingDirty;
 
+  const anyImageUploading = headerImageUploading || avatarUploading || logoUploading;
+
+  // Field validation (State 1). Errors surface on submit-attempt (showErrors)
+  // and re-validate live on edit because fieldErrors is derived.
+  const fieldErrors = useMemo(() => {
+    const e: { title?: string; website?: string; x?: string; distrikt?: string } = {};
+    if (title.trim() === "") e.title = copy.errorTitleRequired;
+    if (website.trim() !== "" && !isValidUrl(website)) e.website = copy.errorInvalidUrl;
+    if (namedSocial.x.trim() !== "" && !isValidUrl(namedSocial.x)) e.x = copy.errorInvalidUrl;
+    if (namedSocial.distrikt.trim() !== "" && !isValidUrl(namedSocial.distrikt))
+      e.distrikt = copy.errorInvalidUrl;
+    return e;
+  }, [title, website, namedSocial]);
+  const hasFieldErrors = Object.keys(fieldErrors).length > 0;
+
   // ── Image upload handlers ────────────────────────────────────────────────────
 
   const handleHeaderImageSelect = useCallback(
@@ -284,9 +346,23 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
       if (!file.type.startsWith("image/")) return;
       if (file.size > IMAGE_MAX_BYTES) {
         setHeaderImageTooLarge(true);
+        setHeaderImageTooSmall(false);
         return;
       }
       setHeaderImageTooLarge(false);
+      // State 3: reject undersized header images inline; do not upload.
+      let width: number;
+      try {
+        width = await readImageWidth(file);
+      } catch {
+        toast.show(copy.imageUploadError, "error");
+        return;
+      }
+      if (width < HEADER_IMAGE_MIN_WIDTH) {
+        setHeaderImageTooSmall(true);
+        return;
+      }
+      setHeaderImageTooSmall(false);
       setHeaderImageUploading(true);
       try {
         const url = await uploadImage(file);
@@ -312,9 +388,23 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
       if (!file.type.startsWith("image/")) return;
       if (file.size > IMAGE_MAX_BYTES) {
         setHeaderImageTooLarge(true);
+        setHeaderImageTooSmall(false);
         return;
       }
       setHeaderImageTooLarge(false);
+      // State 3: reject undersized header images inline; do not upload.
+      let width: number;
+      try {
+        width = await readImageWidth(file);
+      } catch {
+        toast.show(copy.imageUploadError, "error");
+        return;
+      }
+      if (width < HEADER_IMAGE_MIN_WIDTH) {
+        setHeaderImageTooSmall(true);
+        return;
+      }
+      setHeaderImageTooSmall(false);
       setHeaderImageUploading(true);
       try {
         const url = await uploadImage(file);
@@ -449,6 +539,11 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   // ── Save handler ─────────────────────────────────────────────────────────────
 
   const handleSave = useCallback(async () => {
+    // State 1: block submit while any field error is present; surface errors.
+    if (hasFieldErrors) {
+      setShowErrors(true);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
@@ -503,6 +598,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
       setSaving(false);
     }
   }, [
+    hasFieldErrors,
     title,
     subtitle,
     description,
@@ -594,6 +690,11 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const labelClass =
     "text-[length:calc(16*var(--fpx))] font-bold leading-[calc(24*var(--fpx))] text-ink";
 
+  // Inline field-error text — ink/80 per the frames (Figma 1891:2830 / 1891:3080),
+  // 14/17. The purple in this design is the error BORDER (see EmptyImageDropzone).
+  const errorClass =
+    "text-[length:calc(14*var(--fpx))] font-normal leading-[calc(17*var(--fpx))] text-ink/80";
+
   // Input: 448w, radius 6, border ink-border/10, bg ink/5, 48h.
   const inputClass = [
     "w-full rounded-[calc(6*var(--fpx))]",
@@ -682,6 +783,9 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
             className={inputClass}
             autoComplete="off"
           />
+          {showErrors && fieldErrors.title && (
+            <p role="alert" className={errorClass}>{fieldErrors.title}</p>
+          )}
         </div>
 
         {/* (c) Subtitle */}
@@ -756,6 +860,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
                     setHeaderImage("");
                     setHeaderImageFileName("");
                     setHeaderImageTooLarge(false);
+                    setHeaderImageTooSmall(false);
                   }}
                   className={tertiaryClass}
                 >
@@ -770,6 +875,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               onDrop={handleHeaderImageDrop}
               uploading={headerImageUploading}
               ariaLabel={copy.labelHeaderImage}
+              hasError={headerImageTooSmall}
             />
           )}
           {/* Hidden file input */}
@@ -786,6 +892,9 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
             <p className="text-[length:calc(14*var(--fpx))] font-normal leading-[calc(17*var(--fpx))] text-ink/80">
               {copy.imageTooLarge}
             </p>
+          )}
+          {headerImageTooSmall && (
+            <p role="alert" className={errorClass}>{copy.imageTooSmall}</p>
           )}
         </div>
 
@@ -997,6 +1106,9 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               className={[inputClass, "pl-[calc(40*var(--fpx))]"].join(" ")}
             />
           </div>
+          {showErrors && fieldErrors.website && (
+            <p role="alert" className={errorClass}>{fieldErrors.website}</p>
+          )}
         </div>
 
         {/* Link to X */}
@@ -1019,6 +1131,9 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               className={[inputClass, "pl-[calc(40*var(--fpx))]"].join(" ")}
             />
           </div>
+          {showErrors && fieldErrors.x && (
+            <p role="alert" className={errorClass}>{fieldErrors.x}</p>
+          )}
         </div>
 
         {/* Link to Distrikt */}
@@ -1041,13 +1156,16 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               className={[inputClass, "pl-[calc(40*var(--fpx))]"].join(" ")}
             />
           </div>
+          {showErrors && fieldErrors.distrikt && (
+            <p role="alert" className={errorClass}>{fieldErrors.distrikt}</p>
+          )}
         </div>
 
         {/* (g) Save row — Figma 1:42309 */}
         <div className="flex flex-row items-center gap-[calc(12*var(--fpx))]">
           <button
             type="button"
-            disabled={saving || (!isDirty && !saving)}
+            disabled={saving || anyImageUploading || (!isDirty && !saving)}
             onClick={handleSave}
             className={[
               "inline-flex items-center justify-center gap-[calc(8*var(--fpx))]",

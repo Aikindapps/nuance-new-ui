@@ -1295,4 +1295,9 @@ export const publicationSettingsCopy = {
   // Empty-image dropzone prompt (NIC-370 reconcile \u2014 header + logo share this).
   dropPrompt: "Drop highlighted image here or",
   chooseFile: "choose file",
+  // Field validation (NIC-377 §6.6 batch B — Purple/100 treatment, Figma 1891:2830).
+  errorTitleRequired: "Publication title is required.",
+  errorInvalidUrl: "Enter a valid URL (e.g. https://…).",
+  // Undersized header rejection (NIC-377 §6.6, Figma 1891:3080).
+  imageTooSmall: "Image must be at least 1312px wide. Please choose a larger file.",
 } as const;
