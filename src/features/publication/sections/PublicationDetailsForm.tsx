@@ -1,4 +1,4 @@
-// NIC-381/NIC-382 §6.4 — Publication details form (text + social link + image fields).
+// NIC-381/NIC-382 §6.4 / NIC-370 §6.6 — Publication details + styling form.
 //
 // Mirrors ProfileEditInner in src/routes/Profile.tsx:
 //   - State seeded once at mount; no re-seed effect.
@@ -8,8 +8,10 @@
 //     linkedin / reddit / custom URLs are never silently dropped on save.
 //   - Image upload (NIC-382): 5 MB pre-check before calling useImageUpload.
 //     The shared hook has its own 10 MB cap for article images — left unchanged.
+//   - Styling group (NIC-370): primaryColor picker, font select, logo uploader.
+//     Saved via updatePublicationStyling (only when styling changed).
 //
-// Design ref: Figma 1:42221 / 1:42313 / 1:42309 / 1:42237 / 1:42240.
+// Design ref: Figma 1:42221 / 1:42313 / 1:42309 / 1:42237 / 1:42240 / 1848:7904.
 // Form container: 448-wide column, 24px vertical gaps, labels GT Walsheim
 // 16 / Bold / black · line-height 24px (token --text-label--line-height).
 // Inputs: radius 6 (rounded-[calc(6*var(--fpx))]), border ink-border/10.
@@ -25,10 +27,13 @@ import type {
 } from "../../../candid/Publisher/declarations/Publisher.did";
 import { detectSocialPlatform } from "../../article/lib/socialChannels";
 import { SocialIcon } from "../../../components/ui/icons/SocialIcon";
-import { IconImage } from "../../../components/ui/icons/IconImage";
+import { IconChevronDown } from "../../../components/ui/icons/IconChevronDown";
 import { Avatar } from "../../../components/ui/Avatar";
 import { useImageUpload } from "../../write/hooks/useImageUpload";
 import { publicationSettingsCopy as copy } from "../../../constants/copy";
+import { PrimaryColorPicker } from "./PrimaryColorPicker";
+import { IllustrationNoImages } from "../../../components/ui/icons/IllustrationNoImages";
+import { IconImage } from "../../../components/ui/icons/IconImage";
 
 // 5 MB pre-check enforced client-side BEFORE calling useImageUpload.
 // The shared useImageUpload hook has its own 10 MB cap (for article images);
@@ -39,6 +44,15 @@ const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 // All other detected platforms are carried through untouched (otherLinks).
 const PUB_SOCIAL_PLATFORMS = ["x", "distrikt"] as const;
 type PubSocialPlatform = (typeof PUB_SOCIAL_PLATFORMS)[number];
+
+// Font options — mirrors Profile.tsx; values are the canister's accepted fontType strings.
+const FONT_OPTIONS = [
+  { value: "GT Walsheim", label: "GT Walsheim" },
+  { value: "Roboto", label: "Roboto" },
+  { value: "Lato", label: "Lato" },
+  { value: "Libre Baskerville", label: "Libre Baskerville" },
+  { value: "Playfair Display", label: "Playfair Display" },
+] as const;
 
 type Props = {
   handle: string;
@@ -67,8 +81,58 @@ function ChevronIcon() {
   );
 }
 
+// Empty-image dropzone — shared by header image and logo fields.
+// Design: Figma 1:42239 / NUR / Add image State=Default.
+type EmptyDropzoneProps = {
+  onClick: () => void;
+  onDrop: (e: React.DragEvent<HTMLButtonElement>) => void;
+  uploading: boolean;
+  ariaLabel: string;
+};
+
+function EmptyImageDropzone({
+  onClick,
+  onDrop,
+  uploading,
+  ariaLabel,
+}: EmptyDropzoneProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
+      className={[
+        "flex flex-row items-center",
+        "w-full h-[calc(119*var(--fpx))]",
+        "rounded-[calc(16*var(--fpx))]",
+        "bg-ink-border/5 border-2 border-ink-border/10",
+        "gap-[calc(22*var(--fpx))]",
+        "pt-[calc(16*var(--fpx))] pr-[calc(48*var(--fpx))]",
+        "pb-[calc(16*var(--fpx))] pl-[calc(24*var(--fpx))]",
+        "cursor-pointer",
+      ].join(" ")}
+      aria-label={ariaLabel}
+    >
+      <span className="shrink-0 text-ink-border" aria-hidden>
+        <IllustrationNoImages className="w-[calc(108.75*var(--fpx))] h-[calc(87*var(--fpx))]" />
+      </span>
+      <span className="text-[length:calc(16*var(--fpx))] font-medium leading-[calc(24*var(--fpx))] text-ink/60">
+        {uploading ? (
+          copy.uploading
+        ) : (
+          <>
+            {copy.dropPrompt}{" "}
+            <span className="text-brand-purple underline">{copy.chooseFile}</span>
+          </>
+        )}
+      </span>
+    </button>
+  );
+}
+
 export function PublicationDetailsForm({ handle, canisterId, publication }: Props) {
-  const { updatePublicationDetails } = useActors();
+  const { updatePublicationDetails, updatePublicationStyling } = useActors();
   const uploadImage = useImageUpload();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -81,6 +145,11 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const seedWebsite = publication.socialLinks.website;
   const seedHeaderImage = publication.headerImage;
   const seedAvatar = publication.avatar;
+
+  // Styling seeds (NIC-370).
+  const seedFontType = publication.styling.fontType;
+  const seedPrimaryColor = publication.styling.primaryColor;
+  const seedLogo = publication.styling.logo;
 
   // Seed named platform inputs from socialChannels.
   const seedNamedSocial = (): Record<PubSocialPlatform, string> => {
@@ -129,12 +198,22 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const headerImageInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Styling state (NIC-370) ─────────────────────────────────────────────────
+
+  const [fontType, setFontType] = useState(seedFontType);
+  const [primaryColor, setPrimaryColor] = useState(seedPrimaryColor);
+  const [logo, setLogo] = useState(seedLogo);
+  const [logoFileName, setLogoFileName] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoTooLarge, setLogoTooLarge] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // ── Dirty guard ─────────────────────────────────────────────────────────────
 
-  const isDirty =
+  const detailsDirty =
     title !== seedTitle ||
     subtitle !== seedSubtitle ||
     description !== seedDescription ||
@@ -142,6 +221,13 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     JSON.stringify(namedSocial) !== JSON.stringify(seedNamedSocial()) ||
     headerImage !== seedHeaderImage ||
     avatar !== seedAvatar;
+
+  const stylingDirty =
+    fontType !== seedFontType ||
+    primaryColor !== seedPrimaryColor ||
+    logo !== seedLogo;
+
+  const isDirty = detailsDirty || stylingDirty;
 
   // ── Image upload handlers ────────────────────────────────────────────────────
 
@@ -259,6 +345,63 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     [uploadImage, toast],
   );
 
+  // Logo upload handlers — mirror header image exactly (NIC-370).
+  const handleLogoSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > IMAGE_MAX_BYTES) {
+        setLogoTooLarge(true);
+        return;
+      }
+      setLogoTooLarge(false);
+      setLogoUploading(true);
+      try {
+        const url = await uploadImage(file);
+        setLogo(url);
+        setLogoFileName(file.name);
+      } catch (err) {
+        toast.show(
+          err instanceof Error ? err.message : copy.imageUploadError,
+          "error",
+        );
+      } finally {
+        setLogoUploading(false);
+      }
+    },
+    [uploadImage, toast],
+  );
+
+  const handleLogoDrop = useCallback(
+    async (e: React.DragEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > IMAGE_MAX_BYTES) {
+        setLogoTooLarge(true);
+        return;
+      }
+      setLogoTooLarge(false);
+      setLogoUploading(true);
+      try {
+        const url = await uploadImage(file);
+        setLogo(url);
+        setLogoFileName(file.name);
+      } catch (err) {
+        toast.show(
+          err instanceof Error ? err.message : copy.imageUploadError,
+          "error",
+        );
+      } finally {
+        setLogoUploading(false);
+      }
+    },
+    [uploadImage, toast],
+  );
+
   // ── Save handler ─────────────────────────────────────────────────────────────
 
   const handleSave = useCallback(async () => {
@@ -274,21 +417,32 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
       const modified = new Date().getTime().toString();
 
-      const res = await updatePublicationDetails(
-        canisterId,
-        description,
-        title,
-        headerImage,              // editable (NIC-382)
-        publication.categories,   // round-tripped unchanged
-        publication.writers,      // round-tripped unchanged
-        publication.editors,      // round-tripped unchanged
-        avatar,                   // editable (NIC-382)
-        subtitle,
-        socialLinks,
-        modified,
-      );
+      if (detailsDirty) {
+        const res = await updatePublicationDetails(
+          canisterId,
+          description,
+          title,
+          headerImage,              // editable (NIC-382)
+          publication.categories,   // round-tripped unchanged
+          publication.writers,      // round-tripped unchanged
+          publication.editors,      // round-tripped unchanged
+          avatar,                   // editable (NIC-382)
+          subtitle,
+          socialLinks,
+          modified,
+        );
+        if (res.__kind__ === "err") throw new Error(res.err);
+      }
 
-      if (res.__kind__ === "err") throw new Error(res.err);
+      if (stylingDirty) {
+        const res2 = await updatePublicationStyling(
+          canisterId,
+          fontType,
+          primaryColor,
+          logo,
+        );
+        if (res2.__kind__ === "err") throw new Error(res2.err);
+      }
 
       await queryClient.invalidateQueries({ queryKey: ["publication-settings", handle] });
       toast.show(copy.toastSaved, "success");
@@ -311,7 +465,13 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     handle,
     headerImage,
     avatar,
+    fontType,
+    primaryColor,
+    logo,
+    detailsDirty,
+    stylingDirty,
     updatePublicationDetails,
+    updatePublicationStyling,
     queryClient,
     toast,
   ]);
@@ -358,8 +518,11 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
           &lsaquo; {copy.backToArticles}
         </Link>
         <h1 className="text-[length:calc(24*var(--fpx))] font-bold leading-[calc(32*var(--fpx))] text-ink">
-          {copy.title}
+          {copy.heading}
         </h1>
+        <p className="text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink/60">
+          {copy.intro}
+        </p>
       </div>
 
       {/* Form — 448px column, 24px gap between field groups */}
@@ -441,7 +604,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         </div>
 
         {/* (e) Header image — NIC-382 §6.4 (Figma 1:42237 / Frame 815 / 1:42313) */}
-        {/* Design: 448×(149|226) column gap 6; dropzone 448×119 radius 16 bg ink@2% border ink@10% 2px */}
+        {/* Design: 448×(149|226) column gap 6; dropzone 448×119 radius 16 */}
         <div className={fieldClass}>
           <label className={labelClass}>{copy.labelHeaderImage}</label>
           {headerImage ? (
@@ -483,32 +646,13 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               </div>
             </>
           ) : (
-            /* Empty state: rectangular Add-image dropzone */
-            <button
-              type="button"
+            /* Empty state: NoImages dropzone (NIC-370 reconcile) */
+            <EmptyImageDropzone
               onClick={() => headerImageInputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
               onDrop={handleHeaderImageDrop}
-              className={[
-                "flex flex-row items-center",
-                "w-full h-[calc(119*var(--fpx))]",
-                "rounded-[calc(16*var(--fpx))]",
-                "bg-ink/[0.02] border-2 border-ink/10",
-                "gap-[calc(22*var(--fpx))]",
-                "pt-[calc(16*var(--fpx))] pr-[calc(48*var(--fpx))]",
-                "pb-[calc(16*var(--fpx))] pl-[calc(24*var(--fpx))]",
-                "cursor-pointer",
-              ].join(" ")}
-              aria-label={copy.labelHeaderImage}
-            >
-              {/* NoImages illustration placeholder */}
-              <span className="shrink-0 text-ink/40" aria-hidden>
-                <IconImage className="size-[calc(43*var(--fpx))]" />
-              </span>
-              <span className="text-[length:calc(16*var(--fpx))] font-medium leading-[calc(24*var(--fpx))] text-ink/60">
-                {headerImageUploading ? copy.uploading : copy.addImage}
-              </span>
-            </button>
+              uploading={headerImageUploading}
+              ariaLabel={copy.labelHeaderImage}
+            />
           )}
           {/* Hidden file input */}
           <input
@@ -528,7 +672,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         </div>
 
         {/* (e2) Avatar — NIC-382 §6.4 (Figma 1:42240 / Frame 816 / 1:42313) */}
-        {/* Design: 448×149 column gap 6; circle dropzone 119×119 radius 300 (rounded-full) */}
+        {/* Design: 448×149 column gap 6; circle dropzone 119×119 rounded-full */}
+        {/* NOTE: avatar empty state stays as the circular single-icon glyph — unchanged. */}
         <div className={fieldClass}>
           <label className={labelClass}>{copy.labelAvatar}</label>
           {avatar ? (
@@ -569,7 +714,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               </div>
             </div>
           ) : (
-            /* Empty state: circular Add-image button — 119×119 rounded-full */
+            /* Empty state: circular Add-image button — 119×119 rounded-full (unchanged) */
             <button
               type="button"
               onClick={() => avatarInputRef.current?.click()}
@@ -604,6 +749,114 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
               {copy.imageTooLarge}
             </p>
           )}
+        </div>
+
+        {/* (e3) Styling group — NIC-370 §6.6 (Figma 1:42221 Styling frame) */}
+        {/* Design: 448×453 column gap 24 pt-16 fill #FFFFFF */}
+        <div className="flex flex-col gap-[calc(24*var(--fpx))] pt-[calc(16*var(--fpx))]">
+          <span className="text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink">
+            Styling
+          </span>
+
+          {/* Primary colour */}
+          <div className={fieldClass}>
+            <label className={labelClass}>{copy.labelPrimaryColor}</label>
+            <PrimaryColorPicker value={primaryColor} onChange={setPrimaryColor} />
+          </div>
+
+          {/* Publication font */}
+          <div className={fieldClass}>
+            <label htmlFor="pub-font" className={labelClass}>{copy.labelFont}</label>
+            <div className="relative">
+              <select
+                id="pub-font"
+                value={fontType}
+                onChange={(e) => setFontType(e.target.value)}
+                className={[
+                  "w-full appearance-none rounded-[calc(6*var(--fpx))]",
+                  "border border-ink-border/10",
+                  "px-[calc(16*var(--fpx))] h-[calc(48*var(--fpx))] pr-[calc(40*var(--fpx))]",
+                  "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink",
+                  "bg-ink/5 outline-none focus:border-brand-purple transition-colors",
+                ].join(" ")}
+              >
+                <option value="">{copy.fontPlaceholder}</option>
+                {FONT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute right-[calc(16*var(--fpx))] top-1/2 -translate-y-1/2 text-ink"
+              >
+                <IconChevronDown className="size-[calc(14*var(--fpx))]" />
+              </span>
+            </div>
+          </div>
+
+          {/* Publication logo */}
+          <div className={fieldClass}>
+            <label className={labelClass}>{copy.labelLogo}</label>
+            {logo ? (
+              <>
+                <img
+                  src={logo}
+                  alt=""
+                  aria-hidden
+                  className={[
+                    "w-full h-[calc(150*var(--fpx))] object-contain",
+                    "rounded-[calc(10*var(--fpx))]",
+                  ].join(" ")}
+                />
+                <div className="flex flex-row items-center gap-[calc(6*var(--fpx))] py-[calc(4*var(--fpx))]">
+                  <span className="flex-1 truncate text-[length:calc(14*var(--fpx))] leading-[calc(20*var(--fpx))] text-ink/80">
+                    {logoFileName || copy.currentImage}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={logoUploading}
+                    onClick={() => logoInputRef.current?.click()}
+                    className={tertiaryClass}
+                  >
+                    {copy.changeImage}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLogo("");
+                      setLogoFileName("");
+                      setLogoTooLarge(false);
+                    }}
+                    className={tertiaryClass}
+                  >
+                    {copy.deleteImage}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <EmptyImageDropzone
+                onClick={() => logoInputRef.current?.click()}
+                onDrop={handleLogoDrop}
+                uploading={logoUploading}
+                ariaLabel={copy.labelLogo}
+              />
+            )}
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={handleLogoSelect}
+              aria-label={copy.labelLogo}
+            />
+            {logoTooLarge && (
+              <p className="text-[length:calc(14*var(--fpx))] font-normal leading-[calc(17*var(--fpx))] text-ink/80">
+                {copy.imageTooLarge}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* (f) Social links */}

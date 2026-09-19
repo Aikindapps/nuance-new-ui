@@ -1275,4 +1275,15 @@ export const publicationSettingsCopy = {
   // Toasts.
   toastSaved: "Publication settings saved.",
   toastError: "Couldn\u2019t save publication settings. Please try again.",
+  // Page heading + intro (NIC-370 \u00a76.6 \u2014 replaces the old h1 "Publication settings").
+  heading: "Publication details & styling",
+  intro: "Give your publication its identity \u2014 the title, description, imagery, colour and typeface that appear across your homepage and every article.",
+  // Styling group (NIC-370 \u00a76.6).
+  labelPrimaryColor: "Primary colour",
+  labelFont: "Publication font",
+  fontPlaceholder: "Select a font",
+  labelLogo: "Publication logo",
+  // Empty-image dropzone prompt (NIC-370 reconcile \u2014 header + logo share this).
+  dropPrompt: "Drop highlighted image here or",
+  chooseFile: "choose file",
 } as const;
