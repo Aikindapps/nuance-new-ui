@@ -1,4 +1,4 @@
-// NIC-381 §6.4 — Publication details form (text + social link fields).
+// NIC-381/NIC-382 §6.4 — Publication details form (text + social link + image fields).
 //
 // Mirrors ProfileEditInner in src/routes/Profile.tsx:
 //   - State seeded once at mount; no re-seed effect.
@@ -6,16 +6,15 @@
 //   - Social-link passthrough: named platforms are ONLY "x" and "distrikt".
 //     Any other stored URLs are round-tripped verbatim (otherLinks) so
 //     linkedin / reddit / custom URLs are never silently dropped on save.
+//   - Image upload (NIC-382): 5 MB pre-check before calling useImageUpload.
+//     The shared hook has its own 10 MB cap for article images — left unchanged.
 //
-// Excluded from this card (NIC-382):
-//   - Header image and avatar uploaders.
-//
-// Design ref: Figma 1:42221 / 1:42313 / 1:42309.
+// Design ref: Figma 1:42221 / 1:42313 / 1:42309 / 1:42237 / 1:42240.
 // Form container: 448-wide column, 24px vertical gaps, labels GT Walsheim
-// 16 / Bold / black / 100% line-height.
+// 16 / Bold / black · line-height 24px (token --text-label--line-height).
 // Inputs: radius 6 (rounded-[calc(6*var(--fpx))]), border ink-border/10.
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActors } from "../../../contexts/useActors";
@@ -26,7 +25,15 @@ import type {
 } from "../../../candid/Publisher/declarations/Publisher.did";
 import { detectSocialPlatform } from "../../article/lib/socialChannels";
 import { SocialIcon } from "../../../components/ui/icons/SocialIcon";
+import { IconImage } from "../../../components/ui/icons/IconImage";
+import { Avatar } from "../../../components/ui/Avatar";
+import { useImageUpload } from "../../write/hooks/useImageUpload";
 import { publicationSettingsCopy as copy } from "../../../constants/copy";
+
+// 5 MB pre-check enforced client-side BEFORE calling useImageUpload.
+// The shared useImageUpload hook has its own 10 MB cap (for article images);
+// that cap is intentionally left at 10 MB.
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 // The two named social platforms this form exposes as labelled inputs.
 // All other detected platforms are carried through untouched (otherLinks).
@@ -62,6 +69,7 @@ function ChevronIcon() {
 
 export function PublicationDetailsForm({ handle, canisterId, publication }: Props) {
   const { updatePublicationDetails } = useActors();
+  const uploadImage = useImageUpload();
   const queryClient = useQueryClient();
   const toast = useToast();
 
@@ -71,6 +79,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const seedSubtitle = publication.subtitle;
   const seedDescription = publication.description;
   const seedWebsite = publication.socialLinks.website;
+  const seedHeaderImage = publication.headerImage;
+  const seedAvatar = publication.avatar;
 
   // Seed named platform inputs from socialChannels.
   const seedNamedSocial = (): Record<PubSocialPlatform, string> => {
@@ -103,6 +113,22 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   // otherLinks is intentionally not stateful — it never changes in this form.
   const [otherLinks] = useState<string[]>(seedOtherLinks);
 
+  // ── Image state (NIC-382) ───────────────────────────────────────────────────
+
+  const [headerImage, setHeaderImage] = useState(seedHeaderImage);
+  const [headerImageFileName, setHeaderImageFileName] = useState("");
+  const [headerImageUploading, setHeaderImageUploading] = useState(false);
+  const [headerImageTooLarge, setHeaderImageTooLarge] = useState(false);
+
+  const [avatar, setAvatar] = useState(seedAvatar);
+  const [avatarFileName, setAvatarFileName] = useState("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarTooLarge, setAvatarTooLarge] = useState(false);
+
+  // Hidden file input refs — one per image field.
+  const headerImageInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -113,7 +139,125 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     subtitle !== seedSubtitle ||
     description !== seedDescription ||
     website !== seedWebsite ||
-    JSON.stringify(namedSocial) !== JSON.stringify(seedNamedSocial());
+    JSON.stringify(namedSocial) !== JSON.stringify(seedNamedSocial()) ||
+    headerImage !== seedHeaderImage ||
+    avatar !== seedAvatar;
+
+  // ── Image upload handlers ────────────────────────────────────────────────────
+
+  const handleHeaderImageSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset so the same file can be re-selected after deletion.
+      e.target.value = "";
+      if (!file) return;
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > IMAGE_MAX_BYTES) {
+        setHeaderImageTooLarge(true);
+        return;
+      }
+      setHeaderImageTooLarge(false);
+      setHeaderImageUploading(true);
+      try {
+        const url = await uploadImage(file);
+        setHeaderImage(url);
+        setHeaderImageFileName(file.name);
+      } catch (err) {
+        toast.show(
+          err instanceof Error ? err.message : copy.imageUploadError,
+          "error",
+        );
+      } finally {
+        setHeaderImageUploading(false);
+      }
+    },
+    [uploadImage, toast],
+  );
+
+  const handleHeaderImageDrop = useCallback(
+    async (e: React.DragEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > IMAGE_MAX_BYTES) {
+        setHeaderImageTooLarge(true);
+        return;
+      }
+      setHeaderImageTooLarge(false);
+      setHeaderImageUploading(true);
+      try {
+        const url = await uploadImage(file);
+        setHeaderImage(url);
+        setHeaderImageFileName(file.name);
+      } catch (err) {
+        toast.show(
+          err instanceof Error ? err.message : copy.imageUploadError,
+          "error",
+        );
+      } finally {
+        setHeaderImageUploading(false);
+      }
+    },
+    [uploadImage, toast],
+  );
+
+  const handleAvatarSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset so the same file can be re-selected after deletion.
+      e.target.value = "";
+      if (!file) return;
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > IMAGE_MAX_BYTES) {
+        setAvatarTooLarge(true);
+        return;
+      }
+      setAvatarTooLarge(false);
+      setAvatarUploading(true);
+      try {
+        const url = await uploadImage(file);
+        setAvatar(url);
+        setAvatarFileName(file.name);
+      } catch (err) {
+        toast.show(
+          err instanceof Error ? err.message : copy.imageUploadError,
+          "error",
+        );
+      } finally {
+        setAvatarUploading(false);
+      }
+    },
+    [uploadImage, toast],
+  );
+
+  const handleAvatarDrop = useCallback(
+    async (e: React.DragEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > IMAGE_MAX_BYTES) {
+        setAvatarTooLarge(true);
+        return;
+      }
+      setAvatarTooLarge(false);
+      setAvatarUploading(true);
+      try {
+        const url = await uploadImage(file);
+        setAvatar(url);
+        setAvatarFileName(file.name);
+      } catch (err) {
+        toast.show(
+          err instanceof Error ? err.message : copy.imageUploadError,
+          "error",
+        );
+      } finally {
+        setAvatarUploading(false);
+      }
+    },
+    [uploadImage, toast],
+  );
 
   // ── Save handler ─────────────────────────────────────────────────────────────
 
@@ -134,11 +278,11 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         canisterId,
         description,
         title,
-        publication.headerImage,   // round-tripped unchanged
-        publication.categories,    // round-tripped unchanged
-        publication.writers,       // round-tripped unchanged
-        publication.editors,       // round-tripped unchanged
-        publication.avatar,        // round-tripped unchanged
+        headerImage,              // editable (NIC-382)
+        publication.categories,   // round-tripped unchanged
+        publication.writers,      // round-tripped unchanged
+        publication.editors,      // round-tripped unchanged
+        avatar,                   // editable (NIC-382)
         subtitle,
         socialLinks,
         modified,
@@ -165,6 +309,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     canisterId,
     publication,
     handle,
+    headerImage,
+    avatar,
     updatePublicationDetails,
     queryClient,
     toast,
@@ -172,9 +318,10 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
   // ── Style helpers ────────────────────────────────────────────────────────────
 
-  // Labels: GT Walsheim 16 / Bold / black / 100% line-height (Figma spec).
+  // Labels: GT Walsheim 16 / Bold / black · line-height 24px
+  // (design-system token --text-label--line-height: calc(24 * var(--fpx))).
   const labelClass =
-    "text-[length:calc(16*var(--fpx))] font-bold leading-[calc(16*var(--fpx))] text-ink";
+    "text-[length:calc(16*var(--fpx))] font-bold leading-[calc(24*var(--fpx))] text-ink";
 
   // Input: 448w, radius 6, border ink-border/10, bg ink/5, 48h.
   const inputClass = [
@@ -187,13 +334,18 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     "transition-colors",
   ].join(" ");
 
-  // Field wrapper: 448-wide, 24px gap between label and input (gap-[calc(6*var(--fpx))]).
+  // Field wrapper: 448-wide, 6px gap between label and input (gap-[calc(6*var(--fpx))]).
   const fieldClass = "flex flex-col gap-[calc(6*var(--fpx))]";
+
+  // Tertiary button: text-brand-purple, hover underline, medium weight.
+  // Matches ProfileEditInner's "Remove" treatment (src/routes/Profile.tsx).
+  const tertiaryClass =
+    "font-medium text-[length:calc(14*var(--fpx))] leading-[calc(20*var(--fpx))] text-brand-purple hover:underline disabled:opacity-50 shrink-0";
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-[calc(40*var(--fpx))]">
+    <div className="flex flex-col gap-[calc(24*var(--fpx))]">
       {/* Back link + page heading */}
       <div className="flex flex-col gap-2">
         <Link
@@ -288,8 +440,171 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
           />
         </div>
 
-        {/* (e) NIC-382: header image + avatar rows — NOT built in this card.
-              Image uploaders land in NIC-382 (split 3/3). */}
+        {/* (e) Header image — NIC-382 §6.4 (Figma 1:42237 / Frame 815 / 1:42313) */}
+        {/* Design: 448×(149|226) column gap 6; dropzone 448×119 radius 16 bg ink@2% border ink@10% 2px */}
+        <div className={fieldClass}>
+          <label className={labelClass}>{copy.labelHeaderImage}</label>
+          {headerImage ? (
+            /* Filled state: full-width image preview + filename row */
+            <>
+              <img
+                src={headerImage}
+                alt=""
+                aria-hidden
+                className={[
+                  "w-full h-[calc(150*var(--fpx))] object-cover",
+                  "rounded-[calc(10*var(--fpx))]",
+                ].join(" ")}
+              />
+              {/* Filename + Change / Delete row — Frame 818: gap 6 pad 4/0/4/0 */}
+              <div className="flex flex-row items-center gap-[calc(6*var(--fpx))] py-[calc(4*var(--fpx))]">
+                <span className="flex-1 truncate text-[length:calc(14*var(--fpx))] leading-[calc(20*var(--fpx))] text-ink/80">
+                  {headerImageFileName || copy.currentImage}
+                </span>
+                <button
+                  type="button"
+                  disabled={headerImageUploading}
+                  onClick={() => headerImageInputRef.current?.click()}
+                  className={tertiaryClass}
+                >
+                  {copy.changeImage}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderImage("");
+                    setHeaderImageFileName("");
+                    setHeaderImageTooLarge(false);
+                  }}
+                  className={tertiaryClass}
+                >
+                  {copy.deleteImage}
+                </button>
+              </div>
+            </>
+          ) : (
+            /* Empty state: rectangular Add-image dropzone */
+            <button
+              type="button"
+              onClick={() => headerImageInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleHeaderImageDrop}
+              className={[
+                "flex flex-row items-center",
+                "w-full h-[calc(119*var(--fpx))]",
+                "rounded-[calc(16*var(--fpx))]",
+                "bg-ink/[0.02] border-2 border-ink/10",
+                "gap-[calc(22*var(--fpx))]",
+                "pt-[calc(16*var(--fpx))] pr-[calc(48*var(--fpx))]",
+                "pb-[calc(16*var(--fpx))] pl-[calc(24*var(--fpx))]",
+                "cursor-pointer",
+              ].join(" ")}
+              aria-label={copy.labelHeaderImage}
+            >
+              {/* NoImages illustration placeholder */}
+              <span className="shrink-0 text-ink/40" aria-hidden>
+                <IconImage className="size-[calc(43*var(--fpx))]" />
+              </span>
+              <span className="text-[length:calc(16*var(--fpx))] font-medium leading-[calc(24*var(--fpx))] text-ink/60">
+                {headerImageUploading ? copy.uploading : copy.addImage}
+              </span>
+            </button>
+          )}
+          {/* Hidden file input */}
+          <input
+            ref={headerImageInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={handleHeaderImageSelect}
+            aria-label={copy.labelHeaderImage}
+          />
+          {/* 5 MB too-large error */}
+          {headerImageTooLarge && (
+            <p className="text-[length:calc(14*var(--fpx))] font-normal leading-[calc(17*var(--fpx))] text-ink/80">
+              {copy.imageTooLarge}
+            </p>
+          )}
+        </div>
+
+        {/* (e2) Avatar — NIC-382 §6.4 (Figma 1:42240 / Frame 816 / 1:42313) */}
+        {/* Design: 448×149 column gap 6; circle dropzone 119×119 radius 300 (rounded-full) */}
+        <div className={fieldClass}>
+          <label className={labelClass}>{copy.labelAvatar}</label>
+          {avatar ? (
+            /* Filled state: circular avatar thumbnail + filename row — Frame 817: gap 16 */
+            <div className="flex flex-row items-center gap-[calc(16*var(--fpx))]">
+              <Avatar
+                src={avatar}
+                label={title || handle}
+                sizeClass="size-[calc(119*var(--fpx))] shrink-0"
+                textClass="text-[length:calc(40*var(--fpx))]"
+                rounded="full"
+              />
+              <div className="flex flex-col gap-[calc(6*var(--fpx))] min-w-0 flex-1">
+                <span className="truncate text-[length:calc(14*var(--fpx))] leading-[calc(20*var(--fpx))] text-ink/80">
+                  {avatarFileName || copy.currentImage}
+                </span>
+                <div className="flex flex-row items-center gap-[calc(6*var(--fpx))]">
+                  <button
+                    type="button"
+                    disabled={avatarUploading}
+                    onClick={() => avatarInputRef.current?.click()}
+                    className={tertiaryClass}
+                  >
+                    {copy.changeImage}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvatar("");
+                      setAvatarFileName("");
+                      setAvatarTooLarge(false);
+                    }}
+                    className={tertiaryClass}
+                  >
+                    {copy.deleteImage}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Empty state: circular Add-image button — 119×119 rounded-full */
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleAvatarDrop}
+              className={[
+                "flex items-center justify-center",
+                "size-[calc(119*var(--fpx))]",
+                "rounded-full",
+                "bg-ink/[0.02] border-2 border-ink/10",
+                "cursor-pointer",
+              ].join(" ")}
+              aria-label={copy.labelAvatar}
+            >
+              <span className="text-ink/40" aria-hidden>
+                <IconImage className="size-[calc(38*var(--fpx))]" />
+              </span>
+            </button>
+          )}
+          {/* Hidden file input */}
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={handleAvatarSelect}
+            aria-label={copy.labelAvatar}
+          />
+          {/* 5 MB too-large error */}
+          {avatarTooLarge && (
+            <p className="text-[length:calc(14*var(--fpx))] font-normal leading-[calc(17*var(--fpx))] text-ink/80">
+              {copy.imageTooLarge}
+            </p>
+          )}
+        </div>
 
         {/* (f) Social links */}
 

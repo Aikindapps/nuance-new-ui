@@ -1262,6 +1262,16 @@ export const publicationSettingsCopy = {
   save: "Save settings",
   saving: "Saving\u2026",
   goToPublication: "Go to publication page",
+  // Image uploader fields (NIC-382 §6.4).
+  labelHeaderImage: "Select your featured header image (min 1312px wide)",
+  labelAvatar: "Select an avatar image",
+  addImage: "Add image",
+  changeImage: "Change",
+  deleteImage: "Delete",
+  uploading: "Uploading\u2026",
+  currentImage: "Current image",
+  imageTooLarge: "Image must be under 5 MB",
+  imageUploadError: "Image upload failed. Please try again.",
   // Toasts.
   toastSaved: "Publication settings saved.",
   toastError: "Couldn\u2019t save publication settings. Please try again.",
