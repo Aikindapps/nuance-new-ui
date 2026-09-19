@@ -2,7 +2,7 @@
 // @ts-nocheck
 
 import { Actor, HttpAgent, type HttpAgentOptions, type ActorConfig, type Agent, type ActorSubclass } from "@icp-sdk/core/agent";
-import { idlFactory, type _SERVICE } from "./declarations/Publisher.did";
+import { idlFactory, type _SERVICE, type Publication, type SocialLinksObject } from "./declarations/Publisher.did";
 
 // Normalized result shape matching the PostBucket binding's Result_1
 // ({ __kind__: 'ok', ok } | { __kind__: 'err', err }) so callers branch on
@@ -11,12 +11,36 @@ export type UpdatePublicationPostDraftResult =
   | { __kind__: "ok"; ok: unknown }
   | { __kind__: "err"; err: string };
 
+export type PublicationResult =
+  | { __kind__: "ok"; ok: Publication }
+  | { __kind__: "err"; err: string };
+
 export interface PublisherInterface {
   getEditorAndWriterPrincipalIds(): Promise<[Array<string>, Array<string>]>;
   updatePublicationPostDraft(
     postId: string,
     isDraft: boolean,
   ): Promise<UpdatePublicationPostDraftResult>;
+  getPublicationQuery(
+    publicationHandle: string,
+  ): Promise<PublicationResult>;
+  updatePublicationDetails(
+    description: string,
+    publicationTitle: string,
+    headerImage: string,
+    categories: Array<string>,
+    writers: Array<string>,
+    editors: Array<string>,
+    avatar: string,
+    subtitle: string,
+    socialLinks: SocialLinksObject,
+    modified: string,
+  ): Promise<PublicationResult>;
+  updatePublicationStyling(
+    fontType: string,
+    primaryColor: string,
+    brandLogo: string,
+  ): Promise<PublicationResult>;
 }
 
 export class Publisher implements PublisherInterface {
@@ -30,6 +54,52 @@ export class Publisher implements PublisherInterface {
     isDraft: boolean,
   ): Promise<UpdatePublicationPostDraftResult> {
     const result = await this.actor.updatePublicationPostDraft(postId, isDraft);
+    return "ok" in result
+      ? { __kind__: "ok", ok: result.ok }
+      : { __kind__: "err", err: result.err };
+  }
+  async getPublicationQuery(
+    publicationHandle: string,
+  ): Promise<PublicationResult> {
+    const result = await this.actor.getPublicationQuery(publicationHandle);
+    return "ok" in result
+      ? { __kind__: "ok", ok: result.ok }
+      : { __kind__: "err", err: result.err };
+  }
+  async updatePublicationDetails(
+    description: string,
+    publicationTitle: string,
+    headerImage: string,
+    categories: Array<string>,
+    writers: Array<string>,
+    editors: Array<string>,
+    avatar: string,
+    subtitle: string,
+    socialLinks: SocialLinksObject,
+    modified: string,
+  ): Promise<PublicationResult> {
+    const result = await this.actor.updatePublicationDetails(
+      description,
+      publicationTitle,
+      headerImage,
+      categories,
+      writers,
+      editors,
+      avatar,
+      subtitle,
+      socialLinks,
+      modified,
+    );
+    return "ok" in result
+      ? { __kind__: "ok", ok: result.ok }
+      : { __kind__: "err", err: result.err };
+  }
+  async updatePublicationStyling(
+    fontType: string,
+    primaryColor: string,
+    brandLogo: string,
+  ): Promise<PublicationResult> {
+    const result = await this.actor.updatePublicationStyling(fontType, primaryColor, brandLogo);
     return "ok" in result
       ? { __kind__: "ok", ok: result.ok }
       : { __kind__: "err", err: result.err };

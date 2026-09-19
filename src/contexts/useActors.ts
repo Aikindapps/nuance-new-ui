@@ -64,6 +64,7 @@ import type {
   SwapArgs,
 } from "../candid/Sonic/Sonic";
 import type { Principal } from "@icp-sdk/core/principal";
+import type { Publication, SocialLinksObject as PublisherSocialLinksObject } from "../candid/Publisher/declarations/Publisher.did";
 
 // ActorsContext + hook + types live in this file so ActorsContext.tsx is a
 // pure component file. Satisfies `react-refresh/only-export-components`.
@@ -402,6 +403,38 @@ export type ActorsValue = {
   ) => Promise<
     { __kind__: "ok"; ok: unknown } | { __kind__: "err"; err: string }
   >;
+
+  // Read publication metadata by handle (NIC-380). Query; anon-safe.
+  getPublicationQuery: (
+    publisherCanisterId: string,
+    handle: string,
+  ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
+
+  // Update publication text/list details as an editor (NIC-380). Arg order
+  // mirrors the backend: description, publicationTitle, headerImage,
+  // categories, writers, editors, avatar, subtitle, socialLinks, modified.
+  updatePublicationDetails: (
+    publisherCanisterId: string,
+    description: string,
+    publicationTitle: string,
+    headerImage: string,
+    categories: Array<string>,
+    writers: Array<string>,
+    editors: Array<string>,
+    avatar: string,
+    subtitle: string,
+    socialLinks: PublisherSocialLinksObject,
+    modified: string,
+  ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
+
+  // Update publication styling as an editor (NIC-380). Arg order mirrors the
+  // backend: fontType, primaryColor, brandLogo.
+  updatePublicationStyling: (
+    publisherCanisterId: string,
+    fontType: string,
+    primaryColor: string,
+    brandLogo: string,
+  ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
 
   // --- Article Keys (PR #14, decision #43) — ext_v2 NFT access keys for
   // premium articles. One ext_v2 canister per premium article; the registry

@@ -396,6 +396,21 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getPublisher(publisherCanisterId);
         return actor.updatePublicationPostDraft(postId, isDraft);
       },
+      // Read publication metadata (NIC-380). Query; anon-safe.
+      getPublicationQuery: async (publisherCanisterId, handle) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.getPublicationQuery(handle);
+      },
+      // Update publication details (NIC-380). Editor-gated update.
+      updatePublicationDetails: async (publisherCanisterId, description, publicationTitle, headerImage, categories, writers, editors, avatar, subtitle, socialLinks, modified) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.updatePublicationDetails(description, publicationTitle, headerImage, categories, writers, editors, avatar, subtitle, socialLinks, modified);
+      },
+      // Update publication styling (NIC-380). Editor-gated update.
+      updatePublicationStyling: async (publisherCanisterId, fontType, primaryColor, brandLogo) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.updatePublicationStyling(fontType, primaryColor, brandLogo);
+      },
       // Article Keys (PR #14, decision #43).
       getAllNftCanisters: async () => {
         const actor = await postCorePromise;

@@ -47,9 +47,46 @@ export interface Post {
 }
 export type Result_1 = { 'ok' : Post } | { 'err' : string };
 
+export interface SocialLinksObject {
+  'website' : string,
+  'socialChannels' : Array<string>,
+}
+export interface PublicationStyling {
+  'fontType' : string,
+  'logo' : string,
+  'primaryColor' : string,
+}
+export interface PublicationCta {
+  'buttonCopy' : string,
+  'ctaCopy' : string,
+  'icon' : string,
+  'link' : string,
+}
+export interface Publication {
+  'avatar' : string,
+  'categories' : Array<string>,
+  'created' : string,
+  'cta' : PublicationCta,
+  'description' : string,
+  'editors' : Array<string>,
+  'headerImage' : string,
+  'modified' : string,
+  'nftCanisterId' : string,
+  'publicationHandle' : string,
+  'publicationTitle' : string,
+  'socialLinks' : SocialLinksObject,
+  'styling' : PublicationStyling,
+  'subtitle' : string,
+  'writers' : Array<string>,
+}
+export type Result_2 = { 'ok' : Publication } | { 'err' : string };
+
 export interface _SERVICE {
   'getEditorAndWriterPrincipalIds' : ActorMethod<[], [Array<string>, Array<string>]>,
   'updatePublicationPostDraft' : ActorMethod<[string, boolean], Result_1>,
+  'getPublicationQuery' : ActorMethod<[string], Result_2>,
+  'updatePublicationDetails' : ActorMethod<[string, string, string, Array<string>, Array<string>, Array<string>, string, string, SocialLinksObject, string], Result_2>,
+  'updatePublicationStyling' : ActorMethod<[string, string, string], Result_2>,
 }
 
 export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
@@ -80,8 +117,44 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
     'postId' : IDL.Text,
   });
   const Result_1 = IDL.Variant({ 'ok' : Post, 'err' : IDL.Text });
+  const SocialLinksObject = IDL.Record({
+    'website' : IDL.Text,
+    'socialChannels' : IDL.Vec(IDL.Text),
+  });
+  const PublicationStyling = IDL.Record({
+    'fontType' : IDL.Text,
+    'logo' : IDL.Text,
+    'primaryColor' : IDL.Text,
+  });
+  const PublicationCta = IDL.Record({
+    'buttonCopy' : IDL.Text,
+    'ctaCopy' : IDL.Text,
+    'icon' : IDL.Text,
+    'link' : IDL.Text,
+  });
+  const Publication = IDL.Record({
+    'avatar' : IDL.Text,
+    'categories' : IDL.Vec(IDL.Text),
+    'created' : IDL.Text,
+    'cta' : PublicationCta,
+    'description' : IDL.Text,
+    'editors' : IDL.Vec(IDL.Text),
+    'headerImage' : IDL.Text,
+    'modified' : IDL.Text,
+    'nftCanisterId' : IDL.Text,
+    'publicationHandle' : IDL.Text,
+    'publicationTitle' : IDL.Text,
+    'socialLinks' : SocialLinksObject,
+    'styling' : PublicationStyling,
+    'subtitle' : IDL.Text,
+    'writers' : IDL.Vec(IDL.Text),
+  });
+  const Result_2 = IDL.Variant({ 'ok' : Publication, 'err' : IDL.Text });
   return IDL.Service({
     'getEditorAndWriterPrincipalIds' : IDL.Func([], [IDL.Vec(IDL.Text), IDL.Vec(IDL.Text)], ['query']),
     'updatePublicationPostDraft' : IDL.Func([IDL.Text, IDL.Bool], [Result_1], []),
+    'getPublicationQuery' : IDL.Func([IDL.Text], [Result_2], ['query']),
+    'updatePublicationDetails' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text), IDL.Vec(IDL.Text), IDL.Vec(IDL.Text), IDL.Text, IDL.Text, SocialLinksObject, IDL.Text], [Result_2], []),
+    'updatePublicationStyling' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Result_2], []),
   });
 };
