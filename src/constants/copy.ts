@@ -1302,6 +1302,9 @@ export const publicationSettingsCopy = {
   imageTooSmall: "Image must be at least 1312px wide. Please choose a larger file.",
   // Publication banner / CTA group (NIC-378 §6.6). Labels + placeholders lifted
   // verbatim from Figma frames 1914:9461 / 1920:9464 / 1924:9467 / 1924:9509.
+  // Placeholders are generic promo copy (NIC-378 UAT reconcile, frame 1914:9461
+  // updated): a general CTA banner, not writer recruitment. Placeholder-only —
+  // on/off is still derived from an empty CTA; saved values are unaffected.
   bannerGroupHeading: "Publication banner",
   bannerToggleDescription: "Show a customisable banner on your publication pages.",
   bannerLabelTitle: "Banner title",
@@ -1309,9 +1312,9 @@ export const publicationSettingsCopy = {
   bannerLabelButtonLink: "Button link",
   bannerLabelIcon: "Icon",
   bannerLabelPreview: "Preview",
-  bannerPlaceholderTitle: "Want to write for us?",
-  bannerPlaceholderButtonLabel: "Apply here!",
-  bannerPlaceholderButtonLink: "https://nuance.xyz",
+  bannerPlaceholderTitle: "Join our community",
+  bannerPlaceholderButtonLabel: "Learn more",
+  bannerPlaceholderButtonLink: "https://example.com",
   bannerIconPickerPlaceholder: "Choose icon",
   bannerIconPickerHelp: "Choose an icon for your banner",
 } as const;
