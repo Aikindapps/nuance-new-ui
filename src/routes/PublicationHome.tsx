@@ -8,8 +8,11 @@ import { ArticleFeed } from "../features/home/sections/ArticleFeed";
 import { formatCount } from "../lib/formatCount";
 import { usePublication } from "../features/publication/hooks/usePublication";
 import { usePublicationPosts } from "../features/publication/hooks/usePublicationPosts";
+import { usePublicationCta } from "../features/publication/hooks/usePublicationCta";
 import { CenteredMessage, PageShell } from "../components/ui/CenteredMessage";
 import { publicationCopy } from "../constants/copy";
+import { PublicationCtaBar } from "../features/publication/sections/PublicationCtaBar";
+import { isCtaEmpty } from "../features/publication/lib/cta";
 
 // Normalise a handle param: strip a leading "@" and lowercase.
 function normalizeHandle(raw: string): string {
@@ -43,6 +46,7 @@ export function PublicationHome() {
 function PublicationHomeInner({ handle }: { handle: string }) {
   const publication = usePublication(handle);
   const postsQuery = usePublicationPosts(handle);
+  const ctaQuery = usePublicationCta(handle);
 
   // Whole-page fetch failure (network/canister error).
   if (publication.isError) {
@@ -174,6 +178,19 @@ function PublicationHomeInner({ handle }: { handle: string }) {
               )
             )}
           </section>
+
+          {/* ── 3b. CTA banner (NIC-378) — between identity block and article feed ── */}
+          {ctaQuery.cta && !isCtaEmpty(ctaQuery.cta) && (
+            <div className="mt-6">
+              <PublicationCtaBar
+                ctaCopy={ctaQuery.cta.ctaCopy}
+                buttonCopy={ctaQuery.cta.buttonCopy}
+                link={ctaQuery.cta.link}
+                icon={ctaQuery.cta.icon}
+                primaryColor={ctaQuery.primaryColor}
+              />
+            </div>
+          )}
 
           {/* ── 4. Article feed ── */}
           <section

@@ -36,6 +36,9 @@ import {
   LOGIN_MODAL_TITLE_ID,
 } from "../components/LoginModal/LoginModal";
 import { nftPurchaseCopy, subscriptionPurchaseCopy } from "../constants/copy";
+import { usePublicationCta } from "../features/publication/hooks/usePublicationCta";
+import { PublicationCtaBar } from "../features/publication/sections/PublicationCtaBar";
+import { isCtaEmpty } from "../features/publication/lib/cta";
 
 // Read Article — Page 3, sections 3.2 + 3.3 (PR #7, decisions #31/#32).
 //
@@ -103,6 +106,14 @@ export function ReadArticle() {
     : "";
   const moreArticles = useMoreArticles(postId, railAuthorHandle);
   const recommended = useRecommendedArticles(postId);
+
+  // CTA banner hook for publication articles (NIC-378). Runs unconditionally;
+  // enabled guard is inside the hook (empty handle → disabled).
+  const pubHandleForCta =
+    article.data?.post.isPublication
+      ? (article.data.post.handle || "").toLowerCase()
+      : "";
+  const ctaQuery = usePublicationCta(pubHandleForCta);
 
   // Modal service + auth — must be called unconditionally (hooks rule).
   const modal = useModal();
@@ -300,6 +311,19 @@ export function ReadArticle() {
             followingCount={article.data.authorFollowingCount}
           />
         </div>
+
+        {/* CTA banner — publication articles only, when non-empty (NIC-378) */}
+        {post.isPublication && ctaQuery.cta && !isCtaEmpty(ctaQuery.cta) && (
+          <div className="mt-8 lg:mt-[calc(50*var(--fpx))]">
+            <PublicationCtaBar
+              ctaCopy={ctaQuery.cta.ctaCopy}
+              buttonCopy={ctaQuery.cta.buttonCopy}
+              link={ctaQuery.cta.link}
+              icon={ctaQuery.cta.icon}
+              primaryColor={ctaQuery.primaryColor}
+            />
+          </div>
+        )}
 
         <div className="mt-8 lg:mt-[calc(50*var(--fpx))]">
           <CommentsSection

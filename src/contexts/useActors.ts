@@ -64,7 +64,7 @@ import type {
   SwapArgs,
 } from "../candid/Sonic/Sonic";
 import type { Principal } from "@icp-sdk/core/principal";
-import type { Publication, SocialLinksObject as PublisherSocialLinksObject } from "../candid/Publisher/declarations/Publisher.did";
+import type { Publication, SocialLinksObject as PublisherSocialLinksObject, PublicationCta } from "../candid/Publisher/declarations/Publisher.did";
 
 // ActorsContext + hook + types live in this file so ActorsContext.tsx is a
 // pure component file. Satisfies `react-refresh/only-export-components`.
@@ -434,6 +434,12 @@ export type ActorsValue = {
     fontType: string,
     primaryColor: string,
     brandLogo: string,
+  ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
+
+  // Update publication CTA banner as an editor (NIC-378).
+  updatePublicationCta: (
+    publisherCanisterId: string,
+    cta: PublicationCta,
   ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
 
   // --- Article Keys (PR #14, decision #43) — ext_v2 NFT access keys for

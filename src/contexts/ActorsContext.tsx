@@ -411,6 +411,11 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await getPublisher(publisherCanisterId);
         return actor.updatePublicationStyling(fontType, primaryColor, brandLogo);
       },
+      // Update publication CTA banner (NIC-378). Editor-gated update.
+      updatePublicationCta: async (publisherCanisterId, cta) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.updatePublicationCta(cta);
+      },
       // Article Keys (PR #14, decision #43).
       getAllNftCanisters: async () => {
         const actor = await postCorePromise;

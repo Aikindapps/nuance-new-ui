@@ -1297,7 +1297,21 @@ export const publicationSettingsCopy = {
   chooseFile: "choose file",
   // Field validation (NIC-377 §6.6 batch B — Purple/100 treatment, Figma 1891:2830).
   errorTitleRequired: "Publication title is required.",
-  errorInvalidUrl: "Enter a valid URL (e.g. https://…).",
+  errorInvalidUrl: "Enter a valid URL (e.g. https://\u2026).",
   // Undersized header rejection (NIC-377 §6.6, Figma 1891:3080).
   imageTooSmall: "Image must be at least 1312px wide. Please choose a larger file.",
+  // Publication banner / CTA group (NIC-378 §6.6). Labels + placeholders lifted
+  // verbatim from Figma frames 1914:9461 / 1920:9464 / 1924:9467 / 1924:9509.
+  bannerGroupHeading: "Publication banner",
+  bannerToggleDescription: "Show a customisable banner on your publication pages.",
+  bannerLabelTitle: "Banner title",
+  bannerLabelButtonLabel: "Button label",
+  bannerLabelButtonLink: "Button link",
+  bannerLabelIcon: "Icon",
+  bannerLabelPreview: "Preview",
+  bannerPlaceholderTitle: "Want to write for us?",
+  bannerPlaceholderButtonLabel: "Apply here!",
+  bannerPlaceholderButtonLink: "https://nuance.xyz",
+  bannerIconPickerPlaceholder: "Choose icon",
+  bannerIconPickerHelp: "Choose an icon for your banner",
 } as const;

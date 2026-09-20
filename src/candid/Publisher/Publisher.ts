@@ -2,7 +2,7 @@
 // @ts-nocheck
 
 import { Actor, HttpAgent, type HttpAgentOptions, type ActorConfig, type Agent, type ActorSubclass } from "@icp-sdk/core/agent";
-import { idlFactory, type _SERVICE, type Publication, type SocialLinksObject } from "./declarations/Publisher.did";
+import { idlFactory, type _SERVICE, type Publication, type SocialLinksObject, type PublicationCta } from "./declarations/Publisher.did";
 
 // Normalized result shape matching the PostBucket binding's Result_1
 // ({ __kind__: 'ok', ok } | { __kind__: 'err', err }) so callers branch on
@@ -41,6 +41,7 @@ export interface PublisherInterface {
     primaryColor: string,
     brandLogo: string,
   ): Promise<PublicationResult>;
+  updatePublicationCta(cta: PublicationCta): Promise<PublicationResult>;
 }
 
 export class Publisher implements PublisherInterface {
@@ -100,6 +101,12 @@ export class Publisher implements PublisherInterface {
     brandLogo: string,
   ): Promise<PublicationResult> {
     const result = await this.actor.updatePublicationStyling(fontType, primaryColor, brandLogo);
+    return "ok" in result
+      ? { __kind__: "ok", ok: result.ok }
+      : { __kind__: "err", err: result.err };
+  }
+  async updatePublicationCta(cta: PublicationCta): Promise<PublicationResult> {
+    const result = await this.actor.updatePublicationCta(cta);
     return "ok" in result
       ? { __kind__: "ok", ok: result.ok }
       : { __kind__: "err", err: result.err };

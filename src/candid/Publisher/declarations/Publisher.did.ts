@@ -87,6 +87,7 @@ export interface _SERVICE {
   'getPublicationQuery' : ActorMethod<[string], Result_2>,
   'updatePublicationDetails' : ActorMethod<[string, string, string, Array<string>, Array<string>, Array<string>, string, string, SocialLinksObject, string], Result_2>,
   'updatePublicationStyling' : ActorMethod<[string, string, string], Result_2>,
+  'updatePublicationCta' : ActorMethod<[PublicationCta], Result_2>,
 }
 
 export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
@@ -156,5 +157,6 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
     'getPublicationQuery' : IDL.Func([IDL.Text], [Result_2], ['query']),
     'updatePublicationDetails' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text), IDL.Vec(IDL.Text), IDL.Vec(IDL.Text), IDL.Text, IDL.Text, SocialLinksObject, IDL.Text], [Result_2], []),
     'updatePublicationStyling' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Result_2], []),
+    'updatePublicationCta' : IDL.Func([PublicationCta], [Result_2], []),
   });
 };

@@ -41,6 +41,9 @@ import { publicationSettingsCopy as copy } from "../../../constants/copy";
 import { PrimaryColorPicker } from "./PrimaryColorPicker";
 import { IllustrationNoImages } from "../../../components/ui/icons/IllustrationNoImages";
 import { IconImage } from "../../../components/ui/icons/IconImage";
+import { CtaIconPicker } from "./CtaIconPicker";
+import { PublicationCtaBar } from "./PublicationCtaBar";
+import { isCtaEmpty } from "../lib/cta";
 
 // 5 MB pre-check enforced client-side BEFORE calling useImageUpload.
 // The shared useImageUpload hook has its own 10 MB cap (for article images);
@@ -214,7 +217,7 @@ function EmptyImageDropzone({
 }
 
 export function PublicationDetailsForm({ handle, canisterId, publication }: Props) {
-  const { updatePublicationDetails, updatePublicationStyling } = useActors();
+  const { updatePublicationDetails, updatePublicationStyling, updatePublicationCta } = useActors();
   const uploadImage = useImageUpload();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -233,6 +236,10 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const seedFontType = publication.styling.fontType;
   const seedPrimaryColor = publication.styling.primaryColor;
   const seedLogo = publication.styling.logo;
+
+  // CTA banner seeds (NIC-378).
+  const seedCta = publication.cta;
+  const seedBannerEnabled = !isCtaEmpty(seedCta);
 
   // Seed named platform inputs from socialChannels.
   const seedNamedSocial = (): Record<PubSocialPlatform, string> => {
@@ -292,6 +299,17 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const [logoTooLarge, setLogoTooLarge] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
+  // ── CTA banner state (NIC-378) ──────────────────────────────────────────────
+  // Keep field values in state even when bannerEnabled is false — toggling back
+  // ON must restore the in-session values (only a *saved* OFF persists empty).
+  const [bannerEnabled, setBannerEnabled] = useState(seedBannerEnabled);
+  const [ctaCopy, setCtaCopy] = useState(seedCta.ctaCopy);
+  const [buttonCopy, setButtonCopy] = useState(seedCta.buttonCopy);
+  const [ctaLink, setCtaLink] = useState(seedCta.link);
+  // FIX 2: seed from stored value only — no || "star" fallback so an unset icon
+  // stays empty and isCtaEmpty remains true on an all-empty fresh toggle.
+  const [ctaIcon, setCtaIcon] = useState(seedCta.icon);
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
@@ -316,7 +334,24 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     primaryColor !== seedPrimaryColor ||
     logo !== seedLogo;
 
-  const isDirty = detailsDirty || stylingDirty;
+  // CTA dirty: compare the effective payload (banner OFF → all-empty) against seed.
+  const effectiveCta = useMemo(
+    () =>
+      bannerEnabled
+        ? { icon: ctaIcon, link: ctaLink, ctaCopy, buttonCopy }
+        : { icon: "", link: "", ctaCopy: "", buttonCopy: "" },
+    [bannerEnabled, ctaIcon, ctaLink, ctaCopy, buttonCopy],
+  );
+  const ctaDirty =
+    JSON.stringify(effectiveCta) !==
+    JSON.stringify({
+      icon: seedCta.icon,
+      link: seedCta.link,
+      ctaCopy: seedCta.ctaCopy,
+      buttonCopy: seedCta.buttonCopy,
+    });
+
+  const isDirty = detailsDirty || stylingDirty || ctaDirty;
 
   const anyImageUploading = headerImageUploading || avatarUploading || logoUploading;
 
@@ -581,6 +616,11 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         if (res2.__kind__ === "err") throw new Error(res2.err);
       }
 
+      if (ctaDirty) {
+        const res3 = await updatePublicationCta(canisterId, effectiveCta);
+        if (res3.__kind__ === "err") throw new Error(res3.err);
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["publication-settings", handle] });
       toast.show(copy.toastSaved, "success");
     } catch (err) {
@@ -613,8 +653,11 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     logo,
     detailsDirty,
     stylingDirty,
+    ctaDirty,
+    effectiveCta,
     updatePublicationDetails,
     updatePublicationStyling,
+    updatePublicationCta,
     queryClient,
     toast,
   ]);
@@ -1086,6 +1129,113 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
             )}
           </div>
         </div>
+
+        {/* (e2) Publication banner / CTA (NIC-378 §6.6) */}
+        {/* Group heading + toggle row */}
+        <div className="flex flex-col gap-[calc(8*var(--fpx))]">
+          <div className="flex flex-row items-center justify-between gap-[calc(12*var(--fpx))]">
+            <span className={labelClass}>{copy.bannerGroupHeading}</span>
+            {/* Toggle — ON: filled purple track; OFF: outlined grey track */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={bannerEnabled}
+              onClick={() => setBannerEnabled((v) => !v)}
+              className="relative shrink-0 focus:outline-none"
+              style={{ width: "calc(24*var(--fpx))", height: "calc(32*var(--fpx))", display: "flex", alignItems: "center" }}
+            >
+              <span
+                className="absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-full transition-colors"
+                style={{
+                  height: "calc(16*var(--fpx))",
+                  backgroundColor: bannerEnabled ? "#5405D4" : "transparent",
+                  border: bannerEnabled ? "none" : "1px solid rgba(32,33,35,0.6)",
+                }}
+              />
+              <span
+                className="absolute top-1/2 -translate-y-1/2 rounded-full transition-all"
+                style={{
+                  width: "calc(10*var(--fpx))",
+                  height: "calc(10*var(--fpx))",
+                  backgroundColor: bannerEnabled ? "#FFFFFF" : "rgba(32,33,35,0.6)",
+                  left: bannerEnabled ? "calc(11*var(--fpx))" : "calc(3*var(--fpx))",
+                }}
+              />
+            </button>
+          </div>
+          <p className="text-[length:calc(16*var(--fpx))] leading-[calc(19*var(--fpx))] text-ink/60">
+            {copy.bannerToggleDescription}
+          </p>
+        </div>
+
+        {/* Fields — collapsed when banner is OFF (state preserved in memory) */}
+        {bannerEnabled && (
+          <>
+            {/* Banner title */}
+            <div className={fieldClass}>
+              <label htmlFor="pub-cta-title" className={labelClass}>
+                {copy.bannerLabelTitle}
+              </label>
+              <input
+                id="pub-cta-title"
+                type="text"
+                value={ctaCopy}
+                onChange={(e) => setCtaCopy(e.target.value)}
+                placeholder={copy.bannerPlaceholderTitle}
+                className={inputClassFor()}
+              />
+            </div>
+
+            {/* Button label */}
+            <div className={fieldClass}>
+              <label htmlFor="pub-cta-button-label" className={labelClass}>
+                {copy.bannerLabelButtonLabel}
+              </label>
+              <input
+                id="pub-cta-button-label"
+                type="text"
+                value={buttonCopy}
+                onChange={(e) => setButtonCopy(e.target.value)}
+                placeholder={copy.bannerPlaceholderButtonLabel}
+                className={inputClassFor()}
+              />
+            </div>
+
+            {/* Button link */}
+            <div className={fieldClass}>
+              <label htmlFor="pub-cta-button-link" className={labelClass}>
+                {copy.bannerLabelButtonLink}
+              </label>
+              <input
+                id="pub-cta-button-link"
+                type="url"
+                value={ctaLink}
+                onChange={(e) => setCtaLink(e.target.value)}
+                placeholder={copy.bannerPlaceholderButtonLink}
+                className={inputClassFor()}
+              />
+            </div>
+
+            {/* Icon picker */}
+            <div className={fieldClass}>
+              <label className={labelClass}>{copy.bannerLabelIcon}</label>
+              <CtaIconPicker value={ctaIcon} onChange={setCtaIcon} />
+            </div>
+
+            {/* Live preview */}
+            <div className={fieldClass}>
+              <span className={labelClass}>{copy.bannerLabelPreview}</span>
+              <PublicationCtaBar
+                ctaCopy={ctaCopy}
+                buttonCopy={buttonCopy}
+                link={ctaLink}
+                icon={ctaIcon}
+                primaryColor={primaryColor}
+                preview
+              />
+            </div>
+          </>
+        )}
 
         {/* (f) Social links */}
 
