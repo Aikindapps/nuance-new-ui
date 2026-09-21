@@ -22,6 +22,7 @@ export type EditArticleInitial = {
   isPublication: boolean;
   publicationHandle: string;
   creatorHandle: string;
+  isMembersOnly: boolean;
 };
 
 // Loads an existing article into editor-ready shape for /write/:postIdAndBucket.
@@ -56,6 +57,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
       const isPublication = post.isPublication;
       const publicationHandle = post.isPublication ? post.handle : "";
       const creatorHandle = post.creatorHandle;
+      const isMembersOnly = post.isMembersOnly;
 
       const local = loadDraft(post.postId);
       const canisterModified = Number(post.modified) || 0;
@@ -72,6 +74,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
           isPublication,
           publicationHandle,
           creatorHandle,
+          isMembersOnly,
         };
       }
       return {
@@ -86,6 +89,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
         isPublication,
         publicationHandle,
         creatorHandle,
+        isMembersOnly,
       };
     },
   });

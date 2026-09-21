@@ -350,6 +350,10 @@ export type ActorsValue = {
   // The caller's subscription history, both directions (reader payments and
   // writer earnings).
   getReaderSubscriptionDetails: () => Promise<ReaderSubscriptionResult>;
+  // Whether the given principal (writer, or publication canister id) has the
+  // subscription feature switched on. Mirrors the PostCore.save gate that
+  // rejects isMembersOnly:true otherwise.
+  isWriterActivatedSubscription: (principalText: string) => Promise<boolean>;
   getWriterSubscriptionDetails: (
     principalText?: string | null,
   ) => Promise<WriterSubscriptionResult>;

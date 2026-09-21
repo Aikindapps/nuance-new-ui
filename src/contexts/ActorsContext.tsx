@@ -341,6 +341,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = createSubscriptionActor(await agentPromise);
         return actor.getReaderSubscriptionDetails();
       },
+      isWriterActivatedSubscription: async (principalText) => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.isWriterActivatedSubscription(principalText);
+      },
       getWriterSubscriptionDetails: async (principalText = null) => {
         const actor = createSubscriptionActor(await agentPromise);
         return actor.getWriterSubscriptionDetails(principalText);

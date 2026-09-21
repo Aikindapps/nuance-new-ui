@@ -16,7 +16,7 @@ import { useActors } from "../../../../contexts/useActors";
 import type { PostSaveModel } from "../../../../candid/PostCore/PostCore";
 
 export function useUnpublishPost() {
-  const { getPost, getPostKeyProperties, savePost } = useActors();
+  const { getPostCompositeQuery, getPostKeyProperties, savePost } = useActors();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -27,7 +27,10 @@ export function useUnpublishPost() {
       postId: string;
     }) => {
       const [postRes, metaRes] = await Promise.all([
-        getPost(bucketCanisterId, postId),
+        // getPostCompositeQuery returns the full body to the author for a
+        // members-only post. getPost blanks the body and the canister then
+        // rejects the re-save with "Body can not be empty."
+        getPostCompositeQuery(bucketCanisterId, postId),
         getPostKeyProperties(postId),
       ]);
       if (postRes.__kind__ === "err") throw new Error(postRes.err);

@@ -82,6 +82,10 @@ export function WriteArticleForm({
   const [savedPubHandle, setSavedPubHandle] = useState<string | null>(
     initial?.isPublication ? (initial.publicationHandle ?? null) : null,
   );
+  // Access (Everyone / Only subscribers). Seeded from the loaded article;
+  // the canister only keeps the flag on published articles, so a draft
+  // opens as Everyone. Updated when the Publish panel confirms.
+  const [membersOnly, setMembersOnly] = useState(initial?.isMembersOnly ?? false);
   // Editing starts clean (matches canister); a restored new draft starts dirty.
   const [dirty, setDirty] = useState(initial ? false : restored != null);
   // Editing a live article: save in place ("Save changes", isDraft:false) so it
@@ -188,6 +192,7 @@ export function WriteArticleForm({
       tags: string[],
       pubHandle: string | null = publicationHandle,
       premium?: { thumbnail: string; icpPrice: bigint; maxSupply: bigint },
+      isMembersOnly: boolean = false,
     ): Promise<Post | null> => {
       const editor = editorRef.current;
       if (!editor) return null;
@@ -233,18 +238,40 @@ export function WriteArticleForm({
               isMembersOnly: false,
             };
             const saved = await saveMutation.mutateAsync(personalModel);
+            // The canister keeps isMembersOnly only on a published save and
+            // migratePostToPublication cannot set it, so a subscribers-only
+            // publish migrates as a draft and then publishes with one direct
+            // publication save that carries the flag (never live as public).
+            const publishMembersOnly = !isDraft && isMembersOnly;
             const migrated = await migrateMutation.mutateAsync({
               bucketCanisterId: saved.bucketCanisterId,
               postId: saved.postId,
               publicationHandle: pubHandle,
-              isDraft,
+              isDraft: publishMembersOnly ? true : isDraft,
             });
+            // PostBucket Post (migrate) and PostCore Post (save) are structurally identical here.
+            const result: Post = publishMembersOnly
+              ? await saveMutation.mutateAsync({
+                  postId: migrated.postId,
+                  title: title.trim(),
+                  subtitle: subtitle.trim(),
+                  content,
+                  headerImage: coverUrl,
+                  isDraft: false,
+                  tagIds: tags,
+                  category: "",
+                  handle: pubHandle,
+                  creatorHandle: myHandle,
+                  isPublication: true,
+                  isMembersOnly: true,
+                })
+              : migrated;
             clearDraft(postId || DRAFT_NEW_ID);
-            setPostId(migrated.postId);
+            setPostId(result.postId);
             setTagIds(tags);
             setDirty(false);
             setSavedPubHandle(pubHandle);
-            return migrated;
+            return result;
           }
           // New article (isNew) or already a publication post: direct pub save.
           // Also used for premium mints (forced, isDraft:false, isPublication:true).
@@ -260,7 +287,7 @@ export function WriteArticleForm({
             handle: pubHandle,
             creatorHandle: myHandle,
             isPublication: true,
-            isMembersOnly: false,
+            isMembersOnly,
             ...(premium ? { premium } : {}),
           };
           const post = await saveMutation.mutateAsync(pubModel);
@@ -286,7 +313,11 @@ export function WriteArticleForm({
           isPublication: false,
           isMembersOnly: false,
         };
-        const post = await saveMutation.mutateAsync(personalModel);
+        const post = await saveMutation.mutateAsync({
+          ...personalModel,
+          // Access chosen in the Publish panel (Everyone -> false, unchanged).
+          isMembersOnly,
+        });
         clearDraft(postId || DRAFT_NEW_ID);
         setPostId(post.postId);
         setTagIds(tags);
@@ -317,11 +348,11 @@ export function WriteArticleForm({
       openPublish(isPublished ? "publish" : "draft");
       return;
     }
-    const post = await doSave(isPublished ? false : true, tagIds);
+    const post = await doSave(isPublished ? false : true, tagIds, publicationHandle, undefined, isPublished && membersOnly);
     if (post) {
       show(isPublished ? C.toasts.changesSaved : C.toasts.savedDraft, "success");
     }
-  }, [isPublished, tagIds, doSave, show, openPublish]);
+  }, [isPublished, tagIds, doSave, show, openPublish, publicationHandle, membersOnly]);
 
   const handleBack = useCallback(() => {
     if (!dirty) {
@@ -343,7 +374,7 @@ export function WriteArticleForm({
             openPublish(isPublished ? "publish" : "draft");
             return;
           }
-          const post = await doSave(isPublished ? false : true, tagIds);
+          const post = await doSave(isPublished ? false : true, tagIds, publicationHandle, undefined, isPublished && membersOnly);
           if (post) {
             show(
               isPublished ? C.toasts.changesSaved : C.toasts.savedDraft,
@@ -369,6 +400,8 @@ export function WriteArticleForm({
     openPublish,
     autosaveId,
     isPublished,
+    membersOnly,
+    publicationHandle,
   ]);
 
   const statusText = dirty ? C.unsavedChanges : postId ? C.saved : C.notSavedYet;
@@ -467,6 +500,7 @@ export function WriteArticleForm({
           coverPresent={coverUrl !== ""}
           articleSavedToCanister={postId !== ""}
           savedPublicationHandle={savedPubHandle}
+          initialMembersOnly={membersOnly}
           onMintPremium={(tags, pubH) => {
             // Guard: migrate path not needed (article is new or already in this pub).
             const migrateNotNeeded =
@@ -495,7 +529,7 @@ export function WriteArticleForm({
             );
           }}
           onBack={() => setPublishView(null)}
-          onConfirm={async (picked, chosenPub, submitForReview) => {
+          onConfirm={async (picked, chosenPub, submitForReview, chosenMembersOnly) => {
             if (chosenPub !== publicationHandle) {
               userChangedTarget.current = true;
             }
@@ -505,7 +539,8 @@ export function WriteArticleForm({
             // rather than published, since only editors may publish (NIC-269).
             const isDraft =
               publishView.mode === "publish" ? submitForReview : true;
-            const post = await doSave(isDraft, picked, chosenPub);
+            setMembersOnly(chosenMembersOnly);
+            const post = await doSave(isDraft, picked, chosenPub, undefined, chosenMembersOnly);
             if (post) {
               if (publishView.mode === "publish") {
                 if (submitForReview) {

@@ -9,6 +9,8 @@ import type { PublicationObject } from "../../../candid/User/User";
 import { TopicPicker } from "./TopicPicker";
 import { IconChevronDown } from "../../../components/ui/icons/IconChevronDown";
 import { IconChevronLeft } from "../../../components/ui/icons/IconChevronLeft";
+import { publishAccessCopy } from "./publishAccessCopy";
+import { useSubscriptionAvailable } from "../hooks/useSubscriptionAvailable";
 
 export const PUBLISH_VIEW_TITLE_ID = "publish-view-title";
 
@@ -28,6 +30,7 @@ export function PublishView({
   onMintPremium,
   articleSavedToCanister,
   savedPublicationHandle,
+  initialMembersOnly,
 }: {
   mode: "draft" | "publish";
   initialTagIds: string[];
@@ -38,11 +41,13 @@ export function PublishView({
     tagIds: string[],
     publicationHandle: string | null,
     submitForReview: boolean,
+    isMembersOnly: boolean,
   ) => Promise<boolean>;
   coverPresent?: boolean;
   onMintPremium?: (tagIds: string[], publicationHandle: string) => void;
   articleSavedToCanister?: boolean;
   savedPublicationHandle?: string | null;
+  initialMembersOnly?: boolean;
 }) {
   const c = writeArticleCopy.publish;
   const cp = writeArticleCopy.premium;
@@ -50,6 +55,8 @@ export function PublishView({
   const [pubHandle, setPubHandle] = useState<string | null>(initialPublicationHandle);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  const [membersOnly, setMembersOnly] = useState(initialMembersOnly ?? false);
+  const [accessOpen, setAccessOpen] = useState(false);
 
   const selectedPub = publications.find((p) => p.publicationName === pubHandle);
   const premiumEligible =
@@ -71,6 +78,22 @@ export function PublishView({
     selectedPub !== undefined &&
     selectedPub.isEditor === false;
 
+  // Access (Everyone / Only subscribers) is a publish-time setting: the
+  // canister stores isMembersOnly only on a published save and clears it on
+  // any draft save, and a writer's submit-for-review is a draft the editor
+  // manages inside the publication. So the field is publish-mode only.
+  const showAccess = mode === "publish" && !submitForReview;
+  // The canister rejects isMembersOnly:true unless the target (own profile,
+  // or the publication) has subscriptions switched on. undefined = resolving.
+  const subscriptionAvailable = useSubscriptionAvailable(pubHandle);
+  const accessRef = useRef<HTMLDivElement>(null);
+  const accessListId = "publish-access-listbox";
+
+  // When the selected target has no subscriptions, treat membersOnly as false
+  // (derived, not mutated) so the display and confirm payload both reset to
+  // Everyone without a separate effect-driven setState.
+  const effectiveMembersOnly = subscriptionAvailable === false ? false : membersOnly;
+
   // Ref wrapping the publish-to field + foldout panel for outside-click close.
   const publishToRef = useRef<HTMLDivElement>(null);
   const listId = "publish-to-listbox";
@@ -79,7 +102,9 @@ export function PublishView({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (open) {
+        if (accessOpen) {
+          setAccessOpen(false);
+        } else if (open) {
           setOpen(false);
         } else {
           onBack();
@@ -88,7 +113,7 @@ export function PublishView({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onBack]);
+  }, [open, accessOpen, onBack]);
 
   // Close foldout on outside mousedown (mirror NotificationsFoldout pattern).
   useEffect(() => {
@@ -101,10 +126,20 @@ export function PublishView({
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
 
+  useEffect(() => {
+    if (!accessOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (accessRef.current?.contains(e.target as Node)) return;
+      setAccessOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [accessOpen]);
+
   const confirm = async () => {
     if (selected.length < 1 || saving) return;
     setSaving(true);
-    const ok = await onConfirm(selected, pubHandle, submitForReview);
+    const ok = await onConfirm(selected, pubHandle, submitForReview, showAccess && effectiveMembersOnly);
     setSaving(false);
     if (ok) onBack();
   };
@@ -241,6 +276,78 @@ export function PublishView({
           <TopicPicker selected={selected} onChange={setSelected} />
         </div>
 
+        {/* Access: Everyone / Only subscribers (NIC-419). Publish mode only. */}
+        {showAccess && (
+          <div className="flex flex-col gap-[calc(6*var(--fpx))]">
+            <label className="text-label font-bold text-ink">
+              {publishAccessCopy.label}
+            </label>
+            <div className="relative" ref={accessRef}>
+              <button
+                type="button"
+                role="combobox"
+                aria-haspopup="listbox"
+                aria-expanded={accessOpen}
+                aria-controls={accessListId}
+                onClick={() => setAccessOpen((o) => !o)}
+                className={[
+                  "flex h-[calc(48*var(--fpx))] w-full items-center justify-between rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] text-body text-ink-80",
+                  accessOpen
+                    ? "border-2 border-brand-purple bg-brand-purple-5"
+                    : "border-2 border-ink-border-10 bg-ink-border-5",
+                ].join(" ")}
+              >
+                <span>{effectiveMembersOnly ? publishAccessCopy.subscribersOnly : publishAccessCopy.everyone}</span>
+                <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0 text-ink-80" />
+              </button>
+              {accessOpen && (
+                <ul
+                  id={accessListId}
+                  role="listbox"
+                  className="absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]"
+                >
+                  <li role="option" aria-selected={!effectiveMembersOnly}>
+                    <button
+                      type="button"
+                      onClick={() => { setMembersOnly(false); setAccessOpen(false); }}
+                      className={[
+                        "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
+                        !effectiveMembersOnly
+                          ? "bg-brand-purple-fluor-80 font-medium"
+                          : "hover:bg-brand-purple-fluor-80",
+                      ].join(" ")}
+                    >
+                      {publishAccessCopy.everyone}
+                    </button>
+                  </li>
+                  <li role="option" aria-selected={effectiveMembersOnly} aria-disabled={subscriptionAvailable === false}>
+                    <button
+                      type="button"
+                      disabled={subscriptionAvailable === false}
+                      onClick={() => { setMembersOnly(true); setAccessOpen(false); }}
+                      className={[
+                        "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
+                        subscriptionAvailable === false
+                          ? "cursor-not-allowed text-white/50"
+                          : effectiveMembersOnly
+                            ? "bg-brand-purple-fluor-80 font-medium"
+                            : "hover:bg-brand-purple-fluor-80",
+                      ].join(" ")}
+                    >
+                      {publishAccessCopy.subscribersOnly}
+                    </button>
+                  </li>
+                </ul>
+              )}
+            </div>
+            {subscriptionAvailable === false && (
+              <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(4*var(--fpx))]">
+                {publishAccessCopy.subscribersUnavailable}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Buttons row */}
         <div className="flex w-full flex-col gap-[calc(12*var(--fpx))] lg:flex-row lg:items-center lg:justify-between">
           <Button
@@ -251,7 +358,7 @@ export function PublishView({
             {c.backToArticle}
           </Button>
           <div className="flex flex-col gap-[calc(8*var(--fpx))] lg:flex-row lg:items-center">
-            {premiumEligible && (
+            {premiumEligible && !effectiveMembersOnly && (
               <Button
                 sx={{ ...secondaryButtonSx, width: { xs: "100%", lg: "auto" } }}
                 disabled={selected.length < 1 || saving}
