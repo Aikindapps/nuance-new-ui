@@ -1,3 +1,4 @@
+import { HomeFeedMobileStateSwap } from "./HomeFeedMobileStates";
 import { ArticleFeed } from "./ArticleFeed";
 import { PopularWriters } from "./PopularWriters";
 import { PopularPublications } from "./PopularPublications";
@@ -20,21 +21,23 @@ const FEED_LABEL: Record<Variant, string> = {
 export function ArticleTab({ variant }: { variant: Variant }) {
   const query = useArticles(variant);
   return (
-    <ArticleFeed
-      query={query}
-      emptyMessage={`${homeStatus.emptyTitle} ${homeStatus.emptyBody}`}
-      feedLabel={FEED_LABEL[variant]}
-      collapsePartialRows
-      afterFeatured={
-        <>
-          <div className="mt-12 md:mt-14 lg:mt-16">
-            <PopularWriters />
+    <HomeFeedMobileStateSwap query={query}>
+      <ArticleFeed
+        query={query}
+        emptyMessage={`${homeStatus.emptyTitle} ${homeStatus.emptyBody}`}
+        feedLabel={FEED_LABEL[variant]}
+        collapsePartialRows
+        afterFeatured={
+          <div>
+            <div className="mt-12 md:mt-14 lg:mt-16">
+              <PopularWriters />
+            </div>
+            <div className="mt-12 md:mt-14 lg:mt-16">
+              <PopularPublications />
+            </div>
           </div>
-          <div className="mt-12 md:mt-14 lg:mt-16">
-            <PopularPublications />
-          </div>
-        </>
-      }
-    />
+        }
+      />
+    </HomeFeedMobileStateSwap>
   );
 }

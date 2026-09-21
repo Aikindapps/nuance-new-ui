@@ -56,8 +56,8 @@ export function ArticleSummary({
           <h3
             className={
               large
-                ? "font-bold text-ink lg:text-title-lg text-title-sm line-clamp-3"
-                : "text-title-sm font-bold text-ink line-clamp-3"
+                ? "font-bold text-ink lg:text-title-lg text-title-sm line-clamp-3 break-words"
+                : "text-title-sm font-bold text-ink line-clamp-3 break-words"
             }
           >
             <Link to={articleUrl} className="hover:underline">

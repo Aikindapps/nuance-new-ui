@@ -1,3 +1,5 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { HomeFeedMobileStateSwap, HomeFeedMobileSkeleton, HomeFeedMobileError, HomeFollowingMobileEmpty } from "./HomeFeedMobileStates";
 import Skeleton from "@mui/material/Skeleton";
 import { ArticleFeed } from "./ArticleFeed";
 import { useFollowing } from "../hooks/useFollowing";
@@ -31,11 +33,13 @@ export function FollowingTab() {
   }
 
   return (
-    <ArticleFeed
-      query={query}
-      emptyMessage={homeLoggedInCopy.followingEmpty}
-      feedLabel="Articles from people and topics you follow"
-    />
+    <HomeFeedMobileStateSwap query={query} withShelves={false}>
+      <ArticleFeed
+        query={query}
+        emptyMessage={homeLoggedInCopy.followingEmpty}
+        feedLabel="Articles from people and topics you follow"
+      />
+    </HomeFeedMobileStateSwap>
   );
 }
 
@@ -44,11 +48,15 @@ export function FollowingTab() {
 
 function GatingSkeleton() {
   return (
-    <div
-      className="flex flex-col gap-12 md:gap-14 lg:gap-16"
-      aria-live="polite"
-      aria-busy="true"
-    >
+    <div>
+      <div className="md:hidden">
+        <HomeFeedMobileSkeleton withShelves={false} />
+      </div>
+      <div
+        className="hidden md:flex flex-col gap-12 md:gap-14 lg:gap-16"
+        aria-live="polite"
+        aria-busy="true"
+      >
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-10 lg:gap-14">
         {[0, 1].map((i) => (
           <SkeletonCard key={`hero-${i}`} large />
@@ -60,6 +68,7 @@ function GatingSkeleton() {
         ))}
       </div>
       <span className="sr-only">{homeStatus.loadingSrLabel}</span>
+      </div>
     </div>
   );
 }
@@ -85,28 +94,44 @@ function SkeletonCard({ large = false }: { large?: boolean }) {
 }
 
 function GatingError({ message }: { message: string }) {
+  const queryClient = useQueryClient();
   return (
-    <div
-      role="alert"
-      className="rounded-card border border-ink-60/30 bg-ink-60/5 p-6 text-ink-80"
-    >
-      <p className="font-bold text-ink">{homeStatus.errorTitle}</p>
-      <p className="mt-2 text-body">{homeStatus.errorBody}</p>
-      {import.meta.env.DEV && (
-        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-sm text-ink-60">
-          {message}
-        </pre>
-      )}
+    <div>
+      <div className="md:hidden">
+        <HomeFeedMobileError
+          onRetry={() => {
+            void queryClient.refetchQueries({ queryKey: ["my-profile"] });
+            void queryClient.refetchQueries({ queryKey: ["my-tags"] });
+          }}
+        />
+      </div>
+      <div
+        role="alert"
+        className="hidden md:block rounded-card border border-ink-60/30 bg-ink-60/5 p-6 text-ink-80"
+      >
+        <p className="font-bold text-ink">{homeStatus.errorTitle}</p>
+        <p className="mt-2 text-body">{homeStatus.errorBody}</p>
+        {import.meta.env.DEV && (
+          <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-sm text-ink-60">
+            {message}
+          </pre>
+        )}
+      </div>
     </div>
   );
 }
 
 function GatingEmpty({ message }: { message: string }) {
   return (
-    <div className="rounded-card border border-ink-border/20 bg-ink-60/5 p-12 text-center md:p-16">
-      <p className="mx-auto max-w-2xl text-body text-ink-80 md:text-lg">
-        {message}
-      </p>
+    <div>
+      <div className="md:hidden">
+        <HomeFollowingMobileEmpty />
+      </div>
+      <div className="hidden md:block rounded-card border border-ink-border/20 bg-ink-60/5 p-12 text-center md:p-16">
+        <p className="mx-auto max-w-2xl text-body text-ink-80 md:text-lg">
+          {message}
+        </p>
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { PublicationBlock } from "../../../components/ui/PublicationBlock";
 import { SectionHeading } from "../../../components/ui/SectionHeading";
 import { usePopularDiscovery } from "../hooks/usePopularDiscovery";
 import { popularPublicationsCopy } from "../../../constants/copy";
+import { homeMobileCopy } from "./homeMobileCopy";
 
 export function PopularPublications() {
   const { data, isLoading } = usePopularDiscovery();
@@ -14,7 +15,8 @@ export function PopularPublications() {
     <section aria-labelledby="popular-publications-heading">
       <div className="mb-6 flex items-center justify-between gap-4">
         <SectionHeading id="popular-publications-heading">
-          {popularPublicationsCopy.heading}
+          <span className="md:hidden">{homeMobileCopy.publicationsHeading}</span>
+          <span className="hidden md:inline">{popularPublicationsCopy.heading}</span>
         </SectionHeading>
         <a
           href="/explore/publications"
