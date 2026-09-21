@@ -7,6 +7,8 @@ import { notificationsCopy } from "../constants/copy";
 import type { UserListItem } from "../candid/User/User";
 import { NotificationItem } from "../features/notifications/NotificationItem";
 import { NotificationsEmpty } from "../features/notifications/NotificationsEmpty";
+import { NotificationsSkeleton } from "../features/notifications/NotificationsSkeleton";
+import { NotificationsLoadError } from "../features/notifications/NotificationsLoadError";
 import { useMarkRead } from "../features/notifications/hooks/useMarkRead";
 import { useNotificationsRoute } from "../features/notifications/hooks/useNotifications";
 import { useUnreadSnapshot } from "../features/notifications/hooks/useUnreadSnapshot";
@@ -69,19 +71,29 @@ export function NotificationsPage() {
       <title>{c.routeMetaTitle}</title>
       <meta name="description" content={c.routeMetaDescription} />
       <HeaderLoggedIn />
-      <main className={`${CONTAINER} px-6 pt-12 lg:px-14 lg:pt-20`}>
+      <main className={`${CONTAINER} px-4 pt-12 lg:px-14 lg:pt-20`}>
         <h1 className="text-title-md font-bold text-ink-80 lg:text-title-lg">
           {c.routeHeading}
         </h1>
 
         <div className="mt-6 pb-24">
           {query.isPending && (
-            <p className="px-4 py-8 text-body text-ink-60">{c.loading}</p>
+            <div>
+              <NotificationsSkeleton className="lg:hidden" />
+              <p className="hidden px-4 py-8 text-body text-ink-60 lg:block">{c.loading}</p>
+            </div>
           )}
           {query.isError && (
-            <p className="px-4 py-8 text-body text-error">{c.loadingError}</p>
+            <div>
+              <NotificationsLoadError className="lg:hidden" onRetry={() => query.refetch()} />
+              <p className="hidden px-4 py-8 text-body text-error lg:block">{c.loadingError}</p>
+            </div>
           )}
-          {showEmpty && <NotificationsEmpty variant="route" />}
+          {showEmpty && (
+            <div className="rounded-card border border-ink-border/10 bg-white lg:rounded-none lg:border-0 lg:bg-transparent">
+              <NotificationsEmpty variant="route" />
+            </div>
+          )}
 
           {allNotifications.length > 0 && (
             <ul className="overflow-hidden rounded-card border border-ink-border/10 bg-white">

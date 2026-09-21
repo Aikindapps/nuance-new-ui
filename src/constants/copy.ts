@@ -130,6 +130,9 @@ export const navDrawerCopy = {
 // them).
 export const notificationsCopy = {
   title: "Notifications",
+  loadErrorTitle: "Something went wrong",
+  loadErrorBody: "We couldn\u2019t load your notifications.",
+  retryLabel: "Try again",
   viewAll: "View all",
   emptyTitle: "No notifications yet",
   emptyHint: "Follow some writers or topics and updates will show up here.",
