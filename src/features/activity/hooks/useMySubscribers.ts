@@ -17,6 +17,14 @@ import type { SubscriptionTimeInterval } from "../../../candid/Subscription/Subs
 // useWalletHistory / usePublicationSubscribers), so Number(bigint) is safe
 // with NO divide.
 //
+// NIC-379 -- each row carries an `isPublication` discriminator so the section
+// can render publications with the house square logo avatar and writers with
+// the round photo. A resolved subscriber is a plain UserListItem with no type
+// marker, so the discriminator comes from getPublicationCanisters() (the
+// platform's authoritative [handle, canisterId] publication list): a row is a
+// publication when its lowercased handle is in that set. Same partition the
+// shipped useMyFollows / useSearchUsers hooks use.
+//
 // Read-only: no earnings or plan management (NIC-44).
 
 export type SubscriberRow = {
@@ -25,6 +33,7 @@ export type SubscriberRow = {
   interval: SubscriptionTimeInterval;
   startTimeMs: number;
   endTimeMs: number;
+  isPublication: boolean;
 };
 
 export function useMySubscribers() {
@@ -53,13 +62,19 @@ export function useMySubscribers() {
         }
       }
       const active = [...latestByReader.values()];
+      if (active.length === 0) return [];
 
-      // Resolve reader principals to profiles.
+      // Resolve reader principals to profiles, and fetch the publication
+      // handle set in parallel (the writer-vs-publication discriminator).
       const principals = active.map((e) => e.readerPrincipalId);
-      const users = principals.length
-        ? await actors.getUsersByPrincipals(principals).catch(() => [])
-        : [];
+      const [users, pubCanisters] = await Promise.all([
+        actors.getUsersByPrincipals(principals).catch(() => [] as UserListItem[]),
+        actors
+          .getPublicationCanisters()
+          .catch(() => [] as Array<[string, string]>),
+      ]);
       const byPrincipal = new Map(users.map((u) => [u.principal, u]));
+      const pubHandleSet = new Set(pubCanisters.map(([h]) => h.toLowerCase()));
 
       // Map to rows; drop those whose profile did not resolve.
       const rows: SubscriberRow[] = active
@@ -73,6 +88,7 @@ export function useMySubscribers() {
               interval: e.subscriptionTimeInterval,
               startTimeMs: Number(e.startTime),
               endTimeMs: Number(e.endTime),
+              isPublication: pubHandleSet.has(user.handle.toLowerCase()),
             },
           ];
         })

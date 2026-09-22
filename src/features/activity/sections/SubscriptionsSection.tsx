@@ -17,6 +17,8 @@ import { subscriptionsCopy as c } from "../../../constants/copy";
 // the FollowersSection pattern: loading -> error -> empty -> populated list
 // with row dividers + Show more pager. ActivityNoteBand leads (top) in both
 // states.
+// NIC-379: publication rows render the house square logo avatar (8px radius)
+// via the row's isPublication discriminator; writer rows keep the round photo.
 // Desktop frame 1737:2830; phone frame 1741:4872.
 
 const INITIAL_VISIBLE = 10;
@@ -60,6 +62,7 @@ export function SubscriptionsSection() {
             {idx > 0 && <ActivityRowDivider />}
             <ActivityUserRow
               user={row.user}
+              isPublication={row.isPublication}
               subLine={`@${row.user.handle}`}
               right={
                 <SubscriptionMeta
