@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import Button from "@mui/material/Button";
 import { Popup } from "../../../components/ui/Popup";
+import { useIsMobileViewport } from "../../../lib/useIsMobileViewport";
+import { PremiumMintSheet } from "./PremiumMintSheet";
+import {
+  sanitizeKeys,
+  sanitizePrice,
+} from "../lib/premiumMintFields";
 import {
   primaryButtonSx,
   secondaryButtonSx,
@@ -81,6 +87,7 @@ export function PremiumMintView({
   onCancel,
 }: PremiumMintViewProps) {
   const c = writeArticleCopy.premium;
+  const isMobile = useIsMobileViewport();
 
   const [resizedHeaderImage, setResizedHeaderImage] = useState("");
   // Initialize to true only if there is actually a URL to fetch.
@@ -148,6 +155,31 @@ export function PremiumMintView({
     // On success the parent closes the modal — no state update needed.
   };
 
+  if (isMobile) {
+    return (
+      <PremiumMintSheet
+        titleId={PREMIUM_MINT_VIEW_TITLE_ID}
+        processing={processing}
+        imageLoading={imageLoading}
+        svg={svg}
+        keys={keys}
+        price={price}
+        onKeysChange={setKeys}
+        onPriceChange={setPrice}
+        termsAccepted={termsAccepted}
+        onTermsChange={setTermsAccepted}
+        minKeys={minKeys}
+        editorCount={editorCount}
+        editorCountError={editorCountError}
+        ckbtcEquiv={ckbtcEquiv}
+        nuaEquiv={nuaEquiv}
+        isValid={isValid}
+        onMint={() => void handleMint()}
+        onCancel={onCancel}
+      />
+    );
+  }
+
   // Processing state: no close control, inputs disabled.
   if (processing) {
     return (
@@ -207,15 +239,7 @@ export function PremiumMintView({
             value={keys}
             placeholder={c.keysPlaceholder}
             disabled={processing}
-            onChange={(e) => {
-              const v = e.target.value.replace(/\D/g, "");
-              // Cap at 10000
-              if (v === "" || parseInt(v, 10) <= 10000) {
-                setKeys(v);
-              } else {
-                setKeys("10000");
-              }
-            }}
+            onChange={(e) => setKeys(sanitizeKeys(e.target.value))}
             className="h-[calc(48*var(--fpx))] w-full rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink outline-none focus:border-brand-purple focus:bg-brand-purple-5"
           />
           <p className="text-[length:calc(13*var(--fpx))] text-ink-60">
@@ -246,10 +270,8 @@ export function PremiumMintView({
             placeholder={c.pricePlaceholder}
             disabled={processing}
             onChange={(e) => {
-              const v = e.target.value;
-              if (/^\d*\.?\d{0,4}$/.test(v)) {
-                setPrice(v);
-              }
+              const v = sanitizePrice(e.target.value);
+              if (v !== null) setPrice(v);
             }}
             className="h-[calc(48*var(--fpx))] w-full rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink outline-none focus:border-brand-purple focus:bg-brand-purple-5"
           />
