@@ -31,4 +31,31 @@ export const myArticlesMobileCopy = {
   closeFilterAriaLabel: "Close filter menu",
   // Published status label shown in the action sheet meta line.
   published: "Published",
+  // "Minted" tag on a minted article's row (Figma 2294:3003 "Minted badge").
+  mintedTag: "Minted",
+  // Action sheet row label -- first item, minted articles only (2299:9770).
+  viewKeysSold: "View keys sold",
+
+  // Keys & sales panel (read-only, Figma 2555:6058 / 6097 / 6135 / 6173).
+  keysAndSales: {
+    heading: "Limited-edition NFT",
+    subHeading:
+      "These keys are already minted. Here\u2019s the price, quantity, and how many have sold.",
+    keysLabel: "Number of keys",
+    keysInfo: "How many keys of this article are available.",
+    keysUnit: "keys",
+    soldLine: (n: number, m: number): string =>
+      `${n.toLocaleString()} of ${m.toLocaleString()} keys sold`,
+    soldLineLoading: "Loading sold count\u2026",
+    soldLineError: "Couldn\u2019t load the sold count.",
+    priceLabel: "Price per key",
+    priceInfo: "What each key costs. Paid in ICP.",
+    priceUnit: "ICP",
+    conversionPrefix: "=",
+    ckbtcUnit: "ckBTC",
+    nuaUnit: "NUA",
+    conversionPlaceholder: "\u2014",
+    doneLabel: "Done",
+    closeAriaLabel: "Close keys & sales",
+  },
 };

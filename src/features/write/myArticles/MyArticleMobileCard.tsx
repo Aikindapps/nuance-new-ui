@@ -79,6 +79,12 @@ export function MyArticleMobileCard({
             {c.draftPill}
           </span>
         )}
+        {/* Minted tag -- Figma 2294:3003 "Minted badge", Purple/10% pill */}
+        {article.hasNft && (
+          <span className="rounded-[100px] bg-brand-purple-10 px-2.5 py-1 text-[12px] font-medium leading-[15px] text-brand-purple">
+            {mc.mintedTag}
+          </span>
+        )}
         <span className="flex-1" />
         {/* Claps -- shown when non-zero, matches frame "Stats bar" clap icon */}
         {article.claps > 0 && (

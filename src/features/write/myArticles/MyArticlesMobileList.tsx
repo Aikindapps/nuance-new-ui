@@ -6,7 +6,7 @@
 // CONTENT only: heading + count, "New article" CTA, filter controls, card
 // stack, and the three data states (loading skeleton / error / empty).
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useId } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import FocusTrap from "@mui/material/Unstable_TrapFocus";
 import { myArticlesCopy } from "../../../constants/copy";
@@ -14,6 +14,8 @@ import { myArticlesMobileCopy } from "./myArticlesMobileCopy";
 import { IllustrationLoadError } from "../../../components/ui/icons/IllustrationLoadError";
 import { MyArticleMobileCard } from "./MyArticleMobileCard";
 import { MyArticlesActionSheet } from "./MyArticlesActionSheet";
+import { KeysAndSalesSheet } from "./KeysAndSalesSheet";
+import { useModal } from "../../../services/modal";
 import { buildArticleUrl } from "../../../lib/articleUrl";
 import type { MyArticle, MyArticleFilter } from "./hooks/useMyArticles";
 
@@ -65,6 +67,8 @@ export function MyArticlesMobileList({
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const navigate = useNavigate();
+  const modal = useModal();
+  const keysAndSalesTitleId = useId();
 
   const closeSheet = useCallback(() => setSheetArticle(null), []);
 
@@ -79,6 +83,24 @@ export function MyArticlesMobileList({
   }, [filterSheetOpen]);
 
   const totalCount = countsData ? countsData[filter] : null;
+
+  // Opens the read-only Keys & sales panel (NIC-467) through the modal
+  // service -- see KeysAndSalesSheet.tsx for why this sheet uses that
+  // mechanic rather than the inline scrim+FocusTrap one this file's other
+  // two sheets use.
+  const openKeysAndSales = useCallback(
+    (article: MyArticle) => {
+      modal.open(
+        <KeysAndSalesSheet
+          titleId={keysAndSalesTitleId}
+          postId={article.id}
+          onDone={() => modal.close()}
+        />,
+        { ariaLabelledBy: keysAndSalesTitleId, dismissable: true },
+      );
+    },
+    [modal, keysAndSalesTitleId],
+  );
 
   // Derive empty-state message keyed by current filter.
   const emptyMessage =
@@ -221,6 +243,9 @@ export function MyArticlesMobileList({
         }}
         onUnpublish={() => {
           if (sheetArticle) onUnpublish(sheetArticle);
+        }}
+        onViewKeysSold={() => {
+          if (sheetArticle) openKeysAndSales(sheetArticle);
         }}
       />
       {/* Filter picker sheet -- scrim-click and Escape both dismiss */}

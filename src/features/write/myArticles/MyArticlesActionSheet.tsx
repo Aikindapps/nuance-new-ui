@@ -19,6 +19,7 @@ type Props = {
   onView: () => void;
   onDelete: () => void;
   onUnpublish: () => void;
+  onViewKeysSold: () => void;
 };
 
 export function MyArticlesActionSheet({
@@ -27,6 +28,7 @@ export function MyArticlesActionSheet({
   onView,
   onUnpublish,
   onDelete,
+  onViewKeysSold,
 }: Props) {
   const isOpen = article !== null;
 
@@ -81,6 +83,29 @@ export function MyArticlesActionSheet({
             {metaLine}
           </p>
           <div className="h-px bg-ink-border/10" />
+          {/* View keys sold -- FIRST item, minted articles only (Figma
+              2299:9770 draws this menu as View keys sold / View article /
+              Change category / Delete / Cancel). The shipped menu differs
+              from that frame on purpose: "Unpublish" is a working shipped
+              feature simply not drawn on this frame (kept as-is, with its
+              existing conditional), and "Change category" is NOT built in
+              this app (depends on unbuilt publisher bindings) so it is
+              intentionally omitted rather than added as a dead item. The
+              only change this card makes to this menu is inserting this
+              first row for minted articles. */}
+          {article.hasNft && (
+            <div className="contents">
+              <button
+                type="button"
+                onClick={() => { onViewKeysSold(); onClose(); }}
+                className="flex items-center gap-3 py-4 text-[18px] leading-[28px] text-ink"
+              >
+                <SheetKeyIcon />
+                {mc.viewKeysSold}
+              </button>
+              <div className="h-px bg-ink-border/10" />
+            </div>
+          )}
           {/* View article */}
           <button
             type="button"
@@ -145,6 +170,28 @@ function SheetEyeIcon() {
         fill="#202123"
       />
       <circle cx="12" cy="12" r="1.9" fill="#202123" />
+    </svg>
+  );
+}
+
+// Key icon for "View keys sold" (Figma 2299:9770 row icon).
+function SheetKeyIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle
+        cx="8"
+        cy="15"
+        r="4"
+        stroke="#202123"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M11 12 18.5 4.5M18.5 4.5 21 7M18.5 4.5 16 7"
+        stroke="#202123"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
