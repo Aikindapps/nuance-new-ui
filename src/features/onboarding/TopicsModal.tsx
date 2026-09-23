@@ -2,6 +2,8 @@ import { useState } from "react";
 import Button from "@mui/material/Button";
 import { Popup } from "../../components/ui/Popup";
 import { SelectableTag } from "../../components/ui/SelectableTag";
+import { useIsMobileViewport } from "../../lib/useIsMobileViewport";
+import { TopicsSheet } from "./TopicsSheet";
 import {
   primaryButtonSx,
   secondaryButtonSx,
@@ -29,6 +31,7 @@ export function TopicsModal({ onComplete }: TopicsModalProps) {
   const tags = useAllTags();
   const followTags = useFollowTags();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobileViewport();
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -48,6 +51,23 @@ export function TopicsModal({ onComplete }: TopicsModalProps) {
     }
     followTags.mutate([...selected], { onSuccess: onComplete });
   };
+
+  if (isMobile) {
+    return (
+      <TopicsSheet
+        titleId={TOPICS_MODAL_TITLE_ID}
+        tags={tags.data ?? []}
+        tagsLoading={tags.isLoading}
+        tagsError={tags.isError}
+        selected={selected}
+        onToggle={toggle}
+        onSkip={onComplete}
+        onDone={done}
+        isSubmitting={followTags.isPending}
+        submitError={followTags.isError}
+      />
+    );
+  }
 
   return (
     <Popup

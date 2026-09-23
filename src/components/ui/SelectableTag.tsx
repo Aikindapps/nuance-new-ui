@@ -9,14 +9,21 @@ type SelectableTagProps = {
   label: string;
   selected: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 };
 
-export function SelectableTag({ label, selected, onToggle }: SelectableTagProps) {
+export function SelectableTag({
+  label,
+  selected,
+  onToggle,
+  disabled,
+}: SelectableTagProps) {
   return (
     <button
       type="button"
       aria-pressed={selected}
       onClick={onToggle}
+      disabled={disabled}
       className={
         "inline-flex h-12 items-center justify-center rounded-full border-2 px-6 text-lg font-medium text-brand-purple transition-colors " +
         (selected

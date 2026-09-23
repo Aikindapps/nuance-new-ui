@@ -9,7 +9,7 @@ import type { SxProps, Theme } from "@mui/material/styles";
 // and Topics footer buttons hug their label (px:3 gives the 24px Figma
 // horizontal padding).
 
-const PURPLE_GRADIENT =
+export const PURPLE_GRADIENT =
   "linear-gradient(-31.886deg, var(--color-brand-purple-light) 0.643%, var(--color-brand-purple) 59.555%)";
 
 export const primaryButtonSx: SxProps<Theme> = {
