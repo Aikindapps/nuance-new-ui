@@ -193,6 +193,7 @@ export function WriteArticleForm({
       pubHandle: string | null = publicationHandle,
       premium?: { thumbnail: string; icpPrice: bigint; maxSupply: bigint },
       isMembersOnly: boolean = false,
+      scheduled: bigint | null = null,
     ): Promise<Post | null> => {
       const editor = editorRef.current;
       if (!editor) return null;
@@ -217,6 +218,13 @@ export function WriteArticleForm({
         return null;
       }
 
+      // Only ever schedule a FIRST publish: a future date on an already
+      // published article rewrites its publish date and hides it.
+      const scheduleMs =
+        !isDraft && scheduled != null && !isPublished
+          ? scheduled
+          : null;
+
       try {
         if (pubHandle) {
           // Existing personal draft being moved into a publication for the first
@@ -239,18 +247,22 @@ export function WriteArticleForm({
             };
             const saved = await saveMutation.mutateAsync(personalModel);
             // The canister keeps isMembersOnly only on a published save and
-            // migratePostToPublication cannot set it, so a subscribers-only
-            // publish migrates as a draft and then publishes with one direct
-            // publication save that carries the flag (never live as public).
+            // migratePostToPublication cannot set it either, so both a
+            // subscribers-only publish AND a scheduled publish
+            // migrate as a draft first, then publish with one
+            // direct publication save that carries the flag(s)
+            // (never live as public).
             const publishMembersOnly = !isDraft && isMembersOnly;
+            const twoStepPublish =
+              publishMembersOnly || scheduleMs != null;
             const migrated = await migrateMutation.mutateAsync({
               bucketCanisterId: saved.bucketCanisterId,
               postId: saved.postId,
               publicationHandle: pubHandle,
-              isDraft: publishMembersOnly ? true : isDraft,
+              isDraft: twoStepPublish ? true : isDraft,
             });
             // PostBucket Post (migrate) and PostCore Post (save) are structurally identical here.
-            const result: Post = publishMembersOnly
+            const result: Post = twoStepPublish
               ? await saveMutation.mutateAsync({
                   postId: migrated.postId,
                   title: title.trim(),
@@ -263,7 +275,10 @@ export function WriteArticleForm({
                   handle: pubHandle,
                   creatorHandle: myHandle,
                   isPublication: true,
-                  isMembersOnly: true,
+                  isMembersOnly: publishMembersOnly,
+                  ...(scheduleMs != null
+                    ? { scheduledPublishedDate: scheduleMs }
+                    : {}),
                 })
               : migrated;
             clearDraft(postId || DRAFT_NEW_ID);
@@ -289,6 +304,9 @@ export function WriteArticleForm({
             isPublication: true,
             isMembersOnly,
             ...(premium ? { premium } : {}),
+            ...(scheduleMs != null
+              ? { scheduledPublishedDate: scheduleMs }
+              : {}),
           };
           const post = await saveMutation.mutateAsync(pubModel);
           clearDraft(postId || DRAFT_NEW_ID);
@@ -317,6 +335,9 @@ export function WriteArticleForm({
           ...personalModel,
           // Access chosen in the Publish panel (Everyone -> false, unchanged).
           isMembersOnly,
+          ...(scheduleMs != null
+            ? { scheduledPublishedDate: scheduleMs }
+            : {}),
         });
         clearDraft(postId || DRAFT_NEW_ID);
         setPostId(post.postId);
@@ -329,7 +350,19 @@ export function WriteArticleForm({
         return null;
       }
     },
-    [postId, savedPubHandle, title, subtitle, coverUrl, myHandle, publicationHandle, saveMutation, migrateMutation, show],
+    [
+      postId,
+      savedPubHandle,
+      title,
+      subtitle,
+      coverUrl,
+      myHandle,
+      publicationHandle,
+      saveMutation,
+      migrateMutation,
+      show,
+      isPublished,
+    ],
   );
 
   const openPublish = useCallback(
@@ -501,6 +534,7 @@ export function WriteArticleForm({
           articleSavedToCanister={postId !== ""}
           savedPublicationHandle={savedPubHandle}
           initialMembersOnly={membersOnly}
+          alreadyPublished={isPublished}
           onMintPremium={(tags, pubH) => {
             // Guard: migrate path not needed (article is new or already in this pub).
             const migrateNotNeeded =
@@ -529,7 +563,13 @@ export function WriteArticleForm({
             );
           }}
           onBack={() => setPublishView(null)}
-          onConfirm={async (picked, chosenPub, submitForReview, chosenMembersOnly) => {
+          onConfirm={async (
+            picked,
+            chosenPub,
+            submitForReview,
+            chosenMembersOnly,
+            scheduledPublishedDate,
+          ) => {
             if (chosenPub !== publicationHandle) {
               userChangedTarget.current = true;
             }
@@ -540,7 +580,14 @@ export function WriteArticleForm({
             const isDraft =
               publishView.mode === "publish" ? submitForReview : true;
             setMembersOnly(chosenMembersOnly);
-            const post = await doSave(isDraft, picked, chosenPub, undefined, chosenMembersOnly);
+            const post = await doSave(
+              isDraft,
+              picked,
+              chosenPub,
+              undefined,
+              chosenMembersOnly,
+              scheduledPublishedDate,
+            );
             if (post) {
               if (publishView.mode === "publish") {
                 if (submitForReview) {

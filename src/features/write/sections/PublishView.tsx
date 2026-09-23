@@ -11,6 +11,12 @@ import { IconChevronDown } from "../../../components/ui/icons/IconChevronDown";
 import { IconChevronLeft } from "../../../components/ui/icons/IconChevronLeft";
 import { publishAccessCopy } from "./publishAccessCopy";
 import { useSubscriptionAvailable } from "../hooks/useSubscriptionAvailable";
+import { publishScheduleCopy } from "./publishScheduleCopy";
+import { PublishScheduleField } from "./PublishScheduleField";
+import {
+  localDateISO,
+  scheduleMsIfFuture,
+} from "../lib/publishSchedule";
 
 export const PUBLISH_VIEW_TITLE_ID = "publish-view-title";
 
@@ -31,6 +37,7 @@ export function PublishView({
   articleSavedToCanister,
   savedPublicationHandle,
   initialMembersOnly,
+  alreadyPublished,
 }: {
   mode: "draft" | "publish";
   initialTagIds: string[];
@@ -42,12 +49,14 @@ export function PublishView({
     publicationHandle: string | null,
     submitForReview: boolean,
     isMembersOnly: boolean,
+    scheduledPublishedDate: bigint | null,
   ) => Promise<boolean>;
   coverPresent?: boolean;
   onMintPremium?: (tagIds: string[], publicationHandle: string) => void;
   articleSavedToCanister?: boolean;
   savedPublicationHandle?: string | null;
   initialMembersOnly?: boolean;
+  alreadyPublished?: boolean;
 }) {
   const c = writeArticleCopy.publish;
   const cp = writeArticleCopy.premium;
@@ -57,6 +66,11 @@ export function PublishView({
   const [open, setOpen] = useState(false);
   const [membersOnly, setMembersOnly] = useState(initialMembersOnly ?? false);
   const [accessOpen, setAccessOpen] = useState(false);
+  const [pubDate, setPubDate] = useState(() =>
+    localDateISO(new Date()),
+  );
+  const [pubTime, setPubTime] = useState<string | null>(null);
+  const [timeOpen, setTimeOpen] = useState(false);
 
   const selectedPub = publications.find((p) => p.publicationName === pubHandle);
   const premiumEligible =
@@ -83,6 +97,15 @@ export function PublishView({
   // any draft save, and a writer's submit-for-review is a draft the editor
   // manages inside the publication. So the field is publish-mode only.
   const showAccess = mode === "publish" && !submitForReview;
+  // Publish date & time (NIC-418): hidden in Draft mode, hidden for a
+  // writer's "Submit for review", and hidden when editing an already
+  // published article - a future date there would rewrite the live
+  // publish date and pull the article out of every feed.
+  const showSchedule =
+    mode === "publish" && !submitForReview && alreadyPublished !== true;
+  const scheduledMs = showSchedule
+    ? scheduleMsIfFuture(pubDate, pubTime, new Date())
+    : null;
   // The canister rejects isMembersOnly:true unless the target (own profile,
   // or the publication) has subscriptions switched on. undefined = resolving.
   const subscriptionAvailable = useSubscriptionAvailable(pubHandle);
@@ -104,6 +127,8 @@ export function PublishView({
       if (e.key === "Escape") {
         if (accessOpen) {
           setAccessOpen(false);
+        } else if (timeOpen) {
+          setTimeOpen(false);
         } else if (open) {
           setOpen(false);
         } else {
@@ -113,7 +138,7 @@ export function PublishView({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, accessOpen, onBack]);
+  }, [open, accessOpen, timeOpen, onBack]);
 
   // Close foldout on outside mousedown (mirror NotificationsFoldout pattern).
   useEffect(() => {
@@ -139,7 +164,18 @@ export function PublishView({
   const confirm = async () => {
     if (selected.length < 1 || saving) return;
     setSaving(true);
-    const ok = await onConfirm(selected, pubHandle, submitForReview, showAccess && effectiveMembersOnly);
+    // Recompute at submit time: the pick can go stale while the panel
+    // stays open, and a stale (past) pick must publish immediately.
+    const ms = showSchedule
+      ? scheduleMsIfFuture(pubDate, pubTime, new Date())
+      : null;
+    const ok = await onConfirm(
+      selected,
+      pubHandle,
+      submitForReview,
+      showAccess && effectiveMembersOnly,
+      ms === null ? null : BigInt(ms),
+    );
     setSaving(false);
     if (ok) onBack();
   };
@@ -276,6 +312,25 @@ export function PublishView({
           <TopicPicker selected={selected} onChange={setSelected} />
         </div>
 
+        {/* Divider before the schedule row (frame 1:38058). */}
+        {showSchedule && (
+          <hr className="w-full border-t border-ink-border/20" />
+        )}
+
+        {/* Publish date & time (NIC-418). Publish mode only, and */}
+        {/* not for an already-published article (see showSchedule). */}
+        {showSchedule && (
+          <PublishScheduleField
+            date={pubDate}
+            time={pubTime}
+            onDateChange={setPubDate}
+            onTimeChange={setPubTime}
+            open={timeOpen}
+            onOpenChange={setTimeOpen}
+            scheduledMs={scheduledMs}
+          />
+        )}
+
         {/* Access: Everyone / Only subscribers (NIC-419). Publish mode only. */}
         {showAccess && (
           <div className="flex flex-col gap-[calc(6*var(--fpx))]">
@@ -379,7 +434,9 @@ export function PublishView({
               {mode === "publish"
                 ? submitForReview
                   ? c.submitForReviewButton
-                  : c.publishButton
+                  : scheduledMs !== null
+                    ? publishScheduleCopy.scheduleButton
+                    : c.publishButton
                 : c.saveDraftButton}
             </Button>
           </div>
