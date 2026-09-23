@@ -1,8 +1,9 @@
 // Phone-only copy for PremiumMintSheet (bottom sheet, <1024px).
 // Feature-local, same precedent as myArticlesMobileCopy.ts /
 // homeMobileCopy.ts -- src/constants/copy.ts is not touched. Strings
-// are taken verbatim off the Figma frames (2483:3290 / 2484:6252 /
-// 2485:6252).
+// are taken from the Figma frames (2483:3290 / 2484:6252 /
+// 2485:6252), with pricePlaceholder corrected to match the field's
+// accepted decimal format (dot, not comma).
 export const premiumMintSheetCopy = {
   heading: "Limited-edition NFT",
   subHeading:
@@ -13,7 +14,7 @@ export const premiumMintSheetCopy = {
   keysUnit: "keys",
   priceLabel: "Price per key",
   priceInfo: "What each key costs. Paid in ICP.",
-  pricePlaceholder: "e.g. 0,5",
+  pricePlaceholder: "e.g. 0.5",
   priceUnit: "ICP",
   conversionPrefix: "=",
   ckbtcUnit: "ckBTC",

@@ -173,9 +173,10 @@ export function PremiumMintSheet({
   const inputBase =
     "h-[calc(48*var(--fpx))] w-[calc(140*var(--fpx))] " +
     "rounded-[calc(6*var(--fpx))] bg-ink-border-5 " +
-    "px-[calc(16*var(--fpx))] text-body text-ink outline-none";
+    "px-[calc(16*var(--fpx))] text-body text-ink outline-none " +
+    "focus:border-brand-purple focus:bg-brand-purple-5";
   const inputOk = " border border-ink-border-10";
-  const inputErr = " border-2 border-brand-purple";
+  const inputErr = " border-[1.5px] border-brand-purple";
 
   return (
     <div
@@ -320,7 +321,7 @@ export function PremiumMintSheet({
               {ckbtcEquiv != null
                 ? ckbtcEquiv.toFixed(6)
                 : sc.conversionPlaceholder}{" "}
-              {sc.ckbtcUnit} = {" "}
+              {sc.ckbtcUnit} {sc.conversionPrefix}{" "}
               {nuaEquiv != null
                 ? nuaEquiv.toFixed(2)
                 : sc.conversionPlaceholder}{" "}
