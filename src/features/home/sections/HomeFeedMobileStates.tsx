@@ -36,6 +36,18 @@ function PublicationCardSkeleton() {
   );
 }
 
+// Banner skeleton: single full-width block for the on-chain CTA
+// banner (phone Loading frame 2445:8926). Height 360px per that
+// frame -- matches the CTA banner's rendered phone height.
+function BannerSkeleton() {
+  return (
+    <div
+      className={`h-[360px] w-full animate-pulse
+        rounded-card bg-ink-border/10`}
+    />
+  );
+}
+
 // Shelf skeleton: heading bar + N item skeletons.
 function ShelfSkeleton({ count, renderItem }: { count: number; renderItem: () => ReactNode }) {
   return (
@@ -49,9 +61,17 @@ function ShelfSkeleton({ count, renderItem }: { count: number; renderItem: () =>
 }
 
 // HomeFeedMobileSkeleton -- phone-only loading state (NIC-420, frame 2316:4011).
-// 4 article-card skeletons; when withShelves: 3 author-card skeletons + 2
-// publication-card skeletons below heading bars. Grey bg-ink-border/10, animate-pulse.
-export function HomeFeedMobileSkeleton({ withShelves = true }: { withShelves?: boolean }) {
+// 4 article-card skeletons; when withBanner: a banner-block skeleton
+// (NIC-402, frame 2445:8926) between the cards and the shelves; when
+// withShelves: 3 author-card skeletons + 2 publication-card skeletons
+// below heading bars. Grey bg-ink-border/10, animate-pulse.
+export function HomeFeedMobileSkeleton({
+  withShelves = true,
+  withBanner = false,
+}: {
+  withShelves?: boolean;
+  withBanner?: boolean;
+}) {
   return (
     <div aria-live="polite" aria-busy="true" className="flex flex-col gap-8">
       <span className="sr-only">{homeMobileCopy.loadingSrLabel}</span>
@@ -59,6 +79,7 @@ export function HomeFeedMobileSkeleton({ withShelves = true }: { withShelves?: b
       <ArticleCardSkeleton />
       <ArticleCardSkeleton />
       <ArticleCardSkeleton />
+      {withBanner && <BannerSkeleton />}
       {withShelves && (
         <div className="mt-4 flex flex-col gap-12">
           <ShelfSkeleton count={3} renderItem={() => <AuthorCardSkeleton />} />

@@ -1,3 +1,7 @@
+import {
+  HomeFeedMobileSkeleton,
+  HomeFeedMobileError,
+} from "../features/home/sections/HomeFeedMobileStates";
 import { useState } from "react";
 import Skeleton from "@mui/material/Skeleton";
 import { Hero } from "../features/home/sections/Hero";
@@ -67,8 +71,30 @@ export function HomeLoggedOut({ variant }: { variant: Variant }) {
                   <HomeFollowingSignInPrompt />
                 ) : (
                   <>
-                    {isLoading && <LoadingSkeleton />}
-                    {isError && <ErrorState message={String(error)} />}
+                    {isLoading && (
+                      <div className="md:hidden">
+                        <HomeFeedMobileSkeleton withBanner />
+                      </div>
+                    )}
+                    {isLoading && (
+                      <div className="hidden md:block">
+                        <LoadingSkeleton />
+                      </div>
+                    )}
+                    {isError && (
+                      <div className="md:hidden">
+                        <HomeFeedMobileError
+                          onRetry={() => {
+                            void query.refetch();
+                          }}
+                        />
+                      </div>
+                    )}
+                    {isError && (
+                      <div className="hidden md:block">
+                        <ErrorState message={String(error)} />
+                      </div>
+                    )}
                     {data && data.pages[0]?.articles.length === 0 && <EmptyState />}
                     {data && data.pages[0] && data.pages[0].articles.length > 0 && (
                       <>
