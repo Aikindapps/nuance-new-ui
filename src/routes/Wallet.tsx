@@ -1,3 +1,4 @@
+import { WalletMobile } from "../features/wallet/mobile/WalletMobile";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 import { walletCopy } from "../constants/copy";
@@ -19,11 +20,19 @@ export function Wallet() {
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
+  const desktopWrapperClasses = [
+    "hidden flex-col gap-[calc(40*var(--fpx))]",
+    "lg:flex",
+  ].join(" ");
+
   return (
     <AccountShell active="wallet">
       <title>{walletCopy.metaTitle}</title>
       <meta name="description" content={walletCopy.metaDescription} />
-      <div className="flex flex-col gap-[calc(40*var(--fpx))]">
+      <div className="lg:hidden">
+        <WalletMobile />
+      </div>
+      <div className={desktopWrapperClasses}>
         <WalletIntro />
         <CurrencyHoldings />
         <ArticleKeys />
