@@ -37,15 +37,13 @@ function PublicationCardSkeleton() {
 }
 
 // Banner skeleton: single full-width block for the on-chain CTA
-// banner (phone Loading frame 2445:8926). Height 360px per that
-// frame -- matches the CTA banner's rendered phone height.
+// banner (phone Loading frame 2445:8926). Height 364px, measured
+// from the "banner skeleton" block 2445:9004 (361 x 364), a 1:1
+// match to the real Banner footprint in Default 2444:8796.
+const BANNER_SKELETON_CLASS =
+  "h-[364px] w-full animate-pulse rounded-card bg-ink-border/10";
 function BannerSkeleton() {
-  return (
-    <div
-      className={`h-[360px] w-full animate-pulse
-        rounded-card bg-ink-border/10`}
-    />
-  );
+  return <div className={BANNER_SKELETON_CLASS} />;
 }
 
 // Shelf skeleton: heading bar + N item skeletons.
