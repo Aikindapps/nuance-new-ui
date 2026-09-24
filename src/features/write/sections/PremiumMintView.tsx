@@ -17,6 +17,7 @@ import { useNuaPrices, priceBetween } from "../../wallet/hooks/useNuaEquivalent"
 import { usePublicationEditorCount } from "../hooks/usePublicationEditorCount";
 
 export const PREMIUM_MINT_VIEW_TITLE_ID = "premium-mint-view-title";
+const CONVERSION_PLACEHOLDER = "\u2014";
 
 // Spinner — mirrors NftPurchaseModal's inline Spinner component.
 function Spinner() {
@@ -276,18 +277,17 @@ export function PremiumMintView({
             className="h-[calc(48*var(--fpx))] w-full rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink outline-none focus:border-brand-purple focus:bg-brand-purple-5"
           />
           {/* Conversion sub-line */}
-          {icpAmount > 0 && (ckbtcEquiv != null || nuaEquiv != null) && (
-            <p className="text-[length:calc(13*var(--fpx))] text-ink-60">
-              ={" "}
-              {ckbtcEquiv != null && (
-                <span>{ckbtcEquiv.toFixed(6)} ckBTC</span>
-              )}
-              {ckbtcEquiv != null && nuaEquiv != null && " = "}
-              {nuaEquiv != null && (
-                <span>{nuaEquiv.toFixed(2)} NUA</span>
-              )}
-            </p>
-          )}
+          <p className="text-[length:calc(13*var(--fpx))] text-ink-60">
+            ={" "}
+            {ckbtcEquiv != null
+              ? ckbtcEquiv.toFixed(6)
+              : CONVERSION_PLACEHOLDER}{" "}
+            ckBTC ={" "}
+            {nuaEquiv != null
+              ? nuaEquiv.toFixed(2)
+              : CONVERSION_PLACEHOLDER}{" "}
+            NUA
+          </p>
         </div>
 
         {/* Terms checkbox */}
