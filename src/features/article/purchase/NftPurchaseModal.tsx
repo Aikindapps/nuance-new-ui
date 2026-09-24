@@ -120,6 +120,19 @@ export function NftPurchaseModal({
   const price = purchase.saleInfo?.price ?? 0n;
   const currentSupply = purchase.saleInfo?.currentSupply ?? 0n;
   const maxSupply = purchase.saleInfo?.maxSupply ?? 0n;
+  // "Keys remaining" = keys still for sale. currentSupply counts keys
+  // MINTED so far (editors' free keys + sales + the one unsold
+  // spare the canister always keeps ready), so it is neither the
+  // remaining count nor the edition size. Clamped: a null saleInfo
+  // or an odd read can never print a negative or impossible count.
+  // (NIC-480)
+  const remainingRaw = maxSupply - currentSupply + 1n;
+  const keysRemaining =
+    remainingRaw < 0n
+      ? 0n
+      : remainingRaw > maxSupply
+        ? maxSupply
+        : remainingRaw;
   const priceDisplay = fmtIcp(price);
 
   // Title driven by stage.
@@ -174,7 +187,7 @@ export function NftPurchaseModal({
                 [c.confirmYouPay, `${priceDisplay} ICP`],
                 [
                   c.confirmKeysRemaining,
-                  `${String(currentSupply)} of ${String(maxSupply)}`,
+                  `${String(keysRemaining)} of ${String(maxSupply)}`,
                 ],
               ]}
             />

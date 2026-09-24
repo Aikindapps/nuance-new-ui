@@ -20,8 +20,8 @@ export type KeysSold = {
 //   maxSupply      = the edition size the author configured. This is M.
 //   transactions   = the actual sales. transactions.length is N, the sold
 //                    count -- this is the only correct source for it.
-// NftPurchaseModal.tsx and useArticleKeys.ts both read this differently;
-// that's NIC-480, out of scope here -- left untouched on purpose.
+// NftPurchaseModal.tsx and useArticleKeys.ts were fixed in NIC-480 and
+// now read maxSupply / the sold count correctly, same as here.
 //
 // nftCanisterId isn't on the Article type (too much blast radius to add it
 // there for one screen), so this resolves postId -> nftCanisterId via

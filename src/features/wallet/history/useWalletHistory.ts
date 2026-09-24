@@ -177,7 +177,8 @@ export function useWalletHistory() {
                 raw.push({
                   postId,
                   tokenIndex: Number(tx.token),
-                  supply: Number(supply.currentSupply),
+                  // Edition size, not keys minted so far (NIC-480).
+                  supply: Number(supply.maxSupply),
                   priceE8s: BigInt(tx.price),
                   timeMs: Number(tx.time / 1_000_000n),
                   sign: mine ? "-" : "+",

@@ -115,7 +115,9 @@ export function useArticleKeys() {
             nftCanisterId: e.nftCanisterId,
             tokenIndex,
             keyNumber: tokenIndex + 1,
-            totalSupply: e.supply ? Number(e.supply.currentSupply) : null,
+            // Edition size the author configured, not keys minted
+            // so far (currentSupply is the minted count -- NIC-480).
+            totalSupply: e.supply ? Number(e.supply.maxSupply) : null,
             handle,
             title,
             url,
