@@ -9,13 +9,13 @@
 // Article feed uses ArticleFeed + useAuthorPosts(myHandle).
 //
 // NIC-262 -- /profile/edit form (ProfileEdit) replaces ProfileEditPlaceholder.
-// Single Tagline field (bound directly to bio, 160-char cap). No separate Bio
-// textarea -- the backend stores only one string; product decision to keep just
-// the tagline line. Avatar >5 MB pre-checked before useImageUpload (5 MB limit
+// Single Bio field (bound to the user's bio, 160-char cap; D-127 renamed it
+// from Tagline). No reader font on a personal profile (D-112) -- fonts belong
+// to publications. Avatar >5 MB pre-checked before useImageUpload (5 MB limit
 // here; the shared 10 MB cap in useImageUpload serves article images elsewhere
 // and is left untouched).
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import Skeleton from "@mui/material/Skeleton";
@@ -342,23 +342,15 @@ export function Profile() {
 }
 
 // -- /profile/edit -- NIC-262 -------------------------------------------------
-//
-// Font options mirror the Nuance canister's accepted fontType strings.
-const FONT_OPTIONS = [
-  { value: "GT Walsheim", label: "GT Walsheim" },
-  { value: "Roboto", label: "Roboto" },
-  { value: "Lato", label: "Lato" },
-  { value: "Libre Baskerville", label: "Libre Baskerville" },
-  { value: "Playfair Display", label: "Playfair Display" },
-] as const;
 
 // 5 MB avatar cap -- enforced client-side BEFORE calling useImageUpload.
 // The shared useImageUpload hook has its own 10 MB cap (for article images);
 // that cap is intentionally left at 10 MB.
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
-// Single Tagline field cap matches the User canister's hard limit.
-const TAGLINE_MAX = 160;
+// Bio field cap matches the User canister's hard limit (updateUserDetails
+// rejects a bio over 160).
+const BIO_MAX = 160;
 
 // Social-link platform ordering used to map socialChannels[] to named inputs.
 // detectSocialPlatform already covers these domains; the order is for seeding.
@@ -392,7 +384,7 @@ function buildSocialChannelsUrls(
 // -- ProfileEditInner -- receives User data as props (mounted after data loads) --
 //
 // State is seeded once at mount from the User record passed as props. No
-// re-seed useEffect -- the outer gate (ProfileEditView) only mounts this
+// re-seed effect -- the outer gate (ProfileEditView) only mounts this
 // component when the User record is available, so the initial state is always
 // fully populated.
 
@@ -401,7 +393,7 @@ type ProfileEditInnerProps = {
 };
 
 function ProfileEditInner({ user }: ProfileEditInnerProps) {
-  const { getUserListItemByHandle, updateUserDetails, updateFontType } = useActors();
+  const { updateUserDetails } = useActors();
   const uploadImage = useImageUpload();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -410,8 +402,8 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
 
   const initialHandle = user.handle;
 
-  // Seed tagline from bio -- join newlines with a space so it's single-line.
-  const seedTagline = user.bio.split("\n").join(" ");
+  // Seed bio -- join newlines with a space so it's single-line.
+  const seedBio = user.bio.split("\n").join(" ");
   const seedAvatar = user.avatar;
   const seedDisplayName = user.displayName;
   const seedWebsite = user.website;
@@ -419,15 +411,10 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
 
   // Form state -- seeded once at mount from the User record.
   const [displayName, setDisplayName] = useState(seedDisplayName);
-  const [tagline, setTagline] = useState(seedTagline);
+  const [bio, setBio] = useState(seedBio);
   const [avatarUrl, setAvatarUrl] = useState(seedAvatar);
   const [website, setWebsite] = useState(seedWebsite);
   const [social, setSocial] = useState<Record<SocialPlatformKey, string>>(seedSocial);
-  const [fontType, setFontType] = useState("GT Walsheim");
-  // seedFontType tracks the value fetched from the canister so the dirty guard
-  // can detect font-only changes. Initialised to the same default as fontType
-  // so pre-seed state is never spuriously dirty.
-  const [seedFontType, setSeedFontType] = useState("GT Walsheim");
   // Other-platform links (e.g. Twitter/X, Mastodon, custom URL) are NOT exposed
   // as editable inputs -- they are carried through verbatim on every save so the
   // user doesn't silently lose them. Seeded synchronously from the User record.
@@ -445,31 +432,14 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Seed font from getUserListItemByHandle. Both setFontType and setSeedFontType
-  // are called together in the async callback so the async seed itself does NOT
-  // mark the form dirty (both values move in lockstep).
-  useEffect(() => {
-    getUserListItemByHandle(initialHandle.toLowerCase())
-      .then((res) => {
-        if (res.__kind__ === "ok" && res.ok.fontType) {
-          setFontType(res.ok.fontType);
-          setSeedFontType(res.ok.fontType);
-        }
-      })
-      .catch(() => {
-        // Non-fatal -- leave the default "GT Walsheim".
-      });
-  }, [initialHandle, getUserListItemByHandle]);
-
   // -- Dirty tracking -------------------------------------------------------
 
   const isDirty =
     displayName !== seedDisplayName ||
-    tagline !== seedTagline ||
+    bio !== seedBio ||
     avatarUrl !== seedAvatar ||
     website !== seedWebsite ||
-    JSON.stringify(social) !== JSON.stringify(seedSocial) ||
-    fontType !== seedFontType;
+    JSON.stringify(social) !== JSON.stringify(seedSocial);
 
   // -- Avatar file select handler -------------------------------------------
 
@@ -506,17 +476,23 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
   // -- Save handler ---------------------------------------------------------
 
   const handleSave = useCallback(async () => {
-    if (tagline.length > TAGLINE_MAX) return;
+    if (bio.length > BIO_MAX) return;
     setSaving(true);
     setSaveError(null);
     try {
       const socialChannelsUrls = buildSocialChannelsUrls(social, otherLinks);
-      const [detailsRes, fontRes] = await Promise.all([
-        updateUserDetails(tagline, avatarUrl, displayName, website, socialChannelsUrls),
-        updateFontType(fontType),
-      ]);
+      // An untouched Bio field sends the stored bio back exactly as it was, so
+      // a save that only changed another field never flattens a legacy
+      // multi-line bio.
+      const bioToSave = bio === seedBio ? user.bio : bio;
+      const detailsRes = await updateUserDetails(
+        bioToSave,
+        avatarUrl,
+        displayName,
+        website,
+        socialChannelsUrls,
+      );
       if (detailsRes.__kind__ === "err") throw new Error(detailsRes.err);
-      if (fontRes.__kind__ === "err") throw new Error(fontRes.err);
       await queryClient.invalidateQueries({ queryKey: ["my-profile"] });
       toast.show("Profile saved", "success");
       navigate("/profile");
@@ -528,15 +504,15 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
       setSaving(false);
     }
   }, [
-    tagline,
+    bio,
+    seedBio,
+    user.bio,
     avatarUrl,
     displayName,
     website,
     social,
     otherLinks,
-    fontType,
     updateUserDetails,
-    updateFontType,
     queryClient,
     toast,
     navigate,
@@ -544,7 +520,7 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
 
   // -- Field helpers --------------------------------------------------------
 
-  const taglineInvalid = tagline.length > TAGLINE_MAX;
+  const bioInvalid = bio.length > BIO_MAX;
 
   const inputClass = [
     "w-full rounded-[calc(8*var(--fpx))]",
@@ -715,87 +691,35 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
             </p>
           </div>
 
-          {/* Tagline -- single field bound directly to bio (NIC-262 r2).
-              Intentional deviation from Figma which showed two boxes; the
-              backend stores one string with a 160-char hard cap. */}
+          {/* Bio -- single field bound to the user's bio (D-127, renamed from
+              Tagline). 160-char backend cap. */}
           <div className="flex flex-col gap-[calc(6*var(--fpx))]">
             <label
-              htmlFor="edit-tagline"
+              htmlFor="edit-bio"
               className={labelClass}
             >
-              Tagline
+              Bio
             </label>
             <input
-              id="edit-tagline"
+              id="edit-bio"
               type="text"
-              value={tagline}
-              maxLength={TAGLINE_MAX}
-              onChange={(e) => setTagline(e.target.value)}
+              value={bio}
+              maxLength={BIO_MAX}
+              onChange={(e) => setBio(e.target.value)}
               className={[
                 inputClass,
-                taglineInvalid ? "border-red-500 focus:border-red-500" : "",
+                bioInvalid ? "border-red-500 focus:border-red-500" : "",
               ].join(" ")}
               autoComplete="off"
             />
             <p
               className={[
                 "text-[length:calc(14*var(--fpx))] font-normal leading-[calc(17*var(--fpx))]",
-                taglineInvalid ? "text-red-500" : "text-ink/60",
+                bioInvalid ? "text-red-500" : "text-ink/60",
               ].join(" ")}
             >
-              {tagline.length} / {TAGLINE_MAX}
+              {bio.length} / {BIO_MAX}
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* -- Divider -- */}
-      <div className={dividerClass} aria-hidden="true" />
-
-      {/* -- Reading font -- */}
-      <section aria-labelledby="edit-section-font">
-        <div className="flex flex-col gap-4">
-          <p id="edit-section-font" className={sectionHeadingClass}>
-            Reading font
-          </p>
-          <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-            <div className="relative">
-              <select
-                id="edit-font-type"
-                value={fontType}
-                onChange={(e) => setFontType(e.target.value)}
-                className={[
-                  "w-full appearance-none rounded-[calc(8*var(--fpx))]",
-                  "border border-ink-border/20",
-                  "px-[calc(16*var(--fpx))] h-[calc(48*var(--fpx))]",
-                  "text-[length:calc(16*var(--fpx))] leading-[calc(19*var(--fpx))] text-ink",
-                  "bg-white outline-none",
-                  "focus:border-brand-purple transition-colors",
-                  "pr-[calc(40*var(--fpx))]",
-                ].join(" ")}
-              >
-                {FONT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              {/* Chevron icon */}
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute right-[calc(16*var(--fpx))] top-1/2 -translate-y-1/2 text-ink"
-              >
-                <svg width="14" height="8" viewBox="0 0 14 8" fill="none">
-                  <path
-                    d="M1 1L7 7L13 1"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </div>
           </div>
         </div>
       </section>
@@ -930,7 +854,7 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
       <div className="flex flex-row items-center gap-4">
         <button
           type="button"
-          disabled={saving || taglineInvalid || (!isDirty && !saving)}
+          disabled={saving || bioInvalid || (!isDirty && !saving)}
           onClick={handleSave}
           className={[
             "inline-flex items-center justify-center",

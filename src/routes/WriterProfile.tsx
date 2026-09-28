@@ -138,13 +138,6 @@ function WriterProfileInner({ handle }: { handle: string }) {
                   )}
                 </div>
 
-                {/* tagline (bio used as tagline per spec; first line) */}
-                {author.bio && (
-                  <p className="text-[length:calc(22*var(--fpx))] font-bold leading-snug text-ink truncate max-w-[calc(600*var(--fpx))]">
-                    {author.bio.split("\n")[0]}
-                  </p>
-                )}
-
                 {/* Details row: followers | following | social icons */}
                 <div className="flex flex-wrap items-center justify-center gap-2 text-[length:calc(16*var(--fpx))] font-medium text-ink-60">
                   <span>
