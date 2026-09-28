@@ -32,7 +32,7 @@ type Props = {
 // Thin skeleton bar -- shared shape for the loading treatment.
 function SkeletonBar({ className }: { className: string }) {
   return (
-    <div aria-hidden className={`animate-pulse rounded-[8px] bg-ink-border-5 ${className}`} />
+    <div aria-hidden className={`animate-pulse rounded-[calc(8*var(--fpx))] bg-ink-border-5 ${className}`} />
   );
 }
 
@@ -188,7 +188,7 @@ export function KeysAndSalesPanel({ headingId, postId, onDone, extraLoading }: P
         <button
           type="button"
           onClick={onDone}
-          className="rounded-[calc(8*var(--fpx))] bg-brand-gradient-button px-6 py-2.5 text-[18px] font-medium leading-[24px] text-white shadow-[var(--shadow-purple-glow-medium)]"
+          className="rounded-[calc(8*var(--fpx))] bg-brand-gradient-button px-6 py-2.5 text-[length:calc(18*var(--fpx))] font-medium leading-[calc(24*var(--fpx))] text-white shadow-[var(--shadow-purple-glow-medium)]"
         >
           {sc.doneLabel}
         </button>

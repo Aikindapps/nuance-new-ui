@@ -47,7 +47,7 @@ export function MyArticleCard({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2">
           {isNft && (
-            <span className="rounded-[100px] bg-brand-purple-10 px-2.5 py-1 text-[12px] font-medium leading-[15px] text-brand-purple">
+            <span className="rounded-full bg-brand-purple-10 px-2.5 py-1 text-[length:calc(12*var(--fpx))] font-medium leading-[calc(15*var(--fpx))] text-brand-purple">
               {myArticlesMobileCopy.mintedTag}
             </span>
           )}
