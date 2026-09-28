@@ -3,7 +3,7 @@
   "canisters": {
     "nuance_uat": {
       "type": "assets",
-      "build": [],
+      "build": ["true"],
       "source": ["dist/"],
       "frontend": { "entrypoint": "dist/index.html" }
     }
