@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
 import { Popup } from "../../components/ui/Popup";
@@ -6,7 +6,7 @@ import {
   primaryButtonSx,
   secondaryButtonSx,
 } from "../../components/ui/modalButtons";
-import { registerModalCopy } from "../../constants/copy";
+import { registerModalCopy, imageUploadCopy } from "../../constants/copy";
 import { useRegister } from "./useRegister";
 import { AvatarPicker } from "./AvatarPicker";
 import { AvatarCropper } from "./AvatarCropper";
@@ -103,6 +103,10 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [cropSource, setCropSource] = useState<File | null>(null);
+  // NIC-527 -- set when the picked file fails to load in AvatarCropper (e.g.
+  // a blocked blob: preview); shows an inline message instead of silently
+  // closing the crop step.
+  const [avatarCantOpen, setAvatarCantOpen] = useState(false);
   // Ref tracks the current object URL so we can revoke it without putting the
   // URL value into the effect's dependency array (avoids calling setState in
   // an effect — react-hooks/set-state-in-effect). The ref is only read in
@@ -119,6 +123,7 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
   }, []);
 
   const handleSelectFile = (file: File) => {
+    setAvatarCantOpen(false);
     setCropSource(file);
   };
 
@@ -129,11 +134,18 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
     setAvatarFile(cropped);
     setAvatarPreview(url);
     setCropSource(null);
+    setAvatarCantOpen(false);
   };
 
   const handleCropCancel = () => {
     setCropSource(null);
   };
+
+  // NIC-527 -- the picked file failed to load (e.g. blocked blob: preview).
+  const handleCropLoadError = useCallback(() => {
+    setCropSource(null);
+    setAvatarCantOpen(true);
+  }, []);
 
   const handleRemoveAvatar = () => {
     if (avatarUrlRef.current) {
@@ -142,6 +154,7 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
     }
     setAvatarFile(null);
     setAvatarPreview(null);
+    setAvatarCantOpen(false);
   };
 
   // Handles are case-insensitive (lowercase reverse index) and stored
@@ -191,11 +204,18 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
       {/* Inputs — 48px below subtitle, 32px gap between fields (Figma) */}
       <div className="mt-12 flex flex-col gap-8">
         {/* Avatar picker — Figma 1:1366 "Avatar image" frame, above @handle */}
-        <AvatarPicker
-          previewUrl={avatarPreview}
-          onSelectFile={handleSelectFile}
-          onRemove={handleRemoveAvatar}
-        />
+        <div className="flex flex-col gap-2">
+          <AvatarPicker
+            previewUrl={avatarPreview}
+            onSelectFile={handleSelectFile}
+            onRemove={handleRemoveAvatar}
+          />
+          {avatarCantOpen && (
+            <p role="alert" className="text-body text-error">
+              {imageUploadCopy.cantOpen}
+            </p>
+          )}
+        </div>
         <Field
           id="register-handle"
           label={registerModalCopy.handleLabel}
@@ -258,6 +278,7 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
           file={cropSource}
           onSave={handleCropSave}
           onCancel={handleCropCancel}
+          onLoadError={handleCropLoadError}
         />
       )}
     </Popup>

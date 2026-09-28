@@ -39,9 +39,18 @@ export type AvatarCropperProps = {
   file: File;
   onSave: (file: File) => void;
   onCancel: () => void;
+  // NIC-527 -- called instead of onCancel when the picked file fails to load
+  // (e.g. blocked blob: preview), so the caller can show an inline message
+  // rather than silently closing the crop step.
+  onLoadError?: () => void;
 };
 
-export function AvatarCropper({ file, onSave, onCancel }: AvatarCropperProps) {
+export function AvatarCropper({
+  file,
+  onSave,
+  onCancel,
+  onLoadError,
+}: AvatarCropperProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const minScaleRef = useRef<number>(1);
@@ -67,12 +76,12 @@ export function AvatarCropper({ file, onSave, onCancel }: AvatarCropperProps) {
       setZoom(1);
       setImgReady(true);
     };
-    img.onerror = () => onCancel();
+    img.onerror = () => (onLoadError ?? onCancel)();
     img.src = url;
     return () => {
       URL.revokeObjectURL(url);
     };
-  }, [file, onCancel]);
+  }, [file, onCancel, onLoadError]);
 
   // Draw the crop frame whenever image, zoom, or offset change.
   useEffect(() => {

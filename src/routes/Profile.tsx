@@ -34,7 +34,11 @@ import {
   detectSocialPlatform,
   normalizeUrl,
 } from "../features/article/lib/socialChannels";
-import { profileSelfCopy, verifyProfileCopy } from "../constants/copy";
+import {
+  profileSelfCopy,
+  verifyProfileCopy,
+  imageUploadCopy,
+} from "../constants/copy";
 import { useModal } from "../services/modal";
 import { useToast } from "../services/toast";
 import {
@@ -474,10 +478,8 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
         const url = await uploadImage(file);
         setAvatarUrl(url);
       } catch (err) {
-        toast.show(
-          err instanceof Error ? err.message : "Avatar upload failed",
-          "error",
-        );
+        console.error("[avatar upload]", err);
+        toast.show(imageUploadCopy.uploadFailed, "error");
       } finally {
         setAvatarUploading(false);
       }

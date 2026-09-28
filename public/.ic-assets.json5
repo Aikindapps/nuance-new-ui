@@ -15,7 +15,11 @@
       // directive is copied verbatim from the standard policy (PR #11 review
       // of Risk #3). Keep connect-src exactly as-is — it carries the
       // https://icp-api.io agent endpoint the app depends on.
-      "Content-Security-Policy": "default-src 'self';script-src 'self';connect-src 'self' http://localhost:* https://icp0.io https://*.icp0.io https://icp-api.io;img-src 'self' data: https:;style-src * 'unsafe-inline';style-src-elem * 'unsafe-inline';font-src *;object-src 'none';base-uri 'self';frame-ancestors 'none';form-action 'self';upgrade-insecure-requests;",
+      // NIC-527 -- img-src also allows blob: so the page can preview and
+      // measure files the user picks locally (header image width check,
+      // sign-up crop) via URL.createObjectURL(). blob: URLs are only ever
+      // created by the page itself, and img-src cannot execute code.
+      "Content-Security-Policy": "default-src 'self';script-src 'self';connect-src 'self' http://localhost:* https://icp0.io https://*.icp0.io https://icp-api.io;img-src 'self' data: blob: https:;style-src * 'unsafe-inline';style-src-elem * 'unsafe-inline';font-src *;object-src 'none';base-uri 'self';frame-ancestors 'none';form-action 'self';upgrade-insecure-requests;",
     },
     "allow_raw_access": false,
   },

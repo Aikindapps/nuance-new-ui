@@ -9,7 +9,7 @@ import {
 } from "../nodes/ImageNode";
 import { useImageUpload } from "../../hooks/useImageUpload";
 import { useToast } from "../../../../services/toast";
-import { writeArticleCopy } from "../../../../constants/copy";
+import { writeArticleCopy, imageUploadCopy } from "../../../../constants/copy";
 
 // Wires in-body images: the INSERT_IMAGE_COMMAND (inserts an ImageNode at the
 // selection) plus paste-image and drop-image on the editable region. The block
@@ -34,7 +34,7 @@ export function ImagesPlugin() {
         show(
           msg === writeArticleCopy.toasts.imageTooLarge
             ? msg
-            : "Image upload failed. Please try again.",
+            : imageUploadCopy.uploadFailed,
           "error",
         );
         console.error("[image upload]", e);

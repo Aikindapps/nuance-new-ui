@@ -19,6 +19,7 @@ import { insertDivider, setHeading, setQuote, toggleList } from "./blockActions"
 import { INSERT_IMAGE_COMMAND } from "../nodes/ImageNode";
 import { useImageUpload } from "../../hooks/useImageUpload";
 import { useToast } from "../../../../services/toast";
+import { writeArticleCopy, imageUploadCopy } from "../../../../constants/copy";
 
 // "+" block-insert menu (Figma 1:37480) — a "+" in the left gutter, aligned to
 // the caret's block, opens the dark foldout: Heading 2 · Heading 3 · Quote ·
@@ -45,7 +46,13 @@ export function BlockMenuPlugin() {
       const url = await upload(file);
       editor.dispatchCommand(INSERT_IMAGE_COMMAND, { src: url, altText: "" });
     } catch (e) {
-      show("Image upload failed. Please try again.", "error");
+      const msg = (e as Error)?.message;
+      show(
+        msg === writeArticleCopy.toasts.imageTooLarge
+          ? msg
+          : imageUploadCopy.uploadFailed,
+        "error",
+      );
       console.error("[image upload]", e);
     }
   };

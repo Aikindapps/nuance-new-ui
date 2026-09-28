@@ -1283,7 +1283,6 @@ export const publicationSettingsCopy = {
   uploading: "Uploading\u2026",
   currentImage: "Current image",
   imageTooLarge: "Image must be under 5 MB",
-  imageUploadError: "Image upload failed. Please try again.",
   // Toasts.
   toastSaved: "Changes saved",
   toastError: "Couldn\u2019t save changes.",
@@ -1328,4 +1327,15 @@ export const publicationSettingsCopy = {
   bannerPlaceholderButtonLink: "https://example.com",
   bannerIconPickerPlaceholder: "Choose icon",
   bannerIconPickerHelp: "Choose an icon for your banner",
+} as const;
+
+// NIC-527 / NIC-528 -- shared image-upload error copy (wording confirmed by
+// design). Used wherever a picked image can't be read/previewed locally
+// (blocked blob: preview, unsupported file) or fails to upload to the
+// Storage canister (network error, oversized piece), so we never surface the
+// raw `err.message` (e.g. "HTTP request failed: Status: 413 ...") to users.
+export const imageUploadCopy = {
+  cantOpen: "We couldn\u2019t open this image. Try a JPG, PNG or WebP file.",
+  uploadFailed:
+    "Couldn\u2019t upload this image. Check your connection and try again.",
 } as const;

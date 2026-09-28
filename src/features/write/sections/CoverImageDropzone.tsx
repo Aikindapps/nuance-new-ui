@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { writeArticleCopy } from "../../../constants/copy";
+import { writeArticleCopy, imageUploadCopy } from "../../../constants/copy";
 import { useToast } from "../../../services/toast";
 import { useImageUpload } from "../hooks/useImageUpload";
 
@@ -29,7 +29,7 @@ export function CoverImageDropzone({
       show(
         msg === writeArticleCopy.toasts.imageTooLarge
           ? msg
-          : "Cover upload failed. Please try again.",
+          : imageUploadCopy.uploadFailed,
         "error",
       );
       console.error("[cover upload]", e);

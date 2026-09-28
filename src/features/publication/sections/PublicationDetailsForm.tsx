@@ -37,7 +37,10 @@ import { SocialIcon } from "../../../components/ui/icons/SocialIcon";
 import { IconChevronDown } from "../../../components/ui/icons/IconChevronDown";
 import { Avatar } from "../../../components/ui/Avatar";
 import { useImageUpload } from "../../write/hooks/useImageUpload";
-import { publicationSettingsCopy as copy } from "../../../constants/copy";
+import {
+  publicationSettingsCopy as copy,
+  imageUploadCopy,
+} from "../../../constants/copy";
 import { PrimaryColorPicker } from "./PrimaryColorPicker";
 import { IllustrationNoImages } from "../../../components/ui/icons/IllustrationNoImages";
 import { IconImage } from "../../../components/ui/icons/IconImage";
@@ -380,8 +383,9 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
       let width: number;
       try {
         width = await readImageWidth(file);
-      } catch {
-        toast.show(copy.imageUploadError, "error");
+      } catch (err) {
+        console.error("[image upload]", err);
+        toast.show(imageUploadCopy.cantOpen, "error");
         return;
       }
       if (width < HEADER_IMAGE_MIN_WIDTH) {
@@ -395,10 +399,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         setHeaderImage(url);
         setHeaderImageFileName(file.name);
       } catch (err) {
-        toast.show(
-          err instanceof Error ? err.message : copy.imageUploadError,
-          "error",
-        );
+        console.error("[image upload]", err);
+        toast.show(imageUploadCopy.uploadFailed, "error");
       } finally {
         setHeaderImageUploading(false);
       }
@@ -422,8 +424,9 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
       let width: number;
       try {
         width = await readImageWidth(file);
-      } catch {
-        toast.show(copy.imageUploadError, "error");
+      } catch (err) {
+        console.error("[image upload]", err);
+        toast.show(imageUploadCopy.cantOpen, "error");
         return;
       }
       if (width < HEADER_IMAGE_MIN_WIDTH) {
@@ -437,10 +440,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         setHeaderImage(url);
         setHeaderImageFileName(file.name);
       } catch (err) {
-        toast.show(
-          err instanceof Error ? err.message : copy.imageUploadError,
-          "error",
-        );
+        console.error("[image upload]", err);
+        toast.show(imageUploadCopy.uploadFailed, "error");
       } finally {
         setHeaderImageUploading(false);
       }
@@ -466,10 +467,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         setAvatar(url);
         setAvatarFileName(file.name);
       } catch (err) {
-        toast.show(
-          err instanceof Error ? err.message : copy.imageUploadError,
-          "error",
-        );
+        console.error("[image upload]", err);
+        toast.show(imageUploadCopy.uploadFailed, "error");
       } finally {
         setAvatarUploading(false);
       }
@@ -494,10 +493,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         setAvatar(url);
         setAvatarFileName(file.name);
       } catch (err) {
-        toast.show(
-          err instanceof Error ? err.message : copy.imageUploadError,
-          "error",
-        );
+        console.error("[image upload]", err);
+        toast.show(imageUploadCopy.uploadFailed, "error");
       } finally {
         setAvatarUploading(false);
       }
