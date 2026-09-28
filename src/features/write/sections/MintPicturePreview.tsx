@@ -16,6 +16,10 @@ import { premiumMintSheetCopy as sc } from "./premiumMintSheetCopy";
 // placeholder fill instead of a broken image icon -- tracked without an
 // effect (repo lint forbids setState in an effect body): a new src is
 // retried automatically because it no longer equals the last failed one.
+// The image uses object-contain, not object-cover, because the minted
+// picture is a portrait composite (cover, title, subtitle, @handle) and
+// the preview must show all of it -- the side bars show the tile's
+// placeholder fill.
 export function MintPicturePreview({ src }: { src: string | null }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const showImage = src != null && src !== failedSrc;
@@ -34,7 +38,7 @@ export function MintPicturePreview({ src }: { src: string | null }) {
             src={src}
             alt={sc.pictureAlt}
             onError={() => setFailedSrc(src)}
-            className="size-full object-cover"
+            className="size-full object-contain"
           />
         )}
       </div>
