@@ -1,11 +1,13 @@
 import { useId } from "react";
 import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
 import {
   primaryButtonSx,
   secondaryButtonSx,
 } from "../../../components/ui/modalButtons";
 import { writeArticleCopy } from "../../../constants/copy";
 import { premiumMintSheetCopy as sc } from "./premiumMintSheetCopy";
+import { MintPicturePreview } from "./MintPicturePreview";
 import {
   MIN_PRICE_E8S,
   parseIcpAmount,
@@ -210,20 +212,15 @@ export function PremiumMintSheet({
           </p>
         </div>
 
-        <div className="h-px bg-ink-border/10" />
+        <MintPicturePreview
+          src={
+            !imageLoading && svg
+              ? "data:image/svg+xml," + encodeURIComponent(svg)
+              : null
+          }
+        />
 
-        {/* Thumbnail preview -- not in frame, kept intentionally */}
-        <div className="flex justify-center">
-          {imageLoading ? (
-            <SheetSpinner />
-          ) : svg ? (
-            <img
-              src={"data:image/svg+xml," + encodeURIComponent(svg)}
-              alt="Premium NFT preview"
-              className="max-h-64 max-w-full rounded"
-            />
-          ) : null}
-        </div>
+        <div className="h-px bg-ink-border/10" />
 
         {/* Number of keys */}
         <div className="flex flex-col gap-[calc(12*var(--fpx))]">
@@ -330,15 +327,28 @@ export function PremiumMintSheet({
           )}
         </div>
 
-        {/* Terms checkbox -- not in the frame, kept intentionally */}
-        <label className="flex cursor-pointer items-start gap-2">
-          <input
-            type="checkbox"
+        <div className="h-px bg-ink-border/10" />
+
+        {/* Terms checkbox (Figma 2661:6124) */}
+        <label
+          className={
+            "flex min-h-[calc(44*var(--fpx))] cursor-pointer " +
+            "items-center gap-[calc(8*var(--fpx))]"
+          }
+        >
+          <Checkbox
             checked={termsAccepted}
             onChange={(e) => onTermsChange(e.target.checked)}
-            className="mt-1 size-4 accent-[var(--color-brand-purple)]"
+            sx={{
+              p: 0,
+              color: "var(--color-ink-40)",
+              "&.Mui-checked": { color: "var(--color-brand-purple)" },
+              "& .MuiSvgIcon-root": { fontSize: 16 },
+            }}
           />
-          <span className="text-label text-ink">{c.terms}</span>
+          <span className="text-body leading-[calc(18*var(--fpx))] text-ink">
+            {sc.termsLabel}
+          </span>
         </label>
       </div>
 

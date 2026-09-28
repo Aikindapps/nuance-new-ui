@@ -8,6 +8,13 @@ export type KeysSold = {
   total: number;
   /** Price per key, in e8s -- icpPrice from the same supply read. */
   priceE8s: bigint;
+  /**
+   * The picture the NFT canister actually minted, served over HTTP.
+   * Uses the raw.icp0.io host -- the certified <id>.icp0.io host returns
+   * 503 for these canisters (verified live on 3 production NFT canisters),
+   * same host precedent as useImageUpload.ts.
+   */
+  pictureUrl: string;
 };
 
 // Read-only "keys sold" figure for the Keys & sales panel (NIC-467).
@@ -47,6 +54,7 @@ export function useKeysSold(postId: string | null) {
         sold: supply.transactions.length,
         total: Number(supply.maxSupply),
         priceE8s: supply.icpPrice,
+        pictureUrl: "https://" + nftCanisterId + ".raw.icp0.io/?index=0",
       };
     },
   });

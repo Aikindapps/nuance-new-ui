@@ -2,6 +2,10 @@
 // Figma frames: 2555:6058 (with sales) / 2555:6097 (zero sold) /
 // 2555:6135 (loading) / 2555:6173 (overflow).
 //
+// Also renders the shared "Picture to be minted" preview (NIC-521,
+// MintPicturePreview) right after the heading -- the picture the NFT
+// canister actually minted, keyed off useKeysSold's pictureUrl.
+//
 // Terms were fixed at mint time -- there is no editable field anywhere in
 // this panel, no checkbox, no Publish button. Price + key quantity are
 // shown dimmed with a lock glyph; the point of the screen is the
@@ -23,6 +27,7 @@ import { useKeysSold } from "./hooks/useKeysSold";
 import { formatSignificant } from "../../../lib/tokenMath";
 import { TOKENS } from "../../../config/tokens";
 import { useNuaPrices, priceBetween } from "../../wallet/hooks/useNuaEquivalent";
+import { MintPicturePreview } from "../sections/MintPicturePreview";
 
 const sc = myArticlesMobileCopy.keysAndSales;
 
@@ -116,6 +121,8 @@ export function KeysAndSalesSheet({ titleId, postId, onDone }: Props) {
           </h2>
           <p className="text-label font-medium text-ink-80">{sc.subHeading}</p>
         </div>
+
+        <MintPicturePreview src={data && !isError ? data.pictureUrl : null} />
 
         <div className="h-px bg-ink-border/10" />
 

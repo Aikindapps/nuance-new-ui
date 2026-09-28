@@ -25,4 +25,7 @@ export const premiumMintSheetCopy = {
   keysBelowMinimum: "Enter at least {min} keys.",
   back: "Back",
   publish: "Publish",
+  pictureLabel: "Picture to be minted",
+  pictureAlt: "Preview of the NFT picture",
+  termsLabel: "I accept the terms and conditions",
 };
