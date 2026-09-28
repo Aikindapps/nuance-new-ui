@@ -10,6 +10,10 @@ import {
 // token's base units (e8s). Mirrors the production frontend's TokenPrice shape.
 export type TokenPrice = { tokenSymbol: SupportedTokenSymbol; icpEquivalence: number };
 
+// Also read by the tip flow (TipModal) to decide whether a quote is stale
+// enough to refetch before sending an ICP/ckBTC tip.
+export const NUA_PRICES_STALE_MS = 2 * 60 * 1000;
+
 // Fetches a price quote per Sonic pool (1 ICP in → output token out) and keeps
 // the successful ones. A failing pool is simply omitted — the "= N NUA" line
 // degrades (hidden) rather than blocking the holdings render.
@@ -17,7 +21,7 @@ export function useNuaPrices() {
   const { getSonicQuote } = useActors();
   return useQuery<TokenPrice[]>({
     queryKey: ["sonic-prices"],
-    staleTime: 2 * 60 * 1000,
+    staleTime: NUA_PRICES_STALE_MS,
     queryFn: async () => {
       const responses = await Promise.all(
         SONIC_POOLS.map((pool) =>

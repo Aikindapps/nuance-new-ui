@@ -722,16 +722,25 @@ export const notFoundCopy = {
 // recipient split (writer / publication / DAO) is entirely canister-side.
 export const tipModalCopy = {
   title: "Start applauding!",
-  body: "By applauding this article you tip the writer a fragment of your wallet. One applaud equals one Nuance Token (NUA).",
+  body: "By applauding this article you tip the writer. One applause is worth one Nuance Token (NUA). If you pay with ICP or ckBTC, your applause is converted at the current price.",
   readMore: "Read more",
-  readMoreUrl: "https://wiki.nuance.xyz/nuance/how-to-tip-applaud-a-writer",
+  readMoreUrl: "https://wiki.nuance.xyz/nuance/tipping/how-to-tip",
   inWallet: "Currently in your wallet",
   selectLabel: "Pay with",
-  amountLabel: "Your applaud amount",
+  amountLabel: "Applause",
   amountPlaceholder: "Amount",
   // {max} → the max applauds the selected balance allows.
   maxLabel: "Max {max}",
-  costPrefix: "≈",
+  // {amount}/{fee}/{token} -> the exact plan being sent (single fee).
+  sendLine: "You send {amount} {token} + {fee} {token} network fee",
+  // Free-NUA split: two legs, two fees (token is always NUA here).
+  sendLineFees: "You send {amount} {token} + {fee} {token} network fees",
+  // {token} -> the token whose Sonic price is loading.
+  priceLoading: "Getting the {token} price...",
+  // {token} -> the token whose Sonic price is unavailable.
+  pricePaused: "We can't get the {token} price right now, so tipping in {token} is paused. You can still tip in NUA.",
+  // {token} -> the token the too-small amount was entered in.
+  tooSmall: "That's too little to send in {token}. Try more applause.",
   overMax: "That’s more than your balance allows.",
   terms: "I understand this sends a real, irreversible token transfer.",
   applaudLabel: "Applaud",

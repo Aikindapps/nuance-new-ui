@@ -6,14 +6,17 @@ import {
   TOKENS,
   type SupportedTokenSymbol,
 } from "../../../config/tokens";
-import { formatAmount, fromE8s } from "../../../lib/tokenMath";
+import { formatAmount } from "../../../lib/tokenMath";
 import { useTokenBalances } from "../hooks/useTokenBalances";
 import { useFreeNuaBalance } from "../hooks/useFreeNuaBalance";
+import { useNuaPrices, NUA_PRICES_STALE_MS } from "../hooks/useNuaEquivalent";
 import {
-  useNuaPrices,
-  nuaEquivalentOf,
-  tokenE8sForNua,
-} from "../hooks/useNuaEquivalent";
+  tipAmountE8s,
+  hasQuote,
+  planTip,
+  maxAffordableApplauds,
+  formatExactE8s,
+} from "./tipAmount";
 import { useTipAuthor } from "./useTipAuthor";
 
 export const TIP_MODAL_TITLE_ID = "tip-modal-title";
@@ -26,6 +29,14 @@ function Stat({ label, value }: { label: string; value: string }) {
       <span className="text-body font-bold text-ink">{value}</span>
       <span className="text-label text-ink-60">{label}</span>
     </div>
+  );
+}
+
+/** Fills `{name}` placeholders in a copy template from `vars`. */
+function fmt(template: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce(
+    (s, [key, value]) => s.replaceAll(`{${key}}`, value),
+    template,
   );
 }
 
@@ -55,47 +66,86 @@ export function TipModal({
 
   const c = tipModalCopy;
 
-  // Spendable balance for the selected token — NUA includes restricted (Free).
-  const selectedBalanceE8s = useMemo(() => {
-    const regular = balances.data?.[token] ?? 0n;
-    return token === "NUA" ? regular + (freeNua.data ?? 0n) : regular;
-  }, [balances.data, freeNua.data, token]);
+  // NUA never needs a quote; ICP/ckBTC need a Sonic quote and can be
+  // loading (initial fetch or a refresh) or simply unavailable (the pool
+  // quote failed, so `prices` succeeded but the entry is missing).
+  const priceState = useMemo<"ready" | "loading" | "unavailable">(() => {
+    if (token === "NUA") return "ready";
+    if (prices.isFetching) return "loading";
+    return hasQuote(prices.data, token) ? "ready" : "unavailable";
+  }, [token, prices.isFetching, prices.data]);
 
-  // Max applauds the balance affords (NUA-equivalent of balance − fee), capped.
+  const freeNuaE8s = token === "NUA" ? freeNua.data ?? 0n : 0n;
+
+  // Exact e8s cost of `amount` applauds -- the same helper the transfer uses,
+  // so the number on screen and the number sent can never diverge.
+  const amountE8s = useMemo(() => {
+    if (amount <= 0 || priceState !== "ready") return null;
+    return tipAmountE8s(prices.data, token, amount);
+  }, [amount, priceState, prices.data, token]);
+
+  const plan = useMemo(() => {
+    if (amountE8s == null || amountE8s <= 0n || !balances.data) return null;
+    return planTip(token, amount, amountE8s, balances.data[token], freeNuaE8s);
+  }, [amountE8s, balances.data, token, amount, freeNuaE8s]);
+
+  // Exact max applauds the reader can afford, found the same way the plan is
+  // built (so Max can never pick an amount the transfer then rejects). Hidden
+  // (button not rendered) while balances are loading or the price isn't
+  // ready.
   const maxApplauds = useMemo(() => {
-    if (!prices.data) return 0;
-    const available = selectedBalanceE8s - TOKENS[token].fee;
-    if (available <= 0n) return 0;
-    const nuaEq = nuaEquivalentOf(prices.data, token, fromE8s(available));
-    if (nuaEq == null) return 0;
-    return Math.min(APPLAUD_CAP, Math.max(0, Math.floor(nuaEq)));
-  }, [prices.data, selectedBalanceE8s, token]);
+    if (priceState !== "ready" || !balances.data) return null;
+    return maxAffordableApplauds(
+      prices.data,
+      token,
+      balances.data[token],
+      freeNuaE8s,
+      APPLAUD_CAP,
+    );
+  }, [priceState, balances.data, prices.data, token, freeNuaE8s]);
 
-  // Cost of `amount` applauds in the selected token (display).
-  const costDisplay = useMemo(() => {
-    if (!prices.data || amount <= 0) return null;
-    const decimals = TOKENS[token].decimals;
-    const e8s = tokenE8sForNua(prices.data, token, amount * 10 ** decimals);
-    if (e8s == null) return null;
-    // Rate-precision, not balance-precision: NUA is always whole (1 applaud =
-    // 1 NUA); ICP at 4dp; ckBTC needs full 8dp or a realistic tip
-    // (~33 base units = 0.00000033) rounds to "0.0000" and reads as free.
-    // Separate from TokenConfig.displayDecimals, which is for balances.
-    const costDecimals = token === "NUA" ? 0 : token === "ckBTC" ? 8 : 4;
-    return (Math.floor(e8s) / 10 ** decimals).toFixed(costDecimals);
-  }, [prices.data, amount, token]);
+  // The single status/cost line under the amount input. First match wins.
+  const costLine = useMemo(() => {
+    if (token !== "NUA" && priceState === "loading") {
+      return { text: fmt(c.priceLoading, { token }), tone: "muted" as const };
+    }
+    if (token !== "NUA" && priceState === "unavailable") {
+      return { text: fmt(c.pricePaused, { token }), tone: "muted" as const };
+    }
+    if (amount > 0 && amountE8s === 0n) {
+      return { text: fmt(c.tooSmall, { token }), tone: "error" as const };
+    }
+    if (plan) {
+      const template = plan.feeE8s === TOKENS[token].fee ? c.sendLine : c.sendLineFees;
+      return {
+        text: fmt(template, {
+          amount: formatExactE8s(plan.amountE8s),
+          fee: formatExactE8s(plan.feeE8s),
+          token,
+        }),
+        tone: "muted" as const,
+      };
+    }
+    return null;
+  }, [token, priceState, amount, amountE8s, plan, c]);
 
-  const valid = amount > 0 && amount <= maxApplauds && terms && !!prices.data;
+  const valid = terms && plan !== null && plan.affordable;
 
   const submit = () => {
     setError(null);
-    tip.mutate(
-      { token, applauds: amount },
-      {
-        onSuccess: () => setDone(true),
-        onError: (e) => setError(e.message),
-      },
-    );
+    if (!plan) return;
+    if (token !== "NUA" && Date.now() - prices.dataUpdatedAt > NUA_PRICES_STALE_MS) {
+      // The quote on screen may be stale -- refresh it instead of sending a
+      // number that no longer matches the market. The line switches to
+      // "Getting the price..." while this runs; the reader presses Applaud
+      // again once the refreshed amount is showing.
+      void prices.refetch();
+      return;
+    }
+    tip.mutate(plan, {
+      onSuccess: () => setDone(true),
+      onError: (e) => setError(e.message),
+    });
   };
 
   if (done) {
@@ -206,13 +256,15 @@ export function TipModal({
             <p className="text-label font-medium uppercase tracking-wide text-ink-60">
               {c.amountLabel}
             </p>
-            <button
-              type="button"
-              onClick={() => setAmount(maxApplauds)}
-              className="text-label font-medium text-brand-purple"
-            >
-              {c.maxLabel.replace("{max}", String(maxApplauds))}
-            </button>
+            {maxApplauds !== null && (
+              <button
+                type="button"
+                onClick={() => setAmount(maxApplauds)}
+                className="text-label font-medium text-brand-purple"
+              >
+                {c.maxLabel.replace("{max}", String(maxApplauds))}
+              </button>
+            )}
           </div>
           <input
             type="number"
@@ -235,12 +287,14 @@ export function TipModal({
             }}
             className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink focus:border-brand-purple focus:outline-none"
           />
-          {costDisplay && (
-            <p className="text-label text-ink-60">
-              {c.costPrefix} {costDisplay} {token}
+          {costLine && (
+            <p
+              className={`text-label ${costLine.tone === "error" ? "text-error" : "text-ink-60"}`}
+            >
+              {costLine.text}
             </p>
           )}
-          {amount > maxApplauds && amount > 0 && (
+          {plan && !plan.affordable && (
             <p className="text-label text-error">{c.overMax}</p>
           )}
         </div>

@@ -30,7 +30,7 @@ export type TokenConfig = {
    * Decimals shown in the UI for balance displays. Decoupled from ledger
    * decimals: ckBTC needs 8 because realistic balances are sub-0.0001 and
    * round to "0.0000" at 4 (PR #13). NUA/ICP look right at 4. Tip-cost
-   * lines use a separate rate-precision rule — see TipModal.
+   * lines use exact base-unit formatting instead -- see tip/tipAmount.ts.
    */
   displayDecimals: number;
 };
