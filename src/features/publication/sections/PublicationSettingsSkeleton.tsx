@@ -33,7 +33,7 @@ function InputRect() {
   return <Rect className="h-[calc(48*var(--fpx))] w-full rounded-[calc(6*var(--fpx))]" />;
 }
 
-// Dropzone rect (header image / logo), 119h radius 16.
+// Dropzone rect (header image), 119h radius 16.
 function DropzoneRect() {
   return <Rect className="h-[calc(119*var(--fpx))] w-full rounded-[calc(16*var(--fpx))]" />;
 }
@@ -81,7 +81,6 @@ export function PublicationSettingsSkeleton() {
           <Rect className="h-[calc(20*var(--fpx))] w-[calc(90*var(--fpx))] rounded-[calc(4*var(--fpx))]" />
           <FieldSkeleton labelWidth="w-[calc(120*var(--fpx))]" control={<InputRect />} />
           <FieldSkeleton labelWidth="w-[calc(160*var(--fpx))]" control={<InputRect />} />
-          <FieldSkeleton labelWidth="w-[calc(160*var(--fpx))]" control={<DropzoneRect />} />
         </div>
 
         {/* Social links */}

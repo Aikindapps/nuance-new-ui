@@ -8,7 +8,7 @@
 //     linkedin / reddit / custom URLs are never silently dropped on save.
 //   - Image upload (NIC-382): 5 MB pre-check before calling useImageUpload.
 //     The shared hook has its own 10 MB cap for article images — left unchanged.
-//   - Styling group (NIC-370): primaryColor picker, font select, logo uploader.
+//   - Styling group (NIC-370): primaryColor picker, font select.
 //     Saved via updatePublicationStyling (only when styling changed).
 //
 // Design ref: Figma 1:42221 / 1:42313 / 1:42309 / 1:42237 / 1:42240 / 1848:7904.
@@ -152,7 +152,7 @@ function SaveSpinner({
   );
 }
 
-// Empty-image dropzone — shared by header image and logo fields.
+// Empty-image dropzone -- used by the header image field.
 // Design: Figma 1:42239 / NUR / Add image State=Default.
 type EmptyDropzoneProps = {
   onClick: () => void;
@@ -235,7 +235,6 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   // Styling seeds (NIC-370).
   const seedFontType = publication.styling.fontType;
   const seedPrimaryColor = publication.styling.primaryColor;
-  const seedLogo = publication.styling.logo;
 
   // CTA banner seeds (NIC-378).
   const seedCta = publication.cta;
@@ -293,11 +292,6 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
   const [fontType, setFontType] = useState(seedFontType);
   const [primaryColor, setPrimaryColor] = useState(seedPrimaryColor);
-  const [logo, setLogo] = useState(seedLogo);
-  const [logoFileName, setLogoFileName] = useState("");
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [logoTooLarge, setLogoTooLarge] = useState(false);
-  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // ── CTA banner state (NIC-378) ──────────────────────────────────────────────
   // Keep field values in state even when bannerEnabled is false — toggling back
@@ -331,8 +325,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
   const stylingDirty =
     fontType !== seedFontType ||
-    primaryColor !== seedPrimaryColor ||
-    logo !== seedLogo;
+    primaryColor !== seedPrimaryColor;
 
   // CTA dirty: compare the effective payload (banner OFF → all-empty) against seed.
   const effectiveCta = useMemo(
@@ -353,7 +346,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
   const isDirty = detailsDirty || stylingDirty || ctaDirty;
 
-  const anyImageUploading = headerImageUploading || avatarUploading || logoUploading;
+  const anyImageUploading = headerImageUploading || avatarUploading;
 
   // Field validation (State 1). Errors surface on submit-attempt (showErrors)
   // and re-validate live on edit because fieldErrors is derived.
@@ -512,63 +505,6 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     [uploadImage, toast],
   );
 
-  // Logo upload handlers — mirror header image exactly (NIC-370).
-  const handleLogoSelect = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = "";
-      if (!file) return;
-      if (!file.type.startsWith("image/")) return;
-      if (file.size > IMAGE_MAX_BYTES) {
-        setLogoTooLarge(true);
-        return;
-      }
-      setLogoTooLarge(false);
-      setLogoUploading(true);
-      try {
-        const url = await uploadImage(file);
-        setLogo(url);
-        setLogoFileName(file.name);
-      } catch (err) {
-        toast.show(
-          err instanceof Error ? err.message : copy.imageUploadError,
-          "error",
-        );
-      } finally {
-        setLogoUploading(false);
-      }
-    },
-    [uploadImage, toast],
-  );
-
-  const handleLogoDrop = useCallback(
-    async (e: React.DragEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files?.[0];
-      if (!file) return;
-      if (!file.type.startsWith("image/")) return;
-      if (file.size > IMAGE_MAX_BYTES) {
-        setLogoTooLarge(true);
-        return;
-      }
-      setLogoTooLarge(false);
-      setLogoUploading(true);
-      try {
-        const url = await uploadImage(file);
-        setLogo(url);
-        setLogoFileName(file.name);
-      } catch (err) {
-        toast.show(
-          err instanceof Error ? err.message : copy.imageUploadError,
-          "error",
-        );
-      } finally {
-        setLogoUploading(false);
-      }
-    },
-    [uploadImage, toast],
-  );
-
   // ── Save handler ─────────────────────────────────────────────────────────────
 
   const handleSave = useCallback(async () => {
@@ -607,11 +543,13 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
       }
 
       if (stylingDirty) {
+        // Logo field removed from the UI (D-114); pass the stored value through
+        // unchanged so a colour/font-only save never blanks publication.styling.logo.
         const res2 = await updatePublicationStyling(
           canisterId,
           fontType,
           primaryColor,
-          logo,
+          publication.styling.logo,
         );
         if (res2.__kind__ === "err") throw new Error(res2.err);
       }
@@ -650,7 +588,6 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     avatar,
     fontType,
     primaryColor,
-    logo,
     detailsDirty,
     stylingDirty,
     ctaDirty,
@@ -1023,7 +960,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
         </div>
 
         {/* (e3) Styling group — NIC-370 §6.6 (Figma 1:42221 Styling frame) */}
-        {/* Design: 448×453 column gap 24 pt-16 fill #FFFFFF */}
+        {/* Design: 448x246 column gap 24 pt-16 fill #FFFFFF */}
         <div className="flex flex-col gap-[calc(24*var(--fpx))] pt-[calc(16*var(--fpx))]">
           <span className="text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink">
             Styling
@@ -1065,68 +1002,6 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
                 <IconChevronDown className="size-[calc(14*var(--fpx))]" />
               </span>
             </div>
-          </div>
-
-          {/* Publication logo */}
-          <div className={fieldClass}>
-            <label className={labelClass}>{copy.labelLogo}</label>
-            {logo ? (
-              <>
-                <img
-                  src={logo}
-                  alt=""
-                  aria-hidden
-                  className={[
-                    "w-full h-[calc(150*var(--fpx))] object-contain",
-                    "rounded-[calc(10*var(--fpx))]",
-                  ].join(" ")}
-                />
-                <div className="flex flex-row items-center gap-[calc(6*var(--fpx))] py-[calc(4*var(--fpx))]">
-                  <span className="flex-1 truncate text-[length:calc(14*var(--fpx))] leading-[calc(20*var(--fpx))] text-ink/80">
-                    {logoFileName || copy.currentImage}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={logoUploading}
-                    onClick={() => logoInputRef.current?.click()}
-                    className={tertiaryClass}
-                  >
-                    {copy.changeImage}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLogo("");
-                      setLogoFileName("");
-                      setLogoTooLarge(false);
-                    }}
-                    className={tertiaryClass}
-                  >
-                    {copy.deleteImage}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <EmptyImageDropzone
-                onClick={() => logoInputRef.current?.click()}
-                onDrop={handleLogoDrop}
-                uploading={logoUploading}
-                ariaLabel={copy.labelLogo}
-              />
-            )}
-            <input
-              ref={logoInputRef}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={handleLogoSelect}
-              aria-label={copy.labelLogo}
-            />
-            {logoTooLarge && (
-              <p className="text-[length:calc(14*var(--fpx))] font-normal leading-[calc(17*var(--fpx))] text-ink/80">
-                {copy.imageTooLarge}
-              </p>
-            )}
           </div>
         </div>
 

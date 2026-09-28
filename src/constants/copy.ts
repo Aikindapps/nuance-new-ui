@@ -1303,8 +1303,7 @@ export const publicationSettingsCopy = {
   labelPrimaryColor: "Primary colour",
   labelFont: "Publication font",
   fontPlaceholder: "Select a font",
-  labelLogo: "Publication logo",
-  // Empty-image dropzone prompt (NIC-370 reconcile \u2014 header + logo share this).
+  // Empty-image dropzone prompt (NIC-370 reconcile \u2014 used by the header image field).
   dropPrompt: "Drop highlighted image here or",
   chooseFile: "choose file",
   // Field validation (NIC-377 §6.6 batch B — Purple/100 treatment, Figma 1891:2830).
