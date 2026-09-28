@@ -357,6 +357,9 @@ const BIO_MAX = 160;
 const SOCIAL_PLATFORMS = ["google", "linkedin", "reddit", "facebook"] as const;
 type SocialPlatformKey = (typeof SOCIAL_PLATFORMS)[number];
 
+const isNamedPlatform = (p: string): p is SocialPlatformKey =>
+  (SOCIAL_PLATFORMS as readonly string[]).includes(p);
+
 function seedSocialInputs(rawChannels: string[]): Record<SocialPlatformKey, string> {
   const state: Record<SocialPlatformKey, string> = {
     google: "",
@@ -415,13 +418,22 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
   const [avatarUrl, setAvatarUrl] = useState(seedAvatar);
   const [website, setWebsite] = useState(seedWebsite);
   const [social, setSocial] = useState<Record<SocialPlatformKey, string>>(seedSocial);
-  // Other-platform links (e.g. Twitter/X, Mastodon, custom URL) are NOT exposed
-  // as editable inputs -- they are carried through verbatim on every save so the
-  // user doesn't silently lose them. Seeded synchronously from the User record.
+  // Links without a named input here (X/Twitter, Distrikt, Mastodon, custom
+  // URLs, and any extra url for a platform that already has one) are NOT
+  // exposed as editable inputs -- they are carried through verbatim on every
+  // save so the user doesn't silently lose them. Seeded synchronously from the
+  // User record: a url is "named" (and so excluded here) only if its platform
+  // is one of SOCIAL_PLATFORMS AND it is exactly the url shown in that named
+  // input -- any other stored url (including an earlier duplicate for a named
+  // platform) falls through to here.
   const [otherLinks] = useState<string[]>(() =>
     user.socialChannels
       .map((u) => u.trim())
-      .filter((u) => u !== "" && detectSocialPlatform(u) === "other"),
+      .filter((u) => {
+        if (u === "") return false;
+        const platform = detectSocialPlatform(u);
+        return !(isNamedPlatform(platform) && seedSocial[platform] === u);
+      }),
   );
 
   // Avatar upload state
