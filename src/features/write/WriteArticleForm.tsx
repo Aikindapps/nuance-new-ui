@@ -31,6 +31,14 @@ import { useMigratePost } from "./hooks/useMigratePost";
 import type { EditArticleInitial } from "./hooks/useEditArticle";
 import { isEditorEmpty, serializeEditorHtml } from "./lib/htmlSerialize";
 import { useMyProfile } from "../../lib/useMyProfile";
+import { publishSheetCopy } from "./sections/publishSheetCopy";
+import {
+  clockHHMM,
+  formatClock12h,
+  formatGoesLive,
+  localDateISO,
+} from "./lib/publishSchedule";
+import { publishScheduleCopy } from "./sections/publishScheduleCopy";
 
 const C = writeArticleCopy;
 const MY_ARTICLES = "/my-articles";
@@ -194,6 +202,7 @@ export function WriteArticleForm({
       premium?: { thumbnail: string; icpPrice: bigint; maxSupply: bigint },
       isMembersOnly: boolean = false,
       scheduled: bigint | null = null,
+      failure?: { message: string; retry: () => void },
     ): Promise<Post | null> => {
       const editor = editorRef.current;
       if (!editor) return null;
@@ -346,7 +355,14 @@ export function WriteArticleForm({
         setSavedPubHandle(null);
         return post;
       } catch (e) {
-        show((e as Error).message || C.toasts.saveFailed, "error");
+        if (failure) {
+          show(failure.message, "error", {
+            actionLabel: publishSheetCopy.retry,
+            onAction: failure.retry,
+          });
+        } else {
+          show((e as Error).message || C.toasts.saveFailed, "error");
+        }
         return null;
       }
     },
@@ -569,6 +585,7 @@ export function WriteArticleForm({
             submitForReview,
             chosenMembersOnly,
             scheduledPublishedDate,
+            retry,
           ) => {
             if (chosenPub !== publicationHandle) {
               userChangedTarget.current = true;
@@ -580,6 +597,14 @@ export function WriteArticleForm({
             const isDraft =
               publishView.mode === "publish" ? submitForReview : true;
             setMembersOnly(chosenMembersOnly);
+            // Only the "actually publishing now" path (publish mode, not a
+            // writer's submit-for-review, not an already-published article
+            // being re-saved) gets the error+Retry toast (NIC-412) - every
+            // other path keeps today's plain error toast.
+            const failure =
+              publishView.mode === "publish" && !submitForReview && !isPublished
+                ? { message: publishSheetCopy.publishFailedToast, retry }
+                : undefined;
             const post = await doSave(
               isDraft,
               picked,
@@ -587,18 +612,35 @@ export function WriteArticleForm({
               undefined,
               chosenMembersOnly,
               scheduledPublishedDate,
+              failure,
             );
             if (post) {
               if (publishView.mode === "publish") {
                 if (submitForReview) {
                   show(C.toasts.submittedForReview, "success");
                   navigate(MY_ARTICLES);
-                } else {
+                } else if (isPublished) {
                   // Re-publishing an already-live article = saving changes.
-                  show(
-                    isPublished ? C.toasts.changesSaved : C.toasts.published,
-                    "success",
-                  );
+                  show(C.toasts.changesSaved, "success");
+                  navigate(post.url || "/");
+                } else {
+                  const successMessage =
+                    scheduledPublishedDate === null
+                      ? publishSheetCopy.publishedToast
+                      : publishScheduleCopy.goesLive
+                          .replace(
+                            "{date}",
+                            formatGoesLive(
+                              localDateISO(new Date(Number(scheduledPublishedDate))),
+                            ),
+                          )
+                          .replace(
+                            "{time}",
+                            formatClock12h(
+                              clockHHMM(new Date(Number(scheduledPublishedDate))),
+                            ),
+                          );
+                  show(successMessage, "success");
                   navigate(post.url || "/");
                 }
               } else {

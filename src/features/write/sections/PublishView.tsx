@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Button from "@mui/material/Button";
+import FocusTrap from "@mui/material/Unstable_TrapFocus";
 import {
   primaryButtonSx,
   secondaryButtonSx,
@@ -17,6 +18,7 @@ import {
   localDateISO,
   scheduleMsIfFuture,
 } from "../lib/publishSchedule";
+import { useIsMobileViewport } from "../../../lib/useIsMobileViewport";
 
 export const PUBLISH_VIEW_TITLE_ID = "publish-view-title";
 
@@ -50,6 +52,7 @@ export function PublishView({
     submitForReview: boolean,
     isMembersOnly: boolean,
     scheduledPublishedDate: bigint | null,
+    retry: () => void,
   ) => Promise<boolean>;
   coverPresent?: boolean;
   onMintPremium?: (tagIds: string[], publicationHandle: string) => void;
@@ -60,6 +63,7 @@ export function PublishView({
 }) {
   const c = writeArticleCopy.publish;
   const cp = writeArticleCopy.premium;
+  const isMobile = useIsMobileViewport();
   const [selected, setSelected] = useState<string[]>(initialTagIds);
   const [pubHandle, setPubHandle] = useState<string | null>(initialPublicationHandle);
   const [saving, setSaving] = useState(false);
@@ -161,26 +165,334 @@ export function PublishView({
     return () => document.removeEventListener("mousedown", onDown);
   }, [accessOpen]);
 
+  const inFlightRef = useRef(false);
   const confirm = async () => {
-    if (selected.length < 1 || saving) return;
+    if (selected.length < 1 || inFlightRef.current) return;
+    inFlightRef.current = true;
     setSaving(true);
     // Recompute at submit time: the pick can go stale while the panel
     // stays open, and a stale (past) pick must publish immediately.
     const ms = showSchedule
       ? scheduleMsIfFuture(pubDate, pubTime, new Date())
       : null;
-    const ok = await onConfirm(
-      selected,
-      pubHandle,
-      submitForReview,
-      showAccess && effectiveMembersOnly,
-      ms === null ? null : BigInt(ms),
-    );
-    setSaving(false);
-    if (ok) onBack();
+    try {
+      const ok = await onConfirm(
+        selected,
+        pubHandle,
+        submitForReview,
+        showAccess && effectiveMembersOnly,
+        ms === null ? null : BigInt(ms),
+        confirm,
+      );
+      if (ok) onBack();
+    } finally {
+      setSaving(false);
+      inFlightRef.current = false;
+    }
   };
 
+  // Phone-only: keep the open foldout's listbox in view inside the sheet's
+  // scroll region (the sheet is height-capped, unlike the desktop overlay).
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isMobile) return;
+    if (!open && !accessOpen && !timeOpen) return;
+    const listbox = scrollRef.current?.querySelector('[role="listbox"]');
+    listbox?.scrollIntoView({ block: "nearest" });
+  }, [isMobile, open, accessOpen, timeOpen]);
+
   const displayLabel = pubHandle ?? c.personalOption;
+
+  const titleText =
+    mode === "publish"
+      ? submitForReview
+        ? c.titleSubmitForReview
+        : c.titlePublish
+      : c.titleDraft;
+
+  const primaryLabel =
+    mode === "publish"
+      ? submitForReview
+        ? c.submitForReviewButton
+        : scheduledMs !== null
+          ? publishScheduleCopy.scheduleButton
+          : c.publishButton
+      : c.saveDraftButton;
+
+  const fields = (
+    <>
+      {/* Publish-to dropdown — hidden for personal-only users (NIC-72) */}
+      {publications.length > 0 && (
+        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
+          <label className="text-label font-bold text-ink">
+            {c.publishToLabel}
+          </label>
+          {/* Relative wrapper for the foldout */}
+          <div className="relative" ref={publishToRef}>
+            <button
+              type="button"
+              role="combobox"
+              aria-haspopup="listbox"
+              aria-expanded={open}
+              aria-controls={listId}
+              onClick={() => setOpen((o) => !o)}
+              className={[
+                "flex h-[calc(48*var(--fpx))] w-full items-center justify-between rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] text-body text-ink-80",
+                open
+                  ? "border-2 border-brand-purple bg-brand-purple-5"
+                  : "border-2 border-ink-border-10 bg-ink-border-5",
+              ].join(" ")}
+            >
+              <span>{displayLabel}</span>
+              <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0 text-ink-80" />
+            </button>
+
+            {/* Dark foldout panel (Figma 1:41888 — applied to Publish-to field) */}
+            {open && (
+              <ul
+                id={listId}
+                role="listbox"
+                className="absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]"
+              >
+                {/* "My profile" option */}
+                <li role="option" aria-selected={pubHandle === null}>
+                  <button
+                    type="button"
+                    onClick={() => { setPubHandle(null); setOpen(false); }}
+                    className={[
+                      "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
+                      pubHandle === null
+                        ? "bg-brand-purple-fluor-80 font-medium"
+                        : "hover:bg-brand-purple-fluor-80",
+                    ].join(" ")}
+                  >
+                    {c.personalOption}
+                  </button>
+                </li>
+                {publications.map((pub) => (
+                  <li
+                    key={pub.publicationName}
+                    role="option"
+                    aria-selected={pubHandle === pub.publicationName}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { setPubHandle(pub.publicationName); setOpen(false); }}
+                      className={[
+                        "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
+                        pubHandle === pub.publicationName
+                          ? "bg-brand-purple-fluor-80 font-medium"
+                          : "hover:bg-brand-purple-fluor-80",
+                      ].join(" ")}
+                    >
+                      {pub.publicationName}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Select category (disabled / gated F-cat / NIC-57) — shown only when a publication is selected (NIC-72) */}
+      {pubHandle !== null && (
+        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
+          <label className="text-label font-bold text-ink">
+            {c.categoryLabel}
+          </label>
+          <div
+            role="combobox"
+            aria-disabled="true"
+            aria-expanded="false"
+            aria-label={c.categoryLabel}
+            className="flex h-[calc(48*var(--fpx))] w-full cursor-not-allowed select-none items-center justify-between rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink-60 opacity-50"
+          >
+            <span>{c.categoryPlaceholder}</span>
+            <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0" />
+          </div>
+          <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(4*var(--fpx))]">
+            {c.categoryComingSoon}
+          </p>
+        </div>
+      )}
+
+      {/* Divider — hidden for personal-only users (NIC-72) */}
+      {publications.length > 0 && (
+        <hr className="w-full border-t border-ink-border/20" />
+      )}
+
+      {/* Topics block */}
+      <div className="flex flex-col gap-[calc(6*var(--fpx))]">
+        <span className="text-label font-bold text-ink">{c.topicsLabel}</span>
+        <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(8*var(--fpx))]">{c.topicsDescription}</p>
+        <TopicPicker selected={selected} onChange={setSelected} />
+      </div>
+
+      {/* Divider before the schedule row (frame 1:38058). */}
+      {showSchedule && (
+        <hr className="w-full border-t border-ink-border/20" />
+      )}
+
+      {/* Publish date & time (NIC-418). Publish mode only, and */}
+      {/* not for an already-published article (see showSchedule). */}
+      {showSchedule && (
+        <PublishScheduleField
+          date={pubDate}
+          time={pubTime}
+          onDateChange={setPubDate}
+          onTimeChange={setPubTime}
+          open={timeOpen}
+          onOpenChange={setTimeOpen}
+          scheduledMs={scheduledMs}
+        />
+      )}
+
+      {/* Access: Everyone / Only subscribers (NIC-419). Publish mode only. */}
+      {showAccess && (
+        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
+          <label className="text-label font-bold text-ink">
+            {publishAccessCopy.label}
+          </label>
+          <div className="relative" ref={accessRef}>
+            <button
+              type="button"
+              role="combobox"
+              aria-haspopup="listbox"
+              aria-expanded={accessOpen}
+              aria-controls={accessListId}
+              onClick={() => setAccessOpen((o) => !o)}
+              className={[
+                "flex h-[calc(48*var(--fpx))] w-full items-center justify-between rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] text-body text-ink-80",
+                accessOpen
+                  ? "border-2 border-brand-purple bg-brand-purple-5"
+                  : "border-2 border-ink-border-10 bg-ink-border-5",
+              ].join(" ")}
+            >
+              <span>{effectiveMembersOnly ? publishAccessCopy.subscribersOnly : publishAccessCopy.everyone}</span>
+              <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0 text-ink-80" />
+            </button>
+            {accessOpen && (
+              <ul
+                id={accessListId}
+                role="listbox"
+                className="absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]"
+              >
+                <li role="option" aria-selected={!effectiveMembersOnly}>
+                  <button
+                    type="button"
+                    onClick={() => { setMembersOnly(false); setAccessOpen(false); }}
+                    className={[
+                      "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
+                      !effectiveMembersOnly
+                        ? "bg-brand-purple-fluor-80 font-medium"
+                        : "hover:bg-brand-purple-fluor-80",
+                    ].join(" ")}
+                  >
+                    {publishAccessCopy.everyone}
+                  </button>
+                </li>
+                <li role="option" aria-selected={effectiveMembersOnly} aria-disabled={subscriptionAvailable === false}>
+                  <button
+                    type="button"
+                    disabled={subscriptionAvailable === false}
+                    onClick={() => { setMembersOnly(true); setAccessOpen(false); }}
+                    className={[
+                      "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
+                      subscriptionAvailable === false
+                        ? "cursor-not-allowed text-white/50"
+                        : effectiveMembersOnly
+                          ? "bg-brand-purple-fluor-80 font-medium"
+                          : "hover:bg-brand-purple-fluor-80",
+                    ].join(" ")}
+                  >
+                    {publishAccessCopy.subscribersOnly}
+                  </button>
+                </li>
+              </ul>
+            )}
+          </div>
+          {subscriptionAvailable === false && (
+            <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(4*var(--fpx))]">
+              {publishAccessCopy.subscribersUnavailable}
+            </p>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        {/* Scrim - NUR/Overlay, ink @ 40% (matches the frame exactly). */}
+        <div
+          className="absolute inset-0 bg-ink/40"
+          aria-hidden
+          onClick={onBack}
+        />
+        <FocusTrap open>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={PUBLISH_VIEW_TITLE_ID}
+            className="relative flex max-h-[85vh] flex-col rounded-t-[calc(16*var(--fpx))] bg-white"
+          >
+            {/* Drag handle */}
+            <div
+              aria-hidden
+              className="mx-auto mt-[calc(12*var(--fpx))] h-[calc(4*var(--fpx))] w-[calc(36*var(--fpx))] rounded-[calc(2*var(--fpx))] bg-ink-border/20"
+            />
+            <div
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto px-[calc(24*var(--fpx))] pt-[calc(24*var(--fpx))] pb-[calc(24*var(--fpx))] flex flex-col gap-[calc(24*var(--fpx))]"
+            >
+              <h1
+                id={PUBLISH_VIEW_TITLE_ID}
+                className="text-lg font-bold text-ink"
+              >
+                {titleText}
+              </h1>
+              {fields}
+            </div>
+            {/* Footer - pinned below the scroll region. Mint (D-24, when
+                shown) renders full-width above the Back|Primary pair. */}
+            <div className="flex flex-col gap-[calc(12*var(--fpx))] px-[calc(24*var(--fpx))] pb-[calc(24*var(--fpx))]">
+              {premiumEligible && !effectiveMembersOnly && (
+                <Button
+                  sx={{ ...secondaryButtonSx, width: "100%" }}
+                  disabled={selected.length < 1 || saving}
+                  onClick={() => {
+                    if (selected.length >= 1 && pubHandle !== null) {
+                      onMintPremium!(selected, pubHandle);
+                    }
+                  }}
+                >
+                  {cp.mintCta}
+                </Button>
+              )}
+              <div className="flex w-full flex-wrap gap-x-[calc(15*var(--fpx))] gap-y-[calc(12*var(--fpx))]">
+                <Button
+                  sx={{ ...secondaryButtonSx, flex: "1 0 auto", whiteSpace: "nowrap" }}
+                  startIcon={<IconChevronLeft className="size-[calc(24*var(--fpx))]" />}
+                  onClick={onBack}
+                >
+                  {c.backToArticle}
+                </Button>
+                <Button
+                  sx={{ ...primaryButtonSx, flex: "1 0 auto", whiteSpace: "nowrap" }}
+                  disabled={selected.length < 1 || saving}
+                  onClick={confirm}
+                >
+                  {primaryLabel}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </FocusTrap>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -197,211 +509,10 @@ export function PublishView({
           id={PUBLISH_VIEW_TITLE_ID}
           className="text-lg font-bold text-ink"
         >
-          {mode === "publish"
-            ? submitForReview
-              ? c.titleSubmitForReview
-              : c.titlePublish
-            : c.titleDraft}
+          {titleText}
         </h1>
 
-        {/* Publish-to dropdown — hidden for personal-only users (NIC-72) */}
-        {publications.length > 0 && (
-          <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-            <label className="text-label font-bold text-ink">
-              {c.publishToLabel}
-            </label>
-            {/* Relative wrapper for the foldout */}
-            <div className="relative" ref={publishToRef}>
-              <button
-                type="button"
-                role="combobox"
-                aria-haspopup="listbox"
-                aria-expanded={open}
-                aria-controls={listId}
-                onClick={() => setOpen((o) => !o)}
-                className={[
-                  "flex h-[calc(48*var(--fpx))] w-full items-center justify-between rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] text-body text-ink-80",
-                  open
-                    ? "border-2 border-brand-purple bg-brand-purple-5"
-                    : "border-2 border-ink-border-10 bg-ink-border-5",
-                ].join(" ")}
-              >
-                <span>{displayLabel}</span>
-                <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0 text-ink-80" />
-              </button>
-
-              {/* Dark foldout panel (Figma 1:41888 — applied to Publish-to field) */}
-              {open && (
-                <ul
-                  id={listId}
-                  role="listbox"
-                  className="absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]"
-                >
-                  {/* "My profile" option */}
-                  <li role="option" aria-selected={pubHandle === null}>
-                    <button
-                      type="button"
-                      onClick={() => { setPubHandle(null); setOpen(false); }}
-                      className={[
-                        "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
-                        pubHandle === null
-                          ? "bg-brand-purple-fluor-80 font-medium"
-                          : "hover:bg-brand-purple-fluor-80",
-                      ].join(" ")}
-                    >
-                      {c.personalOption}
-                    </button>
-                  </li>
-                  {publications.map((pub) => (
-                    <li
-                      key={pub.publicationName}
-                      role="option"
-                      aria-selected={pubHandle === pub.publicationName}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => { setPubHandle(pub.publicationName); setOpen(false); }}
-                        className={[
-                          "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
-                          pubHandle === pub.publicationName
-                            ? "bg-brand-purple-fluor-80 font-medium"
-                            : "hover:bg-brand-purple-fluor-80",
-                        ].join(" ")}
-                      >
-                        {pub.publicationName}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Select category (disabled / gated F-cat / NIC-57) — shown only when a publication is selected (NIC-72) */}
-        {pubHandle !== null && (
-          <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-            <label className="text-label font-bold text-ink">
-              {c.categoryLabel}
-            </label>
-            <div
-              role="combobox"
-              aria-disabled="true"
-              aria-expanded="false"
-              aria-label={c.categoryLabel}
-              className="flex h-[calc(48*var(--fpx))] w-full cursor-not-allowed select-none items-center justify-between rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink-60 opacity-50"
-            >
-              <span>{c.categoryPlaceholder}</span>
-              <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0" />
-            </div>
-            <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(4*var(--fpx))]">
-              {c.categoryComingSoon}
-            </p>
-          </div>
-        )}
-
-        {/* Divider — hidden for personal-only users (NIC-72) */}
-        {publications.length > 0 && (
-          <hr className="w-full border-t border-ink-border/20" />
-        )}
-
-        {/* Topics block */}
-        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-          <span className="text-label font-bold text-ink">{c.topicsLabel}</span>
-          <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(8*var(--fpx))]">{c.topicsDescription}</p>
-          <TopicPicker selected={selected} onChange={setSelected} />
-        </div>
-
-        {/* Divider before the schedule row (frame 1:38058). */}
-        {showSchedule && (
-          <hr className="w-full border-t border-ink-border/20" />
-        )}
-
-        {/* Publish date & time (NIC-418). Publish mode only, and */}
-        {/* not for an already-published article (see showSchedule). */}
-        {showSchedule && (
-          <PublishScheduleField
-            date={pubDate}
-            time={pubTime}
-            onDateChange={setPubDate}
-            onTimeChange={setPubTime}
-            open={timeOpen}
-            onOpenChange={setTimeOpen}
-            scheduledMs={scheduledMs}
-          />
-        )}
-
-        {/* Access: Everyone / Only subscribers (NIC-419). Publish mode only. */}
-        {showAccess && (
-          <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-            <label className="text-label font-bold text-ink">
-              {publishAccessCopy.label}
-            </label>
-            <div className="relative" ref={accessRef}>
-              <button
-                type="button"
-                role="combobox"
-                aria-haspopup="listbox"
-                aria-expanded={accessOpen}
-                aria-controls={accessListId}
-                onClick={() => setAccessOpen((o) => !o)}
-                className={[
-                  "flex h-[calc(48*var(--fpx))] w-full items-center justify-between rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] text-body text-ink-80",
-                  accessOpen
-                    ? "border-2 border-brand-purple bg-brand-purple-5"
-                    : "border-2 border-ink-border-10 bg-ink-border-5",
-                ].join(" ")}
-              >
-                <span>{effectiveMembersOnly ? publishAccessCopy.subscribersOnly : publishAccessCopy.everyone}</span>
-                <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0 text-ink-80" />
-              </button>
-              {accessOpen && (
-                <ul
-                  id={accessListId}
-                  role="listbox"
-                  className="absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]"
-                >
-                  <li role="option" aria-selected={!effectiveMembersOnly}>
-                    <button
-                      type="button"
-                      onClick={() => { setMembersOnly(false); setAccessOpen(false); }}
-                      className={[
-                        "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
-                        !effectiveMembersOnly
-                          ? "bg-brand-purple-fluor-80 font-medium"
-                          : "hover:bg-brand-purple-fluor-80",
-                      ].join(" ")}
-                    >
-                      {publishAccessCopy.everyone}
-                    </button>
-                  </li>
-                  <li role="option" aria-selected={effectiveMembersOnly} aria-disabled={subscriptionAvailable === false}>
-                    <button
-                      type="button"
-                      disabled={subscriptionAvailable === false}
-                      onClick={() => { setMembersOnly(true); setAccessOpen(false); }}
-                      className={[
-                        "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
-                        subscriptionAvailable === false
-                          ? "cursor-not-allowed text-white/50"
-                          : effectiveMembersOnly
-                            ? "bg-brand-purple-fluor-80 font-medium"
-                            : "hover:bg-brand-purple-fluor-80",
-                      ].join(" ")}
-                    >
-                      {publishAccessCopy.subscribersOnly}
-                    </button>
-                  </li>
-                </ul>
-              )}
-            </div>
-            {subscriptionAvailable === false && (
-              <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(4*var(--fpx))]">
-                {publishAccessCopy.subscribersUnavailable}
-              </p>
-            )}
-          </div>
-        )}
+        {fields}
 
         {/* Buttons row */}
         <div className="flex w-full flex-col gap-[calc(12*var(--fpx))] lg:flex-row lg:items-center lg:justify-between">
@@ -431,13 +542,7 @@ export function PublishView({
               disabled={selected.length < 1 || saving}
               onClick={confirm}
             >
-              {mode === "publish"
-                ? submitForReview
-                  ? c.submitForReviewButton
-                  : scheduledMs !== null
-                    ? publishScheduleCopy.scheduleButton
-                    : c.publishButton
-                : c.saveDraftButton}
+              {primaryLabel}
             </Button>
           </div>
         </div>
