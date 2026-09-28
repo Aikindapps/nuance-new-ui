@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { buildArticleUrl } from "../../../lib/articleUrl";
 import { myArticlesCopy } from "../../../constants/copy";
 import type { MyArticle } from "./hooks/useMyArticles";
+import { IconKey } from "../../../components/ui/icons/IconKey";
+import { myArticlesMobileCopy } from "./myArticlesMobileCopy";
 
 // A row in the My Articles list (Figma 5.7): optional thumb + status pill +
 // date + title (→ edit) + excerpt + Edit / View / Delete actions.
@@ -44,6 +46,11 @@ export function MyArticleCard({
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2">
+          {isNft && (
+            <span className="rounded-[100px] bg-brand-purple-10 px-2.5 py-1 text-[12px] font-medium leading-[15px] text-brand-purple">
+              {myArticlesMobileCopy.mintedTag}
+            </span>
+          )}
           {article.isDraft && (
             <span className="rounded-[calc(8*var(--fpx))] bg-ink-border-10 px-2 py-0.5 text-[length:calc(13*var(--fpx))] font-bold text-ink">
               {c.draftPill}
@@ -122,6 +129,17 @@ export function MyArticleCard({
             >
               {deleting ? c.deleting : c.delete}
             </button>
+          )}
+          {isNft && (
+            <Link
+              to={`/my-articles/keys/${article.id}`}
+              state={{ from: "my-articles" }}
+              aria-label={myArticlesMobileCopy.viewKeysSold}
+              title={myArticlesMobileCopy.viewKeysSold}
+              className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-[calc(4*var(--fpx))] text-brand-purple transition-colors hover:bg-brand-purple-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple"
+            >
+              <IconKey className="size-5" />
+            </Link>
           )}
         </div>
       </div>

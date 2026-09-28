@@ -43,6 +43,8 @@ const ReadArticle = lazy(() => import("./routes/ReadArticle"));
 const WriteArticle = lazy(() => import("./routes/WriteArticle"));
 // eslint-disable-next-line react-refresh/only-export-components
 const MyArticles = lazy(() => import("./routes/MyArticles"));
+// eslint-disable-next-line react-refresh/only-export-components
+const MyArticleKeys = lazy(() => import("./routes/MyArticleKeys"));
 // Notifications (PR #10) — lazy; the page only ever loads after a bell click.
 // eslint-disable-next-line react-refresh/only-export-components
 const NotificationsPage = lazy(() => import("./routes/NotificationsPage"));
@@ -110,6 +112,14 @@ const appRoutes = [
     element: (
       <Suspense fallback={<ArticleLoadingShell />}>
         <MyArticles />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/my-articles/keys/:postId",
+    element: (
+      <Suspense fallback={<ArticleLoadingShell />}>
+        <MyArticleKeys />
       </Suspense>
     ),
   },
