@@ -219,13 +219,13 @@ function RowDivider() {
 function RolePill({ isSelf, role }: { isSelf: boolean; role: "editor" | "writer" }) {
   if (isSelf) {
     return (
-      <span className="inline-flex shrink-0 items-center rounded-[calc(8*var(--fpx))] bg-brand-purple-10 px-[calc(10*var(--fpx))] py-[calc(2*var(--fpx))] text-[length:calc(14*var(--fpx))] font-medium leading-[calc(20*var(--fpx))] text-brand-purple">
+      <span className="inline-flex shrink-0 items-center rounded-full bg-brand-purple-5 px-[calc(12*var(--fpx))] py-[calc(4*var(--fpx))] text-[length:calc(16*var(--fpx))] font-medium leading-[calc(24*var(--fpx))] text-brand-purple">
         {copy.youPill}
       </span>
     );
   }
   return (
-    <span className="inline-flex shrink-0 items-center rounded-[calc(8*var(--fpx))] bg-ink-border-10 px-[calc(10*var(--fpx))] py-[calc(2*var(--fpx))] text-[length:calc(14*var(--fpx))] font-medium leading-[calc(20*var(--fpx))] text-ink-80">
+    <span className="inline-flex shrink-0 items-center rounded-full bg-ink-border-5 px-[calc(12*var(--fpx))] py-[calc(4*var(--fpx))] text-[length:calc(16*var(--fpx))] font-medium leading-[calc(24*var(--fpx))] text-ink-80">
       {role === "editor" ? copy.editorPill : copy.writerPill}
     </span>
   );
@@ -400,7 +400,7 @@ function MembersList({
 function EmptyWritersBlock() {
   return (
     <div className="flex flex-col items-center gap-[calc(16*var(--fpx))] py-[calc(56*var(--fpx))] text-center">
-      <KitIllustrationNoMembers className="size-[calc(87*var(--fpx))]" />
+      <KitIllustrationNoMembers className="w-[calc(108.75*var(--fpx))] h-[calc(87*var(--fpx))]" />
       <p className="text-[length:calc(18*var(--fpx))] font-bold leading-[calc(28*var(--fpx))] text-ink-80">
         {copy.emptyHeading}
       </p>
@@ -431,7 +431,7 @@ function MembersError({ onRetry }: { onRetry: () => void }) {
       role="alert"
       className="flex flex-col items-center gap-[calc(16*var(--fpx))] py-[calc(64*var(--fpx))] text-center"
     >
-      <KitIllustrationLoadError className="size-[calc(87*var(--fpx))]" />
+      <KitIllustrationLoadError className="w-[calc(108.75*var(--fpx))] h-[calc(87*var(--fpx))]" />
       <p className="text-[length:calc(18*var(--fpx))] font-bold leading-[calc(22*var(--fpx))] text-ink-80">
         {copy.loadErrorHeading}
       </p>
