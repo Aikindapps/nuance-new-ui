@@ -79,8 +79,7 @@ type PremiumMintSheetProps = {
   minKeys: number | null;
   editorCount: number | null;
   editorCountError: boolean;
-  ckbtcEquiv: number | null;
-  nuaEquiv: number | null;
+  usdEquiv: number | null;
   isValid: boolean;
   onMint: () => void;
   onCancel: () => void;
@@ -100,8 +99,7 @@ export function PremiumMintSheet({
   minKeys,
   editorCount,
   editorCountError,
-  ckbtcEquiv,
-  nuaEquiv,
+  usdEquiv,
   isValid,
   onMint,
   onCancel,
@@ -315,14 +313,10 @@ export function PremiumMintSheet({
           ) : (
             <p className="text-label text-ink-60">
               {sc.conversionPrefix}{" "}
-              {ckbtcEquiv != null
-                ? ckbtcEquiv.toFixed(6)
+              {usdEquiv != null
+                ? usdEquiv.toFixed(2)
                 : sc.conversionPlaceholder}{" "}
-              {sc.ckbtcUnit} {sc.conversionPrefix}{" "}
-              {nuaEquiv != null
-                ? nuaEquiv.toFixed(2)
-                : sc.conversionPlaceholder}{" "}
-              {sc.nuaUnit}
+              {sc.usdUnit}
             </p>
           )}
         </div>

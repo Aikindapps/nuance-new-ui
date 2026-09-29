@@ -17,7 +17,7 @@ import { myArticlesMobileCopy } from "./myArticlesMobileCopy";
 import { useKeysSold } from "./hooks/useKeysSold";
 import { formatSignificant } from "../../../lib/tokenMath";
 import { TOKENS } from "../../../config/tokens";
-import { useNuaPrices, priceBetween } from "../../wallet/hooks/useNuaEquivalent";
+import { useIcpUsdRate, icpToUsd } from "../hooks/useIcpUsdRate";
 import { MintPicturePreview } from "../sections/MintPicturePreview";
 
 const sc = myArticlesMobileCopy.keysAndSales;
@@ -65,15 +65,13 @@ function LockIcon() {
 
 export function KeysAndSalesPanel({ headingId, postId, onDone, extraLoading }: Props) {
   const { data, isPending, isError } = useKeysSold(postId);
-  const { data: prices } = useNuaPrices();
+  // Same cached ICP -> USD quote as the mint setup (D-142).
+  const usdPerIcp = useIcpUsdRate();
   const loading = isPending || extraLoading;
 
   const priceIcp =
     data && !loading && !isError ? Number(data.priceE8s) / 10 ** TOKENS.ICP.decimals : 0;
-  const ckbtcEquiv =
-    prices && priceIcp > 0 ? priceBetween(prices, "ICP", "ckBTC", priceIcp) : null;
-  const nuaEquiv =
-    prices && priceIcp > 0 ? priceBetween(prices, "ICP", "NUA", priceIcp) : null;
+  const usdEquiv = icpToUsd(usdPerIcp, priceIcp);
 
   const total = data?.total ?? 0;
   const sold = data?.sold ?? 0;
@@ -172,10 +170,8 @@ export function KeysAndSalesPanel({ headingId, postId, onDone, extraLoading }: P
           !isError && (
             <p className="text-label text-ink-60">
               {sc.conversionPrefix}{" "}
-              {ckbtcEquiv != null ? ckbtcEquiv.toFixed(8) : sc.conversionPlaceholder}{" "}
-              {sc.ckbtcUnit} {sc.conversionPrefix}{" "}
-              {nuaEquiv != null ? nuaEquiv.toFixed(2) : sc.conversionPlaceholder}{" "}
-              {sc.nuaUnit}
+              {usdEquiv != null ? usdEquiv.toFixed(2) : sc.conversionPlaceholder}{" "}
+              {sc.usdUnit}
             </p>
           )
         )}

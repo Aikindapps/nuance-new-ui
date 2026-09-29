@@ -13,11 +13,13 @@ import {
 } from "../../../components/ui/modalButtons";
 import { writeArticleCopy } from "../../../constants/copy";
 import { buildSvgForPremiumArticle, loadHeaderImage } from "../lib/premiumThumbnail";
-import { useNuaPrices, priceBetween } from "../../wallet/hooks/useNuaEquivalent";
+import { useIcpUsdRate, icpToUsd } from "../hooks/useIcpUsdRate";
 import { usePublicationEditorCount } from "../hooks/usePublicationEditorCount";
 
 export const PREMIUM_MINT_VIEW_TITLE_ID = "premium-mint-view-title";
 const CONVERSION_PLACEHOLDER = "\u2014";
+const CONVERSION_PREFIX = "\u2248";
+const USD_UNIT = "USD";
 
 // Spinner — mirrors NftPurchaseModal's inline Spinner component.
 function Spinner() {
@@ -115,13 +117,11 @@ export function PremiumMintView({
       });
   }, [post.coverUrl]);
 
-  // Price equivalents via Sonic.
-  const { data: prices } = useNuaPrices();
+  // USD equivalent (D-142): one cached ICP -> USD quote for this screen,
+  // read here once and passed down so desktop and phone show the same value.
+  const usdPerIcp = useIcpUsdRate();
   const icpAmount = price && /^\d*\.?\d{0,4}$/.test(price) ? parseFloat(price) : 0;
-  const ckbtcEquiv =
-    prices && icpAmount > 0 ? priceBetween(prices, "ICP", "ckBTC", icpAmount) : null;
-  const nuaEquiv =
-    prices && icpAmount > 0 ? priceBetween(prices, "ICP", "NUA", icpAmount) : null;
+  const usdEquiv = icpToUsd(usdPerIcp, icpAmount);
 
   // Editor-aware minimum (NIC-225): backend requires maxSupply > numberOfEditors
   // + 1, and editors are each auto-given a key, so the floor is editorCount + 2.
@@ -172,8 +172,7 @@ export function PremiumMintView({
         minKeys={minKeys}
         editorCount={editorCount}
         editorCountError={editorCountError}
-        ckbtcEquiv={ckbtcEquiv}
-        nuaEquiv={nuaEquiv}
+        usdEquiv={usdEquiv}
         isValid={isValid}
         onMint={() => void handleMint()}
         onCancel={onCancel}
@@ -277,16 +276,12 @@ export function PremiumMintView({
             className="h-[calc(48*var(--fpx))] w-full rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink outline-none focus:border-brand-purple focus:bg-brand-purple-5"
           />
           {/* Conversion sub-line */}
-          <p className="text-[length:calc(13*var(--fpx))] text-ink-60">
-            ={" "}
-            {ckbtcEquiv != null
-              ? ckbtcEquiv.toFixed(6)
+          <p className="text-label text-ink-60">
+            {CONVERSION_PREFIX}{" "}
+            {usdEquiv != null
+              ? usdEquiv.toFixed(2)
               : CONVERSION_PLACEHOLDER}{" "}
-            ckBTC ={" "}
-            {nuaEquiv != null
-              ? nuaEquiv.toFixed(2)
-              : CONVERSION_PLACEHOLDER}{" "}
-            NUA
+            {USD_UNIT}
           </p>
         </div>
 
