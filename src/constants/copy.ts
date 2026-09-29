@@ -277,15 +277,24 @@ export const myArticlesCopy = {
   },
   heading: "My articles",
   newArticle: "Write a new article",
-  tabs: { all: "All", published: "Published", drafts: "Drafts" },
+  tabs: {
+    all: "All",
+    published: "Published",
+    drafts: "Drafts",
+    submitted: "Submitted for review",
+  },
   empty: {
     all: "You haven't written anything yet.",
     published: "No published articles yet.",
     drafts: "No drafts yet.",
+    submitted: "No articles submitted for review.",
   },
   loading: "Loading…",
   loadError: "Couldn't load your articles.",
   draftPill: "Draft",
+  // Replaces "Draft" on an article submitted to a publication and waiting
+  // for an editor (NIC-573, D-134).
+  inReviewPill: "In review",
   inPublicationPrefix: "In",
   manageInPrefix: "Manage in",
   edit: "Edit",

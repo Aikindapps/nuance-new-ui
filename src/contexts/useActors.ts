@@ -267,6 +267,13 @@ export type ActorsValue = {
     from: number,
     to: number,
   ) => Promise<Array<PostKeyProperties>>;
+  // The caller's articles submitted to a publication and waiting for an
+  // editor (drafts owned by the publication, not by the caller) -- the My
+  // Articles "Submitted for review" tab (NIC-573, D-134).
+  getMySubmittedToReviewPosts: (
+    from: number,
+    to: number,
+  ) => Promise<Array<PostKeyProperties>>;
   // Storage canister chunked upload (cover + in-body images). getNewContentId
   // allocates an upload id; uploadBlob sends one chunk and returns the
   // data-canister id (used to build the public asset URL).

@@ -4,7 +4,8 @@ import { useAuth } from "../../../../contexts/useAuth";
 import { useMyProfile } from "../../../../lib/useMyProfile";
 import type { MyArticleFilter } from "./useMyArticles";
 
-// Counts for the My-Articles tab bar (All / Published / Drafts). Sourced from
+// Counts for the My-Articles tab bar (All / Published / Drafts / Submitted
+// for review). Sourced from
 // PostCore.getUserPostCounts — the canister's authoritative per-user tally — so
 // the numbers are EXACT and never capped.
 //
@@ -20,6 +21,9 @@ import type { MyArticleFilter } from "./useMyArticles";
 //   drafts    -> draftCount       (the caller's own drafts; excludes posts
 //                                 submitted to a publication for review — the
 //                                 same filter getMyDraftPosts applies)
+//   submitted -> submittedToReviewCount (drafts owned by a publication -- the
+//                                 same filter getMySubmittedToReviewPosts
+//                                 applies; NIC-573)
 //
 // getUserPostCounts is handle-keyed (the same call that powers the publication
 // article count), so it reads the authed user's handle from the already-cached
@@ -45,12 +49,13 @@ export function useMyArticleCounts() {
     queryFn: async () => {
       // Unreachable when disabled (handle is non-null), but keeps the type
       // narrowed without a non-null assertion.
-      if (!handle) return { all: 0, published: 0, drafts: 0 };
+      if (!handle) return { all: 0, published: 0, drafts: 0, submitted: 0 };
       const counts = await getUserPostCounts(handle);
       return {
         all: toCount(counts.totalPostCount),
         published: toCount(counts.publishedCount),
         drafts: toCount(counts.draftCount),
+        submitted: toCount(counts.submittedToReviewCount),
       };
     },
   });

@@ -22,8 +22,9 @@ import { AccountShell } from "../components/account/AccountShell";
 import { MyArticlesMobileList } from "../features/write/myArticles/MyArticlesMobileList";
 
 // My Articles (Figma 5.7) — the authed writer's drafts + published list, with
-// All / Published / Drafts tabs (via ?tab=), reopen-to-edit, and delete.
-const TABS: MyArticleFilter[] = ["all", "published", "drafts"];
+// All / Published / Drafts / Submitted for review tabs (via ?tab=; the 4th
+// is ?tab=submitted, NIC-573 / D-134), reopen-to-edit, and delete.
+const TABS: MyArticleFilter[] = ["all", "published", "drafts", "submitted"];
 
 export function MyArticles() {
   const { isAuthenticated, isLoading } = useAuth();

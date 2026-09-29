@@ -8,7 +8,7 @@ import { buildArticleUrl } from "../../../lib/articleUrl";
 import { myArticlesCopy } from "../../../constants/copy";
 import { myArticlesMobileCopy } from "./myArticlesMobileCopy";
 import { IconClaps } from "../../../components/ui/icons/IconClaps";
-import type { MyArticle } from "./hooks/useMyArticles";
+import { type MyArticle, isSubmittedForReview } from "./hooks/useMyArticles";
 
 const mc = myArticlesMobileCopy;
 const c = myArticlesCopy;
@@ -64,7 +64,8 @@ export function MyArticleMobileCard({
             {article.title}
           </Link>
           <p className="mt-1 truncate text-[16px] leading-[24px] text-ink-60">
-            {"@"}{article.author.handle}
+            {/* author.handle already carries its "@" (hydrateArticles). */}
+            {article.author.handle}
             {article.publishedOn ? " \u00b7 " + article.publishedOn : ""}
           </p>
         </div>
@@ -76,7 +77,7 @@ export function MyArticleMobileCard({
             per NIC-180 scope (publish toggle is deferred). */}
         {article.isDraft && (
           <span className="rounded-[8px] bg-ink-border-10 px-2 py-0.5 text-[13px] font-bold text-ink">
-            {c.draftPill}
+            {isSubmittedForReview(article) ? c.inReviewPill : c.draftPill}
           </span>
         )}
         {/* Minted tag -- Figma 2294:3003 "Minted badge", Purple/10% pill */}

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { buildArticleUrl } from "../../../lib/articleUrl";
 import { myArticlesCopy } from "../../../constants/copy";
-import type { MyArticle } from "./hooks/useMyArticles";
+import { type MyArticle, isSubmittedForReview } from "./hooks/useMyArticles";
 import { IconKey } from "../../../components/ui/icons/IconKey";
 import { myArticlesMobileCopy } from "./myArticlesMobileCopy";
 
@@ -53,7 +53,7 @@ export function MyArticleCard({
           )}
           {article.isDraft && (
             <span className="rounded-[calc(8*var(--fpx))] bg-ink-border-10 px-2 py-0.5 text-[length:calc(13*var(--fpx))] font-bold text-ink">
-              {c.draftPill}
+              {isSubmittedForReview(article) ? c.inReviewPill : c.draftPill}
             </span>
           )}
           {article.publication && (

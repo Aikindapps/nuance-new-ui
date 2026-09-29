@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import FocusTrap from "@mui/material/Unstable_TrapFocus";
 import { myArticlesCopy } from "../../../constants/copy";
 import { myArticlesMobileCopy } from "./myArticlesMobileCopy";
-import type { MyArticle } from "./hooks/useMyArticles";
+import { type MyArticle, isSubmittedForReview } from "./hooks/useMyArticles";
 
 const mc = myArticlesMobileCopy;
 const c = myArticlesCopy;
@@ -51,7 +51,11 @@ export function MyArticlesActionSheet({
   const canDelete = isPersonal;
   const canUnpublish = isPersonal && isPublished;
 
-  const statusLabel = isPublished ? mc.published : c.draftPill;
+  const statusLabel = isPublished
+    ? mc.published
+    : isSubmittedForReview(article)
+      ? c.inReviewPill
+      : c.draftPill;
   const metaLine = article.publishedOn
     ? statusLabel + " \u00b7 " + article.publishedOn
     : statusLabel;

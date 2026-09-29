@@ -266,6 +266,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await postCorePromise;
         return actor.getMyPublishedPosts(from, to);
       },
+      getMySubmittedToReviewPosts: async (from, to) => {
+        const actor = await postCorePromise;
+        return actor.getMySubmittedToReviewPosts(from, to);
+      },
       getNewContentId: async () => {
         const actor = await storagePromise;
         return actor.getNewContentId();

@@ -18,6 +18,7 @@ import { KeysAndSalesSheet } from "./KeysAndSalesSheet";
 import { useModal } from "../../../services/modal";
 import { buildArticleUrl } from "../../../lib/articleUrl";
 import type { MyArticle, MyArticleFilter } from "./hooks/useMyArticles";
+import type { MyArticleCounts } from "./hooks/useMyArticleCounts";
 
 const mc = myArticlesMobileCopy;
 const c = myArticlesCopy;
@@ -26,13 +27,11 @@ const FILTER_OPTIONS: { value: MyArticleFilter; label: string }[] = [
   { value: "all", label: mc.filterAll },
   { value: "published", label: mc.filterPublished },
   { value: "drafts", label: mc.filterDrafts },
+  // NIC-573 (D-134): appended last, shown even when its count is 0.
+  { value: "submitted", label: mc.filterSubmitted },
 ];
 
-type CountsData = {
-  all: number;
-  published: number;
-  drafts: number;
-} | undefined;
+type CountsData = MyArticleCounts | undefined;
 
 type Props = {
   filter: MyArticleFilter;
@@ -103,12 +102,8 @@ export function MyArticlesMobileList({
   );
 
   // Derive empty-state message keyed by current filter.
-  const emptyMessage =
-    filter === "published"
-      ? c.empty.published
-      : filter === "drafts"
-        ? c.empty.drafts
-        : null; // all-tab empty uses the special CTA below
+  // The all-tab empty state uses c.empty.all below.
+  const emptyMessage = filter === "all" ? null : c.empty[filter];
 
   return (
     <div className="px-4 pb-24 pt-4">
@@ -331,21 +326,13 @@ function SkeletonRow() {
           />
         </div>
       </div>
-      {/* Status row skeleton */}
+      {/* Status row skeleton -- status pill chip + kebab only (2296:9692) */}
       <div className="mt-2 flex items-center gap-2">
         <div
           aria-hidden
           className="h-5 w-10 animate-pulse rounded-[8px] bg-ink-border/10"
         />
-        <div
-          aria-hidden
-          className="h-3 w-[70px] animate-pulse rounded-[8px] bg-ink-border/5"
-        />
         <span className="flex-1" />
-        <div
-          aria-hidden
-          className="h-7 w-7 animate-pulse rounded-[8px] bg-ink-border/5"
-        />
         <div
           aria-hidden
           className="h-7 w-7 animate-pulse rounded-[8px] bg-ink-border/5"

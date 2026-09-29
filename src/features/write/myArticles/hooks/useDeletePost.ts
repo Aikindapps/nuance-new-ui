@@ -50,6 +50,9 @@ export function useDeletePost() {
                     : old.published,
                 drafts:
                   wasDraft === true ? Math.max(0, old.drafts - 1) : old.drafts,
+                // Delete is offered for personal articles only, so a
+                // submitted-for-review article is never the one removed.
+                submitted: old.submitted,
               }
             : old,
       );

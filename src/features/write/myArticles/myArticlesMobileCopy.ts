@@ -15,6 +15,7 @@ export const myArticlesMobileCopy = {
   filterAll: "All",
   filterPublished: "Published",
   filterDrafts: "Drafts",
+  filterSubmitted: "Submitted for review",
   // Empty-state CTA for the all-tab when no articles exist.
   writeFirst: "Write your first article",
   // Article count line below the page heading.

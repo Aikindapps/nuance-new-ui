@@ -4,8 +4,17 @@ import { useAuth } from "../../../../contexts/useAuth";
 import { hydrateArticles } from "../../../home/lib/hydrateArticles";
 import type { Article } from "../../../home/types";
 
-export type MyArticleFilter = "all" | "published" | "drafts";
+export type MyArticleFilter = "all" | "published" | "drafts" | "submitted";
 export type MyArticle = Article & { isDraft: boolean };
+
+// An article the writer submitted to a publication that an editor has not
+// published yet: a draft owned by the publication. This is the same rule
+// PostCore uses for getMySubmittedToReviewPosts / submittedToReviewCount
+// (isDraft and owner != caller), so the "In review" label and the Submitted
+// for review tab always agree (NIC-573, D-134).
+export function isSubmittedForReview(article: MyArticle): boolean {
+  return article.isDraft && article.publication !== null;
+}
 
 // Fetches the authed caller's posts for a My-Articles tab and hydrates them
 // into renderable cards. includeDraft=true so draft bodies hydrate. isDraft is
@@ -22,7 +31,9 @@ export function useMyArticles(filter: MyArticleFilter) {
           ? actors.getMyDraftPosts
           : filter === "published"
             ? actors.getMyPublishedPosts
-            : actors.getMyAllPosts;
+            : filter === "submitted"
+              ? actors.getMySubmittedToReviewPosts
+              : actors.getMyAllPosts;
       const keyProps = await get(0, 50);
       if (keyProps.length === 0) return [];
       const draftById = new Map(keyProps.map((k) => [k.postId, k.isDraft]));
