@@ -47,6 +47,7 @@ import { IconImage } from "../../../components/ui/icons/IconImage";
 import { CtaIconPicker } from "./CtaIconPicker";
 import { PublicationCtaBar } from "./PublicationCtaBar";
 import { isCtaEmpty } from "../lib/cta";
+import { CategoriesEditor, type CategoryRow } from "./CategoriesEditor";
 
 // 5 MB pre-check enforced client-side BEFORE calling useImageUpload.
 // The shared useImageUpload hook has its own 10 MB cap (for article images);
@@ -244,7 +245,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   const seedBannerEnabled = !isCtaEmpty(seedCta);
 
   // Seed named platform inputs from socialChannels.
-  const seedNamedSocial = (): Record<PubSocialPlatform, string> => {
+  const seedNamedSocial = useCallback((): Record<PubSocialPlatform, string> => {
     const result: Record<PubSocialPlatform, string> = { x: "", distrikt: "" };
     for (const url of publication.socialLinks.socialChannels) {
       const platform = detectSocialPlatform(url);
@@ -253,7 +254,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
       }
     }
     return result;
-  };
+  }, [publication.socialLinks.socialChannels]);
 
   // otherLinks: channels whose detected platform is NOT in PUB_SOCIAL_PLATFORMS.
   // These are round-tripped verbatim so we never silently drop linkedin/reddit/etc.
@@ -307,6 +308,19 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
   // stays empty and isCtaEmpty remains true on an all-empty fresh toggle.
   const [ctaIcon, setCtaIcon] = useState(seedCta.icon);
 
+  // Categories (NIC-538). Seeded ONCE at mount from publication.categories;
+  // ids like s0, s1... -- new rows (Add) get a fresh id from the counter ref.
+  const [categoryRows, setCategoryRows] = useState<CategoryRow[]>(() =>
+    publication.categories.map((value, i) => ({ id: `s${i}`, value })),
+  );
+  const nextCategoryIdRef = useRef(publication.categories.length);
+  const newCategoryRowId = useCallback(() => {
+    const id = `s${nextCategoryIdRef.current}`;
+    nextCategoryIdRef.current += 1;
+    return id;
+  }, []);
+  const [categoriesHaveError, setCategoriesHaveError] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
@@ -324,7 +338,9 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     website !== seedWebsite ||
     JSON.stringify(namedSocial) !== JSON.stringify(seedNamedSocial()) ||
     headerImage !== seedHeaderImage ||
-    avatar !== seedAvatar;
+    avatar !== seedAvatar ||
+    JSON.stringify(categoryRows.map((r) => r.value)) !==
+      JSON.stringify(publication.categories);
 
   const stylingDirty =
     fontType !== seedFontType ||
@@ -506,19 +522,35 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
   const handleSave = useCallback(async () => {
     // State 1: block submit while any field error is present; surface errors.
+    // Categories block silently -- their errors are already visible inline.
     if (hasFieldErrors) {
       setShowErrors(true);
+      return;
+    }
+    if (categoriesHaveError) {
       return;
     }
     setSaving(true);
     setSaveError(null);
     try {
-      // Build socialChannels: named non-empty entries first, then other links.
-      const namedEntries = (Object.entries(namedSocial) as [PubSocialPlatform, string][])
-        .filter(([, url]) => url.trim() !== "")
-        .map(([, url]) => url);
-      const socialChannels = [...namedEntries, ...otherLinks];
-      const socialLinks: SocialLinksObject = { website, socialChannels };
+      // Social links: a categories-only save must leave the stored social
+      // links byte-identical. Only rebuild (named-first, reordering the
+      // stored channels) when the editor actually touched website / named
+      // social; otherwise round-trip publication.socialLinks verbatim.
+      let socialLinks: SocialLinksObject;
+      if (
+        website === seedWebsite &&
+        JSON.stringify(namedSocial) === JSON.stringify(seedNamedSocial())
+      ) {
+        socialLinks = publication.socialLinks;
+      } else {
+        // Build socialChannels: named non-empty entries first, then other links.
+        const namedEntries = (Object.entries(namedSocial) as [PubSocialPlatform, string][])
+          .filter(([, url]) => url.trim() !== "")
+          .map(([, url]) => url);
+        const socialChannels = [...namedEntries, ...otherLinks];
+        socialLinks = { website, socialChannels };
+      }
 
       const modified = new Date().getTime().toString();
 
@@ -528,7 +560,7 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
           description,
           title,
           headerImage,              // editable (NIC-382)
-          publication.categories,   // round-tripped unchanged
+          categoryRows.map((r) => r.value), // editable (NIC-538)
           publication.writers,      // round-tripped unchanged
           publication.editors,      // round-tripped unchanged
           avatar,                   // editable (NIC-382)
@@ -572,11 +604,15 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     }
   }, [
     hasFieldErrors,
+    categoriesHaveError,
+    categoryRows,
     title,
     subtitle,
     description,
     website,
+    seedWebsite,
     namedSocial,
+    seedNamedSocial,
     otherLinks,
     canisterId,
     publication,
@@ -1186,6 +1222,15 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
             <p role="alert" className={errorClass}>{fieldErrors.distrikt}</p>
           )}
         </div>
+
+        {/* Categories (NIC-538 -- Figma 1:42256 / 1:42349) */}
+        <CategoriesEditor
+          rows={categoryRows}
+          onRowsChange={setCategoryRows}
+          onNewRowId={newCategoryRowId}
+          onHasErrorChange={setCategoriesHaveError}
+          disabled={saving}
+        />
 
         {/* (g) Save row — Figma 1:42309 */}
         <div className="flex flex-row items-center gap-[calc(12*var(--fpx))]">

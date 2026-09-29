@@ -88,6 +88,28 @@ export function PublicationSettingsSkeleton() {
         <FieldSkeleton labelWidth="w-[calc(120*var(--fpx))]" control={<InputRect />} />
         <FieldSkeleton labelWidth="w-[calc(120*var(--fpx))]" control={<InputRect />} />
 
+        {/* Categories (NIC-538) -- heading + helper + 2 row skeletons, matching
+            the real section's dimensions and its 40px section-gap-on-top of
+            the fieldset's own 24px gap (= 64 total, per the design). */}
+        <div className="pt-[calc(40*var(--fpx))] flex flex-col gap-[calc(24*var(--fpx))]">
+          <div className="flex flex-col gap-[calc(8*var(--fpx))]">
+            <Rect className="h-[calc(32*var(--fpx))] w-[calc(140*var(--fpx))] rounded-[calc(4*var(--fpx))]" />
+            <Rect className="h-[calc(48*var(--fpx))] w-full rounded-[calc(4*var(--fpx))]" />
+          </div>
+          <div className="flex flex-col gap-[calc(8*var(--fpx))] w-full lg:w-[calc(336*var(--fpx))]">
+            <div className="flex flex-row items-center gap-[calc(8*var(--fpx))]">
+              <Rect className="size-[calc(24*var(--fpx))] rounded-[calc(4*var(--fpx))]" />
+              <Rect className="h-[calc(48*var(--fpx))] flex-1 min-w-0 rounded-[calc(6*var(--fpx))]" />
+              <Rect className="size-[calc(32*var(--fpx))] rounded-[calc(4*var(--fpx))]" />
+            </div>
+            <div className="flex flex-row items-center gap-[calc(8*var(--fpx))]">
+              <Rect className="size-[calc(24*var(--fpx))] rounded-[calc(4*var(--fpx))]" />
+              <Rect className="h-[calc(48*var(--fpx))] flex-1 min-w-0 rounded-[calc(6*var(--fpx))]" />
+              <Rect className="size-[calc(32*var(--fpx))] rounded-[calc(4*var(--fpx))]" />
+            </div>
+          </div>
+        </div>
+
         {/* Save row */}
         <div className="flex flex-row items-center gap-[calc(12*var(--fpx))]">
           <Rect className="h-[calc(48*var(--fpx))] w-[calc(150*var(--fpx))] rounded-[calc(8*var(--fpx))]" />

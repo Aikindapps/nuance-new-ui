@@ -1327,6 +1327,17 @@ export const publicationSettingsCopy = {
   bannerPlaceholderButtonLink: "https://example.com",
   bannerIconPickerPlaceholder: "Choose icon",
   bannerIconPickerHelp: "Choose an icon for your banner",
+  // Categories group (NIC-538 -- Figma 1:42256 / 1:42349).
+  categoriesHeading: "Categories",
+  categoriesHelper:
+    "Create categories and drag them in the right order you like for your publication page. You can as well add categories while publishing a new article.",
+  categoryAddPlaceholder: "Click to add category",
+  categoryAddAria: "New category",
+  categoryReorderAria: "Reorder {name}",
+  categoryRemoveAria: "Remove {name}",
+  categoryNameAria: "Category name",
+  errorCategoryExists: "Category already exists",
+  errorCategoryReserved: "That name is reserved.",
 } as const;
 
 // NIC-527 / NIC-528 -- shared image-upload error copy (wording confirmed by
