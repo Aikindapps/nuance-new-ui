@@ -15,6 +15,12 @@ import { IllustrationLoadError } from "../../../components/ui/icons/Illustration
 import { MyArticleMobileCard } from "./MyArticleMobileCard";
 import { MyArticlesActionSheet } from "./MyArticlesActionSheet";
 import { KeysAndSalesSheet } from "./KeysAndSalesSheet";
+import {
+  SHEET_CANCEL_CLASS,
+  SHEET_HANDLE_CLASS,
+  SHEET_PANEL_CLASS,
+  SHEET_ROW_CLASS,
+} from "./myArticlesSheetStyles";
 import { useModal } from "../../../services/modal";
 import { buildArticleUrl } from "../../../lib/articleUrl";
 import type { MyArticle, MyArticleFilter } from "./hooks/useMyArticles";
@@ -257,37 +263,35 @@ export function MyArticlesMobileList({
               role="dialog"
               aria-modal="true"
               aria-label={mc.closeFilterAriaLabel}
-              className="relative flex flex-col rounded-t-[16px] bg-white px-4 pb-8 pt-3 shadow-[0_-4px_24px_0_rgba(55,58,73,0.12)]"
+              className={SHEET_PANEL_CLASS}
             >
-              <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-ink-border/20" />
-              <p className="mb-4 text-[16px] font-bold leading-[24px] text-ink">
+              <div className={SHEET_HANDLE_CLASS} />
+              <p className="mb-[calc(16*var(--fpx))] px-[calc(24*var(--fpx))] text-label font-bold text-ink">
                 {mc.filterSheetTitle}
               </p>
-              <div className="h-px bg-ink-border/10" />
+              {/* Each row is a 64 box that includes its own 1px top divider;
+                  the first row's divider is the header divider and there is
+                  no divider under the last row (NIC-575, Figma 2862:3278). */}
               {FILTER_OPTIONS.map((opt) => (
-                <div key={opt.value} className="contents">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onFilterChange(opt.value);
-                      setFilterSheetOpen(false);
-                    }}
-                    className={`flex items-center justify-between py-4 text-[18px] leading-[28px] ${
-                      filter === opt.value
-                        ? "font-bold text-brand-purple"
-                        : "text-ink"
-                    }`}
-                  >
-                    {opt.label}
-                    {filter === opt.value && <CheckIcon />}
-                  </button>
-                  <div className="h-px bg-ink-border/10" />
-                </div>
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onFilterChange(opt.value);
+                    setFilterSheetOpen(false);
+                  }}
+                  className={`${SHEET_ROW_CLASS} justify-between ${
+                    filter === opt.value ? "text-brand-purple" : "text-ink"
+                  }`}
+                >
+                  {opt.label}
+                  {filter === opt.value && <CheckIcon />}
+                </button>
               ))}
               <button
                 type="button"
                 onClick={() => setFilterSheetOpen(false)}
-                className="mt-4 w-full rounded-[8px] border border-brand-purple py-3 text-center text-[18px] font-medium leading-[28px] text-brand-purple"
+                className={SHEET_CANCEL_CLASS}
               >
                 {mc.cancelLabel}
               </button>
@@ -383,9 +387,15 @@ function SortIcon() {
   );
 }
 
+// 24 design px (NIC-575); same checkmark path, scaled from its 20 viewBox.
 function CheckIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden
+      className="h-[calc(24*var(--fpx))] w-[calc(24*var(--fpx))] shrink-0"
+    >
       <path
         d="M4 10l5 5 7-8"
         stroke="#5405D4"

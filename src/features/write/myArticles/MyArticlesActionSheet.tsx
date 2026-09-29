@@ -9,6 +9,12 @@ import FocusTrap from "@mui/material/Unstable_TrapFocus";
 import { myArticlesCopy } from "../../../constants/copy";
 import { myArticlesMobileCopy } from "./myArticlesMobileCopy";
 import { type MyArticle, isSubmittedForReview } from "./hooks/useMyArticles";
+import {
+  SHEET_CANCEL_CLASS,
+  SHEET_HANDLE_CLASS,
+  SHEET_PANEL_CLASS,
+  SHEET_ROW_CLASS,
+} from "./myArticlesSheetStyles";
 
 const mc = myArticlesMobileCopy;
 const c = myArticlesCopy;
@@ -75,18 +81,20 @@ export function MyArticlesActionSheet({
           role="dialog"
           aria-modal="true"
           aria-label={mc.closeSheetAriaLabel}
-          className="relative flex flex-col rounded-t-[16px] bg-white px-4 pb-8 pt-3 shadow-[0_-4px_24px_0_rgba(55,58,73,0.12)]"
+          className={SHEET_PANEL_CLASS}
         >
           {/* Drag handle bar */}
-          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-ink-border/20" />
+          <div className={SHEET_HANDLE_CLASS} />
           {/* Article mini-header */}
-          <p className="line-clamp-1 text-[16px] font-bold leading-[24px] text-ink">
+          <p className="line-clamp-1 px-[calc(24*var(--fpx))] text-label font-bold text-ink">
             {article.title}
           </p>
-          <p className="mb-4 mt-0.5 text-[14px] leading-[20px] text-ink-60">
+          <p className="mb-[calc(16*var(--fpx))] mt-[calc(4*var(--fpx))] px-[calc(24*var(--fpx))] text-[length:calc(14*var(--fpx))] leading-[calc(20*var(--fpx))] text-ink-60">
             {metaLine}
           </p>
-          <div className="h-px bg-ink-border/10" />
+          {/* Each row is a 64 box that includes its own 1px top divider; the
+              first row shown carries the header divider and there is no
+              divider under the last row (NIC-575). */}
           {/* View keys sold -- FIRST item, minted articles only (Figma
               2299:9770 draws this menu as View keys sold / View article /
               Change category / Delete / Cancel). The shipped menu differs
@@ -98,61 +106,51 @@ export function MyArticlesActionSheet({
               only change this card makes to this menu is inserting this
               first row for minted articles. */}
           {article.hasNft && (
-            <div className="contents">
-              <button
-                type="button"
-                onClick={() => { onViewKeysSold(); onClose(); }}
-                className="flex items-center gap-3 py-4 text-[18px] leading-[28px] text-ink"
-              >
-                <SheetKeyIcon />
-                {mc.viewKeysSold}
-              </button>
-              <div className="h-px bg-ink-border/10" />
-            </div>
+            <button
+              type="button"
+              onClick={() => { onViewKeysSold(); onClose(); }}
+              className={`${SHEET_ROW_CLASS} gap-3 text-ink`}
+            >
+              <SheetKeyIcon />
+              {mc.viewKeysSold}
+            </button>
           )}
           {/* View article */}
           <button
             type="button"
             onClick={() => { onView(); onClose(); }}
-            className="flex items-center gap-3 py-4 text-[18px] leading-[28px] text-ink"
+            className={`${SHEET_ROW_CLASS} gap-3 text-ink`}
           >
             <SheetEyeIcon />
             {mc.viewArticle}
           </button>
-          <div className="h-px bg-ink-border/10" />
           {/* Unpublish -- published personal posts only */}
           {canUnpublish && (
-            <div className="contents">
-              <button
-                type="button"
-                onClick={() => { onUnpublish(); onClose(); }}
-                className="flex items-center gap-3 py-4 text-[18px] leading-[28px] text-ink"
-              >
-                <SheetUnpublishIcon />
-                {c.unpublish}
-              </button>
-              <div className="h-px bg-ink-border/10" />
-            </div>
+            <button
+              type="button"
+              onClick={() => { onUnpublish(); onClose(); }}
+              className={`${SHEET_ROW_CLASS} gap-3 text-ink`}
+            >
+              <SheetUnpublishIcon />
+              {c.unpublish}
+            </button>
           )}
           {/* Delete -- personal posts only */}
           {canDelete && (
-            <div className="contents">
-              <button
-                type="button"
-                onClick={() => { onDelete(); onClose(); }}
-                className="flex items-center gap-3 py-4 text-[18px] leading-[28px] text-error"
-              >
-                <SheetTrashIcon />
-                {c.delete}
-              </button>
-              <div className="h-px bg-ink-border/10" />
-            </div>
+            <button
+              type="button"
+              onClick={() => { onDelete(); onClose(); }}
+              className={`${SHEET_ROW_CLASS} gap-3 text-error`}
+            >
+              <SheetTrashIcon />
+              {c.delete}
+            </button>
           )}
           {/* Cancel */}
           <button
             type="button"
             onClick={onClose}
-            className="mt-4 w-full rounded-[8px] border border-brand-purple py-3 text-center text-[18px] font-medium leading-[28px] text-brand-purple"
+            className={SHEET_CANCEL_CLASS}
           >
             {mc.cancelLabel}
           </button>
