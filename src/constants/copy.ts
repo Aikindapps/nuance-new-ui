@@ -566,6 +566,9 @@ export const publicationCopy = {
   feedLabel: "Articles from this publication",
   // {name} → the publication's display name
   emptyFeed: "{name} hasn't published anything yet.",
+  // NIC-537 category tabs. {category} -> the category as the editor saved it.
+  categoriesNavLabel: "Publication categories",
+  categoryEmptyFeed: "No articles in {category} yet.",
   notFoundHeading: "Publication not found",
   notFoundBody: "That publication doesn't exist or is no longer on Nuance.",
   errorHeading: "Something went wrong",

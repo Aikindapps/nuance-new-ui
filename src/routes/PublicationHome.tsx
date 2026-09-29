@@ -1,10 +1,13 @@
-import { useParams } from "react-router-dom";
+import { useMemo } from "react";
+import { Navigate, useLocation, useParams } from "react-router-dom";
 import Skeleton from "@mui/material/Skeleton";
 import { Avatar } from "../components/ui/Avatar";
 import { FollowButton } from "../components/ui/FollowButton/FollowButton";
-import { Tab } from "../components/ui/Tab";
 import { IconChevronRight } from "../components/ui/icons/IconChevronRight";
-import { ArticleFeed } from "../features/home/sections/ArticleFeed";
+import {
+  ArticleFeed,
+  ArticleFeedSkeleton,
+} from "../features/home/sections/ArticleFeed";
 import { formatCount } from "../lib/formatCount";
 import { usePublication } from "../features/publication/hooks/usePublication";
 import { usePublicationPosts } from "../features/publication/hooks/usePublicationPosts";
@@ -13,6 +16,12 @@ import { CenteredMessage, PageShell } from "../components/ui/CenteredMessage";
 import { publicationCopy } from "../constants/copy";
 import { PublicationCtaBar } from "../features/publication/sections/PublicationCtaBar";
 import { isCtaEmpty } from "../features/publication/lib/cta";
+import { usePublicationSettings } from "../features/publication/hooks/usePublicationSettings";
+import { PublicationCategoryTabs } from "../features/publication/sections/PublicationCategoryTabs";
+import {
+  categoryPath,
+  categoryTabs,
+} from "../features/publication/lib/categories";
 
 // Normalise a handle param: strip a leading "@" and lowercase.
 function normalizeHandle(raw: string): string {
@@ -37,15 +46,42 @@ function IdentityBlockSkeleton() {
 }
 
 export function PublicationHome() {
-  const { h: rawHandle = "" } = useParams();
+  const { h: rawHandle = "", category } = useParams();
   const handle = normalizeHandle(rawHandle);
+  // NIC-537: the category slug from /publication/:handle/:category (the
+  // router has already decoded it), lowercased like the canister's slug.
+  // null = the All tab.
+  const categoryParam = category === undefined ? null : category.toLowerCase();
 
-  return <PublicationHomeInner handle={handle} />;
+  return (
+    <PublicationHomeInner handle={handle} categoryParam={categoryParam} />
+  );
 }
 
-function PublicationHomeInner({ handle }: { handle: string }) {
+function PublicationHomeInner({
+  handle,
+  categoryParam,
+}: {
+  handle: string;
+  categoryParam: string | null;
+}) {
+  const location = useLocation();
   const publication = usePublication(handle);
-  const postsQuery = usePublicationPosts(handle);
+  // The publication's categories, in saved order. Same public read and
+  // query key as the Settings screen, so an editor's save there refreshes
+  // these tabs.
+  const settings = usePublicationSettings(handle);
+  const tabs = useMemo(
+    () => categoryTabs(settings.publication?.categories ?? []),
+    [settings.publication],
+  );
+  const activeTab =
+    categoryParam === null
+      ? null
+      : (tabs.find((t) => t.slug === categoryParam) ?? null);
+  // A category list starts loading from the URL straight away, alongside
+  // the category list read that confirms the slug.
+  const postsQuery = usePublicationPosts(handle, categoryParam);
   const ctaQuery = usePublicationCta(handle);
 
   // Whole-page fetch failure (network/canister error).
@@ -68,13 +104,35 @@ function PublicationHomeInner({ handle }: { handle: string }) {
     );
   }
 
+  // Unknown slug (a removed or renamed category, or a bad link), or the
+  // category list couldn't be read: back to All.
+  if (categoryParam !== null && !settings.isLoading && activeTab === null) {
+    return <Navigate to={`/publication/${handle}`} replace />;
+  }
+
+  // A known category reached through a differently written link (the old
+  // app put "&", "," and ":" in the URL as-is): move to the tab's own URL
+  // so the tab shows as selected.
+  if (activeTab !== null) {
+    const canonical = categoryPath(handle, activeTab.slug);
+    if (location.pathname.toLowerCase() !== canonical.toLowerCase()) {
+      return <Navigate to={canonical} replace />;
+    }
+  }
+
   const pub = publication.data?.item;
   const publishedCount = publication.data?.publishedCount ?? "0";
 
-  const emptyMessage = publicationCopy.emptyFeed.replace(
-    "{name}",
-    pub?.displayName || handle,
-  );
+  const emptyMessage =
+    activeTab !== null
+      ? publicationCopy.categoryEmptyFeed.replace(
+          "{category}",
+          () => activeTab.label.trim(),
+        )
+      : publicationCopy.emptyFeed.replace(
+          "{name}",
+          pub?.displayName || handle,
+        );
 
   return (
     <PageShell>
@@ -100,17 +158,15 @@ function PublicationHomeInner({ handle }: { handle: string }) {
         </div>
 
         <div className="mx-auto max-w-[calc(1312*var(--fpx))] px-4 md:px-8 lg:px-14">
-          {/* ── 2. Category tab bar (All only — no canister source per F6) ── */}
-          <nav
-            className="mt-6 border-b border-ink-border/20"
-            aria-label="Publication categories"
-          >
-            <div className="flex">
-              <Tab to={`/publication/${handle}`} end>
-                {publicationCopy.allTab}
-              </Tab>
-            </div>
-          </nav>
+          {/* 2. Category tab bar: All + the publication's categories (NIC-537).
+              Only All until the category list arrives, or when it fails. */}
+          <div className="mt-6">
+            <PublicationCategoryTabs
+              handle={handle}
+              tabs={tabs}
+              activeSlug={activeTab?.slug ?? null}
+            />
+          </div>
 
           {/* ── 3. Identity block ── */}
           <section className="mt-8" aria-label="Publication details">
@@ -197,11 +253,16 @@ function PublicationHomeInner({ handle }: { handle: string }) {
             className="mt-10 pb-16 md:mt-12 lg:mt-14"
             aria-label={publicationCopy.feedLabel}
           >
-            <ArticleFeed
-              query={postsQuery}
-              emptyMessage={emptyMessage}
-              feedLabel={publicationCopy.feedLabel}
-            />
+            {categoryParam !== null && activeTab === null ? (
+              // A category URL while the category list is still loading.
+              <ArticleFeedSkeleton />
+            ) : (
+              <ArticleFeed
+                query={postsQuery}
+                emptyMessage={emptyMessage}
+                feedLabel={publicationCopy.feedLabel}
+              />
+            )}
           </section>
         </div>
       </main>

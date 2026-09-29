@@ -198,6 +198,11 @@ const appRoutes = [
   { path: "/publication/:handle/manage/settings", element: <PublicationSettings /> },
   { path: "/publication/:handle/manage/members", element: <PublicationMembers /> },
   { path: "/publication/:h", element: <PublicationHome /> },
+  // NIC-537: a category tab, /publication/:handle/:category-slug -- the old
+  // app's shape, so shared links keep working. Two segments after the
+  // handle (the manage routes) never reach it; the static "publication"
+  // segment ranks it above the /:handle/:postIdAndBucket/:slug article URL.
+  { path: "/publication/:h/:category", element: <PublicationHome /> },
   { path: "*", element: <NotFound /> },
 ];
 

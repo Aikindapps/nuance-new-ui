@@ -14,6 +14,12 @@ import { FEATURED_PAGE_SIZE, INFINITE_PAGE_SIZE } from "../../home/hooks/useArti
 // (Do NOT use getPublicationPosts here — that method is editor-gated on the
 // backend and returns [] for all non-editor callers.)
 //
+// NIC-537: with a category slug, the list is that category's published
+// articles instead, via getPostsByCategory(handle, slug, from, to) -- same
+// return shape, same half-open range, also public. The handle must be
+// lowercase (a mixed-case handle silently returns nothing) and `to` is
+// always >= 1 here (to = 0 traps for a category with articles).
+//
 // Page shape mirrors useArticles / ArticleFeed:
 //   { articles: Article[], keyPropsLength: number }
 
@@ -25,25 +31,46 @@ type ArticlesPage = {
 async function fetchPublicationPage(
   actors: ActorsValue,
   handle: string,
+  categorySlug: string | null,
   skip: number,
   count: number,
 ): Promise<ArticlesPage> {
-  const { posts: keyProps } = await actors.getPostsByFollowers([handle], skip, skip + count);
+  const { posts: keyProps } =
+    categorySlug === null
+      ? await actors.getPostsByFollowers([handle], skip, skip + count)
+      : await actors.getPostsByCategory(
+          handle.toLowerCase(),
+          categorySlug,
+          skip,
+          skip + count,
+        );
   if (keyProps.length === 0) return { articles: [], keyPropsLength: 0 };
   const articles = await hydrateArticles(actors, keyProps);
   return { articles, keyPropsLength: keyProps.length };
 }
 
-export function usePublicationPosts(handle: string) {
+export function usePublicationPosts(
+  handle: string,
+  categorySlug: string | null = null,
+) {
   const actors = useActors();
 
   return useInfiniteQuery({
-    queryKey: ["publication-posts", handle],
-    enabled: handle !== "",
+    queryKey:
+      categorySlug === null
+        ? ["publication-posts", handle]
+        : ["publication-posts", handle, "category", categorySlug],
+    enabled: handle !== "" && categorySlug !== "",
     initialPageParam: 0,
     queryFn: ({ pageParam }) => {
       const count = pageParam === 0 ? FEATURED_PAGE_SIZE : INFINITE_PAGE_SIZE;
-      return fetchPublicationPage(actors, handle, pageParam as number, count);
+      return fetchPublicationPage(
+        actors,
+        handle,
+        categorySlug,
+        pageParam as number,
+        count,
+      );
     },
     getNextPageParam: (lastPage, allPages) => {
       const expectedCount =

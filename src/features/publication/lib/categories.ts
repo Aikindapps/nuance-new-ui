@@ -71,3 +71,36 @@ export function droppedCategories(
 export function parseCategoryCount(totalCount: string): number | null {
   return /^\d+$/.test(totalCount) ? Number(totalCount) : null;
 }
+
+// NIC-537 -- reader category tabs on the publication page.
+export type CategoryTab = {
+  // The category exactly as the editor saved it (legacy names can carry
+  // stray spaces, e.g. "Articles ").
+  label: string;
+  // categorySlug(label): what the canister files the articles under and
+  // what the page URL carries.
+  slug: string;
+};
+
+// One tab per saved category, in saved order. Blank names are skipped
+// (they never had a category page) and a second name with the same slug
+// is dropped (it would open the same list and the same URL).
+export function categoryTabs(categories: readonly string[]): CategoryTab[] {
+  const seen = new Set<string>();
+  const tabs: CategoryTab[] = [];
+  for (const label of categories) {
+    if (label.trim() === "") continue;
+    const slug = categorySlug(label);
+    if (seen.has(slug)) continue;
+    seen.add(slug);
+    tabs.push({ label, slug });
+  }
+  return tabs;
+}
+
+// The category page URL: /publication/:handle/:slug, the old app's shape.
+// The slug is percent-encoded so names with "/", "?", "#" or "%" survive
+// (React Router decodes the param again on the way in).
+export function categoryPath(handle: string, slug: string): string {
+  return `/publication/${handle}/${encodeURIComponent(slug)}`;
+}

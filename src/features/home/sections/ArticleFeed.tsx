@@ -108,6 +108,13 @@ export function ArticleFeed({ query, emptyMessage, feedLabel, collapsePartialRow
   );
 }
 
+// The feed's own loading skeleton, for a consumer that must wait on
+// something else before it can hand ArticleFeed a query (the publication
+// page's category tab waits for the category list, NIC-537).
+export function ArticleFeedSkeleton() {
+  return <LoadingSkeleton />;
+}
+
 function LoadingSkeleton() {
   return (
     <div
