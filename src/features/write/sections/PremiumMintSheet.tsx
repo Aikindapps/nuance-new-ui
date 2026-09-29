@@ -9,14 +9,15 @@ import { writeArticleCopy } from "../../../constants/copy";
 import { premiumMintSheetCopy as sc } from "./premiumMintSheetCopy";
 import { MintPicturePreview } from "./MintPicturePreview";
 import {
-  MIN_PRICE_E8S,
-  parseIcpAmount,
+  keysErrorMessage,
+  priceErrorMessage,
   sanitizeKeys,
   sanitizePrice,
 } from "../lib/premiumMintFields";
 
 // Phone-only bottom sheet for the limited-edition NFT mint setup
-// form (Figma 2483:3290 / 2484:6252 / 2485:6252). Rendered by
+// form (Figma 2483:3290 / 2484:6252 / 2485:6252); the desktop twin is
+// PremiumMintStep. Rendered by
 // PremiumMintView below the 1024px seam, inside the modal service's
 // Dialog -- it owns no queries, no mint state, no scrim/FocusTrap/
 // Escape/close-X of its own. The only exits are Back and a
@@ -24,9 +25,9 @@ import {
 
 const c = writeArticleCopy.premium;
 
-// Local spinner -- the desktop Spinner in PremiumMintView.tsx is not
-// exported, and importing across the two sibling files would create a
-// cycle, so this is a small standalone equivalent.
+// Local spinner -- a small standalone equivalent of the desktop
+// Spinner in PremiumMintStep.tsx (kept separate so the two views stay
+// independent).
 function SheetSpinner() {
   return (
     <div className="relative mx-auto my-6 size-16">
@@ -154,21 +155,8 @@ export function PremiumMintSheet({
     );
   }
 
-  const priceError =
-    price === ""
-      ? null
-      : parseIcpAmount(price) <= 0
-        ? sc.priceMustBePositive
-        : Math.round(parseIcpAmount(price) * 1e8) < MIN_PRICE_E8S
-          ? sc.priceBelowMinimum
-          : null;
-
-  const keysError =
-    keys === "" || minKeys == null
-      ? null
-      : parseInt(keys, 10) < minKeys
-        ? sc.keysBelowMinimum.replace("{min}", String(minKeys))
-        : null;
+  const priceError = priceErrorMessage(price);
+  const keysError = keysErrorMessage(keys, minKeys);
 
   const inputBase =
     "h-[calc(48*var(--fpx))] w-[calc(140*var(--fpx))] " +

@@ -1,9 +1,11 @@
-// Phone-only copy for PremiumMintSheet (bottom sheet, <1024px).
-// Feature-local, same precedent as myArticlesMobileCopy.ts /
-// homeMobileCopy.ts -- src/constants/copy.ts is not touched. Strings
-// are taken from the Figma frames (2483:3290 / 2484:6252 /
-// 2485:6252), with pricePlaceholder corrected to match the field's
-// accepted decimal format (dot, not comma).
+// Copy for the limited-edition NFT mint setup at BOTH widths:
+// PremiumMintSheet (phone bottom sheet, <1024px) and PremiumMintStep
+// (desktop step inside the Publish view). One string set; the desktop
+// canonical frames (2724:3290 / 2726:6320 / 2727:6384) were aligned to
+// it. Feature-local, same precedent as myArticlesMobileCopy.ts /
+// homeMobileCopy.ts. Strings are taken from the Figma frames
+// (2483:3290 / 2484:6252 / 2485:6252), with pricePlaceholder corrected
+// to match the field's accepted decimal format (dot, not comma).
 export const premiumMintSheetCopy = {
   heading: "Limited-edition NFT",
   subHeading:

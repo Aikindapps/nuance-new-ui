@@ -2,8 +2,10 @@ import { useState } from "react";
 import { premiumMintSheetCopy as sc } from "./premiumMintSheetCopy";
 
 // Shared "Picture to be minted" preview -- the picture that is (or will be)
-// sent to the mint as `thumbnail`. Two call sites:
-//   - PremiumMintSheet.tsx (mint setup, phone) -- src is the data-URL built
+// sent to the mint as `thumbnail`. Call sites:
+//   - PremiumMintSheet.tsx (mint setup, phone) and PremiumMintStep.tsx
+//     (mint setup, desktop; the only one with `withShadow`, per the
+//     desktop frame 2724:3290) -- src is the data-URL built
 //     from the SVG about to be minted, or null while it's loading.
 //   - KeysAndSalesSheet.tsx (already-minted, phone) -- src is the picture
 //     the NFT canister actually minted, fetched over HTTP, or null while
@@ -20,7 +22,13 @@ import { premiumMintSheetCopy as sc } from "./premiumMintSheetCopy";
 // picture is a portrait composite (cover, title, subtitle, @handle) and
 // the preview must show all of it -- the side bars show the tile's
 // placeholder fill.
-export function MintPicturePreview({ src }: { src: string | null }) {
+export function MintPicturePreview({
+  src,
+  withShadow = false,
+}: {
+  src: string | null;
+  withShadow?: boolean;
+}) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const showImage = src != null && src !== failedSrc;
 
@@ -30,7 +38,8 @@ export function MintPicturePreview({ src }: { src: string | null }) {
       <div
         className={
           "h-[calc(84*var(--fpx))] w-[calc(120*var(--fpx))] shrink-0 " +
-          "overflow-hidden rounded-[calc(8*var(--fpx))] bg-ink-border-5"
+          "overflow-hidden rounded-[calc(8*var(--fpx))] bg-ink-border-5" +
+          (withShadow ? " shadow-purple-glow" : "")
         }
       >
         {showImage && (

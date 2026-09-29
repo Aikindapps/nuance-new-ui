@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Button from "@mui/material/Button";
 import FocusTrap from "@mui/material/Unstable_TrapFocus";
 import {
@@ -19,6 +19,7 @@ import {
   scheduleMsIfFuture,
 } from "../lib/publishSchedule";
 import { useIsMobileViewport } from "../../../lib/useIsMobileViewport";
+import { PREMIUM_MINT_VIEW_TITLE_ID } from "./PremiumMintView";
 
 export const PUBLISH_VIEW_TITLE_ID = "publish-view-title";
 
@@ -41,6 +42,7 @@ export function PublishView({
   initialMembersOnly,
   alreadyPublished,
   lockedPublication,
+  mintStep,
 }: {
   mode: "draft" | "publish";
   initialTagIds: string[];
@@ -65,6 +67,13 @@ export function PublishView({
   // publication (label = the picker's label for it) and names the credited
   // writer in the helper line (D-111, NIC-547 item 4). null = live picker.
   lockedPublication?: { label: string; writerHandle: string } | null;
+  // Desktop only: the limited-edition mint setup step (PremiumMintView),
+  // shown IN PLACE of this view's content -- same white surface, same 666
+  // column, no pop-up. This component stays mounted, so tags, publication,
+  // date/time and access are still set when the step's Back clears it.
+  // null/undefined = the normal Publish content. Ignored on phone, where
+  // the mint setup is a bottom sheet opened through the modal service.
+  mintStep?: ReactNode;
 }) {
   const c = writeArticleCopy.publish;
   const cp = writeArticleCopy.premium;
@@ -83,6 +92,7 @@ export function PublishView({
   );
   const [pubTime, setPubTime] = useState<string | null>(null);
   const [timeOpen, setTimeOpen] = useState(false);
+  const mintShown = !isMobile && mintStep != null;
 
   const selectedPub = publications.find((p) => p.publicationName === pubHandle);
   const premiumEligible =
@@ -139,6 +149,8 @@ export function PublishView({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        // The mint step handles its own Escape (= its Back).
+        if (mintShown) return;
         if (accessOpen) {
           setAccessOpen(false);
         } else if (timeOpen) {
@@ -152,7 +164,22 @@ export function PublishView({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, accessOpen, timeOpen, onBack]);
+  }, [open, accessOpen, timeOpen, onBack, mintShown]);
+
+  // Swapping to the mint step starts it at the top of the page; coming
+  // Back puts focus on "Mint as premium" again (which also scrolls it
+  // into view), since the step's own Back button is gone.
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const mintButtonRef = useRef<HTMLButtonElement>(null);
+  const wasMintShown = useRef(false);
+  useEffect(() => {
+    if (mintShown) {
+      if (overlayRef.current) overlayRef.current.scrollTop = 0;
+    } else if (wasMintShown.current) {
+      mintButtonRef.current?.focus();
+    }
+    wasMintShown.current = mintShown;
+  }, [mintShown]);
 
   // Close foldout on outside mousedown (mirror NotificationsFoldout pattern).
   useEffect(() => {
@@ -538,54 +565,64 @@ export function PublishView({
     <div
       role="dialog"
       aria-modal="true"
-      aria-labelledby={PUBLISH_VIEW_TITLE_ID}
+      ref={overlayRef}
+      aria-labelledby={
+        mintShown ? PREMIUM_MINT_VIEW_TITLE_ID : PUBLISH_VIEW_TITLE_ID
+      }
       className="fixed inset-0 z-50 overflow-y-auto bg-white"
     >
       {/* Centered 666px column */}
       <div className="mx-auto flex w-full max-w-[calc(666*var(--fpx))] flex-col gap-[calc(32*var(--fpx))] px-6 pb-[calc(80*var(--fpx))] pt-12 lg:px-0 lg:pt-20">
 
-        {/* Title */}
-        <h1
-          id={PUBLISH_VIEW_TITLE_ID}
-          className="text-lg font-bold text-ink"
-        >
-          {titleText}
-        </h1>
+        {mintShown ? (
+          mintStep
+        ) : (
+          <>
+            {/* Title */}
+            <h1
+              id={PUBLISH_VIEW_TITLE_ID}
+              className="text-lg font-bold text-ink"
+            >
+              {titleText}
+            </h1>
 
-        {fields}
+            {fields}
 
-        {/* Buttons row */}
-        <div className="flex w-full flex-col gap-[calc(12*var(--fpx))] lg:flex-row lg:items-center lg:justify-between">
-          <Button
-            sx={{ ...secondaryButtonSx, width: { xs: "100%", lg: "auto" } }}
-            startIcon={<IconChevronLeft className="size-[calc(24*var(--fpx))]" />}
-            onClick={onBack}
-          >
-            {c.backToArticle}
-          </Button>
-          <div className="flex flex-col gap-[calc(8*var(--fpx))] lg:flex-row lg:items-center">
-            {premiumEligible && !effectiveMembersOnly && (
+            {/* Buttons row */}
+            <div className="flex w-full flex-col gap-[calc(12*var(--fpx))] lg:flex-row lg:items-center lg:justify-between">
               <Button
                 sx={{ ...secondaryButtonSx, width: { xs: "100%", lg: "auto" } }}
-                disabled={selected.length < 1 || saving}
-                onClick={() => {
-                  if (selected.length >= 1 && pubHandle !== null) {
-                    onMintPremium!(selected, pubHandle);
-                  }
-                }}
+                startIcon={<IconChevronLeft className="size-[calc(24*var(--fpx))]" />}
+                onClick={onBack}
               >
-                {cp.mintCta}
+                {c.backToArticle}
               </Button>
-            )}
-            <Button
-              sx={{ ...primaryButtonSx, width: { xs: "100%", lg: "auto" } }}
-              disabled={selected.length < 1 || saving}
-              onClick={confirm}
-            >
-              {primaryLabel}
-            </Button>
-          </div>
-        </div>
+              <div className="flex flex-col gap-[calc(8*var(--fpx))] lg:flex-row lg:items-center">
+                {premiumEligible && !effectiveMembersOnly && (
+                  <Button
+                    ref={mintButtonRef}
+                    sx={{ ...secondaryButtonSx, width: { xs: "100%", lg: "auto" } }}
+                    disabled={selected.length < 1 || saving}
+                    onClick={() => {
+                      if (selected.length >= 1 && pubHandle !== null) {
+                        onMintPremium!(selected, pubHandle);
+                      }
+                    }}
+                  >
+                    {cp.mintCta}
+                  </Button>
+                )}
+                <Button
+                  sx={{ ...primaryButtonSx, width: { xs: "100%", lg: "auto" } }}
+                  disabled={selected.length < 1 || saving}
+                  onClick={confirm}
+                >
+                  {primaryLabel}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,55 +1,17 @@
 import { useEffect, useState } from "react";
-import Button from "@mui/material/Button";
-import { Popup } from "../../../components/ui/Popup";
 import { useIsMobileViewport } from "../../../lib/useIsMobileViewport";
 import { PremiumMintSheet } from "./PremiumMintSheet";
-import {
-  sanitizeKeys,
-  sanitizePrice,
-} from "../lib/premiumMintFields";
-import {
-  primaryButtonSx,
-  secondaryButtonSx,
-} from "../../../components/ui/modalButtons";
-import { writeArticleCopy } from "../../../constants/copy";
+import { PremiumMintStep } from "./PremiumMintStep";
 import { buildSvgForPremiumArticle, loadHeaderImage } from "../lib/premiumThumbnail";
 import { useIcpUsdRate, icpToUsd } from "../hooks/useIcpUsdRate";
 import { usePublicationEditorCount } from "../hooks/usePublicationEditorCount";
 
+// Limited-edition NFT mint setup -- the controller. Owns the picture, the
+// field state, the editor-count and ICP->USD queries, validation and the
+// mint call, and renders the phone bottom sheet (PremiumMintSheet, opened
+// by WriteArticleForm through the modal service) or the desktop step
+// (PremiumMintStep, rendered by PublishView in place of its own content).
 export const PREMIUM_MINT_VIEW_TITLE_ID = "premium-mint-view-title";
-const CONVERSION_PLACEHOLDER = "\u2014";
-const CONVERSION_PREFIX = "\u2248";
-const USD_UNIT = "USD";
-
-// Spinner — mirrors NftPurchaseModal's inline Spinner component.
-function Spinner() {
-  return (
-    <div className="relative mx-auto my-6 size-16">
-      <svg className="absolute inset-0 size-16" viewBox="0 0 64 64" fill="none" aria-hidden>
-        <circle cx="32" cy="32" r="29" stroke="rgba(55,58,73,0.10)" strokeWidth="6" />
-      </svg>
-      <svg className="absolute inset-0 size-16 animate-spin" viewBox="0 0 64 64" fill="none" aria-hidden>
-        <circle
-          cx="32"
-          cy="32"
-          r="29"
-          stroke="#5405D4"
-          strokeWidth="6"
-          strokeLinecap="round"
-          strokeDasharray="182"
-          strokeDashoffset="145"
-        />
-      </svg>
-    </div>
-  );
-}
-
-// Footer button row, right-aligned with 12px gap.
-function FooterRow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mt-8 flex items-center justify-end gap-3">{children}</div>
-  );
-}
 
 type PremiumMintViewProps = {
   post: { title: string; subtitle: string; coverUrl: string };
@@ -89,7 +51,6 @@ export function PremiumMintView({
   onMint,
   onCancel,
 }: PremiumMintViewProps) {
-  const c = writeArticleCopy.premium;
   const isMobile = useIsMobileViewport();
 
   const [resizedHeaderImage, setResizedHeaderImage] = useState("");
@@ -180,142 +141,25 @@ export function PremiumMintView({
     );
   }
 
-  // Processing state: no close control, inputs disabled.
-  if (processing) {
-    return (
-      <Popup
-        titleId={PREMIUM_MINT_VIEW_TITLE_ID}
-        title={c.processingTitle}
-        onClose={() => undefined}
-        closeAriaLabel=""
-      >
-        <div className="mt-6 flex flex-col gap-4">
-          <p className="text-body text-ink">{c.processingBody}</p>
-          <Spinner />
-        </div>
-        <FooterRow>
-          <Button
-            variant="outlined"
-            disabled
-            sx={{ ...secondaryButtonSx, opacity: 0.4 }}
-          >
-            {c.cancel}
-          </Button>
-        </FooterRow>
-      </Popup>
-    );
-  }
-
   return (
-    <Popup
+    <PremiumMintStep
       titleId={PREMIUM_MINT_VIEW_TITLE_ID}
-      title={c.title}
-      onClose={onCancel}
-      closeAriaLabel={c.cancel}
-    >
-      <div className="mt-6 flex flex-col gap-6">
-        {/* Thumbnail preview */}
-        <div className="flex justify-center">
-          {imageLoading ? (
-            <Spinner />
-          ) : svg ? (
-            <img
-              src={"data:image/svg+xml," + encodeURIComponent(svg)}
-              alt="Premium NFT preview"
-              className="max-h-64 max-w-full rounded"
-            />
-          ) : null}
-        </div>
-
-        {/* AMOUNT OF KEYS */}
-        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-          <label className="text-label font-bold text-ink" htmlFor="pm-keys">
-            {c.keysLabel}
-          </label>
-          <input
-            id="pm-keys"
-            type="text"
-            inputMode="numeric"
-            value={keys}
-            placeholder={c.keysPlaceholder}
-            disabled={processing}
-            onChange={(e) => setKeys(sanitizeKeys(e.target.value))}
-            className="h-[calc(48*var(--fpx))] w-full rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink outline-none focus:border-brand-purple focus:bg-brand-purple-5"
-          />
-          <p className="text-label font-medium text-ink-80">
-            {c.keysInfo}
-          </p>
-          {minKeys != null && (
-            <p className="text-label font-medium text-ink-80">
-              {c.keysMinHint
-                .replace("{count}", String(editorCount))
-                .replace("{min}", String(minKeys))}
-            </p>
-          )}
-          {editorCountError && (
-            <p className="text-label text-error">{c.keysCountError}</p>
-          )}
-        </div>
-
-        {/* COST PER KEY (IN ICP) */}
-        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-          <label className="text-label font-bold text-ink" htmlFor="pm-price">
-            {c.priceLabel}
-          </label>
-          <input
-            id="pm-price"
-            type="text"
-            inputMode="decimal"
-            value={price}
-            placeholder={c.pricePlaceholder}
-            disabled={processing}
-            onChange={(e) => {
-              const v = sanitizePrice(e.target.value);
-              if (v !== null) setPrice(v);
-            }}
-            className="h-[calc(48*var(--fpx))] w-full rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink outline-none focus:border-brand-purple focus:bg-brand-purple-5"
-          />
-          {/* Conversion sub-line */}
-          <p className="text-label text-ink-60">
-            {CONVERSION_PREFIX}{" "}
-            {usdEquiv != null
-              ? usdEquiv.toFixed(2)
-              : CONVERSION_PLACEHOLDER}{" "}
-            {USD_UNIT}
-          </p>
-        </div>
-
-        {/* Terms checkbox */}
-        <label className="flex cursor-pointer items-start gap-2">
-          <input
-            type="checkbox"
-            checked={termsAccepted}
-            disabled={processing}
-            onChange={(e) => setTermsAccepted(e.target.checked)}
-            className="mt-1 size-4 accent-[var(--color-brand-purple)]"
-          />
-          <span className="text-label text-ink">{c.terms}</span>
-        </label>
-      </div>
-
-      <FooterRow>
-        <Button
-          variant="outlined"
-          onClick={onCancel}
-          disabled={processing}
-          sx={secondaryButtonSx}
-        >
-          {c.cancel}
-        </Button>
-        <Button
-          variant="contained"
-          disabled={!isValid || processing}
-          onClick={() => void handleMint()}
-          sx={primaryButtonSx}
-        >
-          {c.mintButton}
-        </Button>
-      </FooterRow>
-    </Popup>
+      processing={processing}
+      imageLoading={imageLoading}
+      svg={svg}
+      keys={keys}
+      price={price}
+      onKeysChange={setKeys}
+      onPriceChange={setPrice}
+      termsAccepted={termsAccepted}
+      onTermsChange={setTermsAccepted}
+      minKeys={minKeys}
+      editorCount={editorCount}
+      editorCountError={editorCountError}
+      usdEquiv={usdEquiv}
+      isValid={isValid}
+      onMint={() => void handleMint()}
+      onCancel={onCancel}
+    />
   );
 }

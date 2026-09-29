@@ -1,6 +1,8 @@
-// Premium-mint field rules shared by the desktop modal
-// (PremiumMintView) and the phone sheet (PremiumMintSheet) -- one
+// Premium-mint field rules shared by the desktop step
+// (PremiumMintStep) and the phone sheet (PremiumMintSheet) -- one
 // source of truth, no drift. Pure functions only, no React.
+
+import { premiumMintSheetCopy } from "../sections/premiumMintSheetCopy";
 
 export const MAX_KEYS = 10000;
 export const MIN_PRICE_E8S = 100000; // canister floor = 0.001 ICP
@@ -26,4 +28,29 @@ export function parseIcpAmount(price: string): number {
     !price || price === "." || !/^\d*\.?\d{0,4}$/.test(price);
   if (bad) return 0;
   return parseFloat(price);
+}
+
+// Inline message under the price field (replaces the conversion line),
+// or null. Explains why Publish is still disabled; the Publish rule
+// itself is PremiumMintView's validateNft, unchanged.
+export function priceErrorMessage(price: string): string | null {
+  if (price === "") return null;
+  const icp = parseIcpAmount(price);
+  if (icp <= 0) return premiumMintSheetCopy.priceMustBePositive;
+  if (Math.round(icp * 1e8) < MIN_PRICE_E8S) {
+    return premiumMintSheetCopy.priceBelowMinimum;
+  }
+  return null;
+}
+
+// Inline message under the keys field, or null (no message while the
+// editor count, and so the minimum, is unknown).
+export function keysErrorMessage(
+  keys: string,
+  minKeys: number | null,
+): string | null {
+  if (keys === "" || minKeys == null) return null;
+  return parseInt(keys, 10) < minKeys
+    ? premiumMintSheetCopy.keysBelowMinimum.replace("{min}", String(minKeys))
+    : null;
 }

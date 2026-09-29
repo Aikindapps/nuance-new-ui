@@ -31,6 +31,7 @@ import { useMigratePost } from "./hooks/useMigratePost";
 import type { EditArticleInitial } from "./hooks/useEditArticle";
 import { isEditorEmpty, serializeEditorHtml } from "./lib/htmlSerialize";
 import { useMyProfile } from "../../lib/useMyProfile";
+import { useIsMobileViewport } from "../../lib/useIsMobileViewport";
 import { publishSheetCopy } from "./sections/publishSheetCopy";
 import {
   clockHHMM,
@@ -171,6 +172,10 @@ export function WriteArticleForm({
   // Replaces the old modal.open(<PublishModal/>) pattern — the view renders
   // as a fixed full-surface overlay so the Lexical editor stays mounted.
   const [publishView, setPublishView] = useState<{ mode: "draft" | "publish" } | null>(null);
+  // Desktop: the limited-edition mint setup open as a step inside the
+  // Publish view (null = the Publish content). Phone uses a bottom sheet.
+  const [mintTarget, setMintTarget] = useState<{ tags: string[]; pubH: string } | null>(null);
+  const isMobile = useIsMobileViewport();
 
   // Preview snapshot — populated when the writer clicks Preview; reading the
   // editor at click time keeps the overlay decoupled from the editor's live
@@ -493,6 +498,31 @@ export function WriteArticleForm({
 
   const statusText = dirty ? C.unsavedChanges : postId ? C.saved : C.notSavedYet;
 
+  // The limited-edition mint setup. Phone: bottom sheet via the modal
+  // service; desktop: a step inside PublishView (mintStep). `close` leaves
+  // the setup (Back); Publish = save with premium, then close, toast and
+  // navigate to the article.
+  const mintView = (tags: string[], pubH: string, close: () => void) => (
+    <PremiumMintView
+      post={{ title, subtitle, coverUrl }}
+      handle={creditHandle}
+      tagIds={tags}
+      publicationHandle={pubH}
+      onCancel={close}
+      onMint={async (premium) => {
+        const post = await doSave(false, tags, pubH, premium);
+        if (post) {
+          close();
+          setPublishView(null);
+          show(C.toasts.published, "success");
+          navigate(post.url || "/");
+          return true;
+        }
+        return false;
+      }}
+    />
+  );
+
   return (
     <article className="flex flex-col gap-[calc(50*var(--fpx))]">
       {/* Breadcrumb row — Back + Draft status + saved-state. */}
@@ -594,35 +624,30 @@ export function WriteArticleForm({
               ? { label: lockedPubLabel, writerHandle: creditHandle }
               : null
           }
+          mintStep={
+            mintTarget
+              ? mintView(mintTarget.tags, mintTarget.pubH, () => setMintTarget(null))
+              : null
+          }
           onMintPremium={(tags, pubH) => {
             // Guard: migrate path not needed (article is new, already in this
             // pub, or an existing publication article locked to its own pub).
             const migrateNotNeeded =
               lockedPubHandle !== null || postId === "" || savedPubHandle === pubH;
             if (!migrateNotNeeded) return;
+            if (!isMobile) {
+              setMintTarget({ tags, pubH });
+              return;
+            }
             modal.open(
-              <PremiumMintView
-                post={{ title, subtitle, coverUrl }}
-                handle={creditHandle}
-                tagIds={tags}
-                publicationHandle={pubH}
-                onCancel={() => modal.close()}
-                onMint={async (premium) => {
-                  const post = await doSave(false, tags, pubH, premium);
-                  if (post) {
-                    modal.close();
-                    setPublishView(null);
-                    show(C.toasts.published, "success");
-                    navigate(post.url || "/");
-                    return true;
-                  }
-                  return false;
-                }}
-              />,
+              mintView(tags, pubH, () => modal.close()),
               { ariaLabelledBy: PREMIUM_MINT_VIEW_TITLE_ID, dismissable: false },
             );
           }}
-          onBack={() => setPublishView(null)}
+          onBack={() => {
+            setMintTarget(null);
+            setPublishView(null);
+          }}
           onConfirm={async (
             picked,
             chosenPub,
