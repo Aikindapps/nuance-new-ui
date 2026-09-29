@@ -40,6 +40,7 @@ export function PublishView({
   savedPublicationHandle,
   initialMembersOnly,
   alreadyPublished,
+  lockedPublication,
 }: {
   mode: "draft" | "publish";
   initialTagIds: string[];
@@ -60,12 +61,19 @@ export function PublishView({
   savedPublicationHandle?: string | null;
   initialMembersOnly?: boolean;
   alreadyPublished?: boolean;
+  // An existing publication article: "Publish to" is locked to its own
+  // publication (label = the picker's label for it) and names the credited
+  // writer in the helper line (D-111, NIC-547 item 4). null = live picker.
+  lockedPublication?: { label: string; writerHandle: string } | null;
 }) {
   const c = writeArticleCopy.publish;
   const cp = writeArticleCopy.premium;
   const isMobile = useIsMobileViewport();
   const [selected, setSelected] = useState<string[]>(initialTagIds);
-  const [pubHandle, setPubHandle] = useState<string | null>(initialPublicationHandle);
+  const [pickedPubHandle, setPubHandle] = useState<string | null>(initialPublicationHandle);
+  const pubHandle = lockedPublication
+    ? lockedPublication.label
+    : pickedPubHandle;
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
   const [membersOnly, setMembersOnly] = useState(initialMembersOnly ?? false);
@@ -83,7 +91,9 @@ export function PublishView({
     selectedPub?.isEditor === true &&
     coverPresent === true &&
     onMintPremium != null &&
-    (articleSavedToCanister !== true || savedPublicationHandle === pubHandle);
+    (lockedPublication != null ||
+      articleSavedToCanister !== true ||
+      savedPublicationHandle === pubHandle);
 
   // Writers (non-editor members of the selected publication) can't publish —
   // only editors can. A writer submits the article to the publication's editor
@@ -221,8 +231,38 @@ export function PublishView({
 
   const fields = (
     <>
+      {/* Publish-to locked to the article's own publication (NIC-547 item 4):
+          the existing disabled field look (same as Select category below), no
+          chevron, no open state; kept in the tab order for screen readers. */}
+      {lockedPublication && (
+        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
+          <label id="publish-to-label" className="text-label font-bold text-ink">
+            {c.publishToLabel}
+          </label>
+          <div
+            role="combobox"
+            aria-disabled="true"
+            aria-expanded="false"
+            aria-labelledby="publish-to-label"
+            aria-describedby="publish-to-helper"
+            tabIndex={0}
+            className="flex h-[calc(48*var(--fpx))] w-full cursor-not-allowed select-none items-center justify-between rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink-60 opacity-50"
+          >
+            <span>{lockedPublication.label}</span>
+          </div>
+          <p
+            id="publish-to-helper"
+            className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(4*var(--fpx))]"
+          >
+            {c.lockedPublicationHelper
+              .replace("{writer}", () => lockedPublication.writerHandle)
+              .replace("{publication}", () => lockedPublication.label)}
+          </p>
+        </div>
+      )}
+
       {/* Publish-to dropdown — hidden for personal-only users (NIC-72) */}
-      {publications.length > 0 && (
+      {!lockedPublication && publications.length > 0 && (
         <div className="flex flex-col gap-[calc(6*var(--fpx))]">
           <label className="text-label font-bold text-ink">
             {c.publishToLabel}
@@ -318,7 +358,7 @@ export function PublishView({
       )}
 
       {/* Divider — hidden for personal-only users (NIC-72) */}
-      {publications.length > 0 && (
+      {(lockedPublication || publications.length > 0) && (
         <hr className="w-full border-t border-ink-border/20" />
       )}
 

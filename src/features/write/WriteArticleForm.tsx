@@ -39,6 +39,7 @@ import {
   localDateISO,
 } from "./lib/publishSchedule";
 import { publishScheduleCopy } from "./sections/publishScheduleCopy";
+import { MY_ARTICLES_RETURN, type WriteReturn } from "./lib/writeReturn";
 
 const C = writeArticleCopy;
 const MY_ARTICLES = "/my-articles";
@@ -52,9 +53,13 @@ const MY_ARTICLES = "/my-articles";
 export function WriteArticleForm({
   initial,
   initialPublication,
+  back = MY_ARTICLES_RETURN,
 }: {
   initial?: EditArticleInitial;
   initialPublication?: string;
+  // Where Back and the leave guard go (NIC-548): My articles by default, the
+  // publication's Manage Articles list when the editor came from there.
+  back?: WriteReturn;
 }) {
   const navigate = useNavigate();
   const modal = useModal();
@@ -72,6 +77,32 @@ export function WriteArticleForm({
     () => me?.publicationsArray ?? [],
     [me?.publicationsArray],
   );
+
+  // An existing publication article stays in its publication and keeps its
+  // writer (D-111, NIC-547). The save always names the post's own raw handle
+  // (PostCore looks publications up by exact case; a miss turns the save into
+  // a personal save that the canister refuses), the original writer, and the
+  // post's category (a publication save rewrites the category every time).
+  // The label shown in the Publish panel is the user's publication entry,
+  // matched case-insensitively (same idiom as ?publication=).
+  const lockedPubHandle =
+    initial?.isPublication && initial.publicationHandle
+      ? initial.publicationHandle
+      : null;
+  const lockedPubLabel = useMemo((): string | null => {
+    if (lockedPubHandle === null) return null;
+    const lower = lockedPubHandle.toLowerCase();
+    const match = myPublications.find(
+      (p) => p.publicationName.toLowerCase() === lower,
+    );
+    return match ? match.publicationName : lockedPubHandle;
+  }, [lockedPubHandle, myPublications]);
+  const creditHandle =
+    initial?.isPublication && initial.creatorHandle
+      ? initial.creatorHandle
+      : myHandle;
+  const lockedCategory =
+    lockedPubHandle !== null ? (initial?.category ?? "") : "";
 
   // Editing → seed from the loaded article. New → restore the browser autosave.
   const restored = useMemo(
@@ -107,8 +138,8 @@ export function WriteArticleForm({
   //      the user's publications and use the canonical publicationName.
   //   3. Default to personal (null).
   const initialTarget = useMemo((): string | null => {
-    if (initial?.isPublication && initial.publicationHandle) {
-      return initial.publicationHandle;
+    if (lockedPubLabel !== null) {
+      return lockedPubLabel;
     }
     if (initialPublication) {
       const lower = initialPublication.toLowerCase();
@@ -118,7 +149,7 @@ export function WriteArticleForm({
       return match ? match.publicationName : null;
     }
     return null;
-  }, [initial, initialPublication, myPublications]);
+  }, [lockedPubLabel, initialPublication, myPublications]);
 
   // Form-level publication target: null = personal ("My profile").
   const [publicationHandle, setPublicationHandle] = useState<string | null>(
@@ -206,10 +237,13 @@ export function WriteArticleForm({
     ): Promise<Post | null> => {
       const editor = editorRef.current;
       if (!editor) return null;
+      // An existing publication article always saves to its own publication,
+      // whatever the panel passed (NIC-547 item 4, D-138).
+      const target = lockedPubHandle ?? pubHandle;
       // Guard: a publication save requires a resolved author handle. If the
       // profile query hasn't resolved yet, myHandle is "" — block the submit
       // so we never send creatorHandle:"" to the canister.
-      if (pubHandle && !myHandle) {
+      if (target && !creditHandle) {
         show(C.toasts.saveFailed, "error");
         return null;
       }
@@ -235,7 +269,7 @@ export function WriteArticleForm({
           : null;
 
       try {
-        if (pubHandle) {
+        if (target) {
           // Existing personal draft being moved into a publication for the first
           // time: two-step migrate so the creator is recorded by the bucket.
           // Premium mints always use the direct pub-save path (no migrate).
@@ -267,7 +301,7 @@ export function WriteArticleForm({
             const migrated = await migrateMutation.mutateAsync({
               bucketCanisterId: saved.bucketCanisterId,
               postId: saved.postId,
-              publicationHandle: pubHandle,
+              publicationHandle: target,
               isDraft: twoStepPublish ? true : isDraft,
             });
             // PostBucket Post (migrate) and PostCore Post (save) are structurally identical here.
@@ -281,7 +315,7 @@ export function WriteArticleForm({
                   isDraft: false,
                   tagIds: tags,
                   category: "",
-                  handle: pubHandle,
+                  handle: target,
                   creatorHandle: myHandle,
                   isPublication: true,
                   isMembersOnly: publishMembersOnly,
@@ -294,7 +328,7 @@ export function WriteArticleForm({
             setPostId(result.postId);
             setTagIds(tags);
             setDirty(false);
-            setSavedPubHandle(pubHandle);
+            setSavedPubHandle(target);
             return result;
           }
           // New article (isNew) or already a publication post: direct pub save.
@@ -307,9 +341,9 @@ export function WriteArticleForm({
             headerImage: coverUrl,
             isDraft: premium ? false : isDraft,
             tagIds: tags,
-            category: "",
-            handle: pubHandle,
-            creatorHandle: myHandle,
+            category: lockedCategory,
+            handle: target,
+            creatorHandle: creditHandle,
             isPublication: true,
             isMembersOnly,
             ...(premium ? { premium } : {}),
@@ -322,7 +356,7 @@ export function WriteArticleForm({
           setPostId(post.postId);
           setTagIds(tags);
           setDirty(false);
-          setSavedPubHandle(pubHandle);
+          setSavedPubHandle(target);
           return post;
         }
         // Personal (My profile) save — unchanged.
@@ -378,6 +412,9 @@ export function WriteArticleForm({
       migrateMutation,
       show,
       isPublished,
+      lockedPubHandle,
+      creditHandle,
+      lockedCategory,
     ],
   );
 
@@ -405,7 +442,7 @@ export function WriteArticleForm({
 
   const handleBack = useCallback(() => {
     if (!dirty) {
-      navigate(MY_ARTICLES);
+      navigate(back.to);
       return;
     }
     modal.open(
@@ -415,7 +452,7 @@ export function WriteArticleForm({
         onLeave={() => {
           clearDraft(autosaveId);
           modal.close();
-          navigate(MY_ARTICLES);
+          navigate(back.to);
         }}
         onSaveDraft={async () => {
           if (tagIds.length < 1) {
@@ -430,7 +467,7 @@ export function WriteArticleForm({
               "success",
             );
             modal.close();
-            navigate(MY_ARTICLES);
+            navigate(back.to);
           }
         }}
         saveLabel={isPublished ? C.actionBar.saveChanges : C.actionBar.saveDraft}
@@ -451,6 +488,7 @@ export function WriteArticleForm({
     isPublished,
     membersOnly,
     publicationHandle,
+    back.to,
   ]);
 
   const statusText = dirty ? C.unsavedChanges : postId ? C.saved : C.notSavedYet;
@@ -462,7 +500,7 @@ export function WriteArticleForm({
         <button
           type="button"
           onClick={handleBack}
-          aria-label="Go back"
+          aria-label={back.fromPublication ? back.label : "Go back"}
           className="flex size-8 shrink-0 items-center justify-center rounded-[calc(4*var(--fpx))] text-brand-purple transition-colors hover:bg-brand-purple-5"
         >
           <IconBack className="size-[calc(18*var(--fpx))]" />
@@ -551,15 +589,21 @@ export function WriteArticleForm({
           savedPublicationHandle={savedPubHandle}
           initialMembersOnly={membersOnly}
           alreadyPublished={isPublished}
+          lockedPublication={
+            lockedPubLabel !== null
+              ? { label: lockedPubLabel, writerHandle: creditHandle }
+              : null
+          }
           onMintPremium={(tags, pubH) => {
-            // Guard: migrate path not needed (article is new or already in this pub).
+            // Guard: migrate path not needed (article is new, already in this
+            // pub, or an existing publication article locked to its own pub).
             const migrateNotNeeded =
-              postId === "" || savedPubHandle === pubH;
+              lockedPubHandle !== null || postId === "" || savedPubHandle === pubH;
             if (!migrateNotNeeded) return;
             modal.open(
               <PremiumMintView
                 post={{ title, subtitle, coverUrl }}
-                handle={myHandle}
+                handle={creditHandle}
                 tagIds={tags}
                 publicationHandle={pubH}
                 onCancel={() => modal.close()}

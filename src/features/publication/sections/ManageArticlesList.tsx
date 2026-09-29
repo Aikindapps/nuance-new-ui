@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import Skeleton from "@mui/material/Skeleton";
 import { manageArticlesCopy } from "../../../constants/copy";
 import { buildArticleUrl } from "../../../lib/articleUrl";
+import { manageArticlesEditState } from "../../write/lib/writeReturn";
 import { useManageArticles, type ManageArticleRow } from "../hooks/useManageArticles";
 import { PublishToggle } from "./PublishToggle";
 
@@ -28,6 +29,41 @@ function StatsButton() {
         <rect x="13" y="1" width="4" height="16" rx="1" fill="currentColor" />
       </svg>
     </button>
+  );
+}
+
+// --- Edit link (NIC-548) ---------------------------------------------------
+
+// Edit is offered to editors on unpublished, non-minted rows only: a
+// published article is read-only until switched off (NIC-283), and the Write
+// route refuses minted articles. It follows the row's Live state, including
+// the toggle's optimistic update and its rollback on failure. The router
+// state brings the editor back to this list from the Write editor.
+function canEditRow(canEdit: boolean, row: ManageArticleRow): boolean {
+  return canEdit && row.isDraft && !row.article.hasNft;
+}
+
+function EditLink({
+  handle,
+  row,
+  className,
+}: {
+  handle: string;
+  row: ManageArticleRow;
+  className: string;
+}) {
+  return (
+    <Link
+      to={`/write/${row.postId}-${row.bucketCanisterId}`}
+      state={manageArticlesEditState(handle)}
+      aria-label={manageArticlesCopy.editAriaLabel.replace(
+        "{title}",
+        () => row.article.title,
+      )}
+      className={`${className} text-base font-medium text-brand-purple no-underline hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple`}
+    >
+      {manageArticlesCopy.edit}
+    </Link>
   );
 }
 
@@ -65,7 +101,15 @@ function TableHead() {
 
 // ─── Desktop table row (lg+) ─────────────────────────────────────────────────
 
-function TableRow({ handle, row }: { handle: string; row: ManageArticleRow }) {
+function TableRow({
+  handle,
+  row,
+  canEdit,
+}: {
+  handle: string;
+  row: ManageArticleRow;
+  canEdit: boolean;
+}) {
   const url = buildArticleUrl({
     handle: row.article.routeHandle,
     postId: row.postId,
@@ -85,6 +129,9 @@ function TableRow({ handle, row }: { handle: string; row: ManageArticleRow }) {
         >
           {row.article.title}
         </Link>
+        {canEditRow(canEdit, row) && (
+          <EditLink handle={handle} row={row} className="block w-fit" />
+        )}
       </td>
       <td className="py-3 pr-4">
         <span className="block truncate text-sm text-ink-80">
@@ -111,7 +158,15 @@ function TableRow({ handle, row }: { handle: string; row: ManageArticleRow }) {
 
 // ─── Mobile stacked card (<lg) ────────────────────────────────────────────────
 
-function MobileCard({ handle, row }: { handle: string; row: ManageArticleRow }) {
+function MobileCard({
+  handle,
+  row,
+  canEdit,
+}: {
+  handle: string;
+  row: ManageArticleRow;
+  canEdit: boolean;
+}) {
   const url = buildArticleUrl({
     handle: row.article.routeHandle,
     postId: row.postId,
@@ -133,6 +188,13 @@ function MobileCard({ handle, row }: { handle: string; row: ManageArticleRow }) 
         <span className="text-xs font-medium uppercase tracking-wide text-ink-60">
           {manageArticlesCopy.colLive}
         </span>
+        {canEditRow(canEdit, row) && (
+          <EditLink
+            handle={handle}
+            row={row}
+            className="ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-end"
+          />
+        )}
       </div>
 
       {/* Thumbnail */}
@@ -275,9 +337,10 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-type Props = { handle: string };
+// canEdit: the viewer is an editor of this publication (writers get no Edit).
+type Props = { handle: string; canEdit: boolean };
 
-export function ManageArticlesList({ handle }: Props) {
+export function ManageArticlesList({ handle, canEdit }: Props) {
   const {
     rows,
     isLoading,
@@ -340,7 +403,12 @@ export function ManageArticlesList({ handle }: Props) {
               <TableHead />
               <tbody>
                 {rows.map((row) => (
-                  <TableRow key={row.postId} handle={handle} row={row} />
+                  <TableRow
+                    key={row.postId}
+                    handle={handle}
+                    row={row}
+                    canEdit={canEdit}
+                  />
                 ))}
               </tbody>
             </table>
@@ -349,7 +417,12 @@ export function ManageArticlesList({ handle }: Props) {
           {/* Mobile stacked cards */}
           <div className="flex flex-col gap-4 lg:hidden">
             {rows.map((row) => (
-              <MobileCard key={row.postId} handle={handle} row={row} />
+              <MobileCard
+                key={row.postId}
+                handle={handle}
+                row={row}
+                canEdit={canEdit}
+              />
             ))}
           </div>
         </>

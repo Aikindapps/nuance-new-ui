@@ -182,7 +182,10 @@ export const writeArticleCopy = {
   nftNotEditable: "This article has been minted as an NFT and can no longer be edited.",
   publishedNotEditable:
     "This article is published, so it's read-only. Unpublish it from My articles first to return it to a draft, then edit and publish again.",
+  publicationNotEditable:
+    "This article is in a publication, so only the publication's editors can edit it.",
   backToMyArticles: "Back to my articles",
+  backToPublicationArticles: "Back to publication articles",
   coverPrompt: "Drop highlighted image here or ",
   coverChooseFile: "choose file",
   statusDraft: "Draft",
@@ -215,6 +218,8 @@ export const writeArticleCopy = {
     categoryLabel: "Select category",
     categoryPlaceholder: "Select category",
     categoryComingSoon: "Category selection is coming soon.",
+    lockedPublicationHelper:
+      "Credited to @{writer}. This article stays in {publication}.",
     topicsDescription: "Add or change tags to help know your readers what it's about.",
     backToArticle: "Back to article",
   },
@@ -633,6 +638,10 @@ export const manageArticlesCopy = {
 
   // NFT badge (display-only; non-interactive).
   nftBadge: "NFT",
+
+  // Row Edit link (NIC-548): unpublished, non-minted rows, editors only.
+  edit: "Edit",
+  editAriaLabel: "Edit {title}",
 
   // Stats cell (disabled; NIC-57 will expand this).
   statsComingSoonAriaLabel: "Article stats — coming soon",

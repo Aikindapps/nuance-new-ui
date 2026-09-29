@@ -22,6 +22,10 @@ export type EditArticleInitial = {
   isPublication: boolean;
   publicationHandle: string;
   creatorHandle: string;
+  // The post's publication category, from the canister (the autosave does not
+  // carry it). A publication save writes the category every time, so an
+  // editor's save must send it back unchanged (D-111, NIC-547).
+  category: string;
   isMembersOnly: boolean;
 };
 
@@ -29,15 +33,19 @@ export type EditArticleInitial = {
 // Body HTML -> Lexical editorState JSON; tags from PostKeyProperties. Prefers a
 // newer LOCAL autosave for this postId (unsaved edits from a prior session)
 // over the canister copy. Returns null when not found / unauthorized.
+// Reads with getPostCompositeQuery: unlike getPost, it also answers the post's
+// creator and the editors of its publication, so an editor can open a
+// writer's submitted draft (D-111, NIC-547). A personal draft's owner still
+// reads it as before.
 export function useEditArticle(bucketCanisterId: string, postId: string) {
-  const { getPost, getPostKeyProperties } = useActors();
+  const { getPostCompositeQuery, getPostKeyProperties } = useActors();
   return useQuery<EditArticleInitial | null>({
     queryKey: ["edit-article", bucketCanisterId, postId],
     enabled: postId !== "" && bucketCanisterId !== "",
     staleTime: 0,
     queryFn: async () => {
       const [postRes, metaRes] = await Promise.all([
-        getPost(bucketCanisterId, postId),
+        getPostCompositeQuery(bucketCanisterId, postId),
         getPostKeyProperties(postId),
       ]);
       if (postRes.__kind__ === "err") return null;
@@ -57,6 +65,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
       const isPublication = post.isPublication;
       const publicationHandle = post.isPublication ? post.handle : "";
       const creatorHandle = post.creatorHandle;
+      const category = post.category;
       const isMembersOnly = post.isMembersOnly;
 
       const local = loadDraft(post.postId);
@@ -74,6 +83,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
           isPublication,
           publicationHandle,
           creatorHandle,
+          category,
           isMembersOnly,
         };
       }
@@ -89,6 +99,7 @@ export function useEditArticle(bucketCanisterId: string, postId: string) {
         isPublication,
         publicationHandle,
         creatorHandle,
+        category,
         isMembersOnly,
       };
     },

@@ -94,7 +94,7 @@ function ManageArticlesInner({ handle }: { handle: string }) {
         </Link>
       )}
       <div className="mt-8">
-        <ManageArticlesList handle={handle} />
+        <ManageArticlesList handle={handle} canEdit={membership.isEditor} />
       </div>
     </>
   );
