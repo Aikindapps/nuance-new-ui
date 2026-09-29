@@ -4,14 +4,18 @@ import { premiumMintSheetCopy as sc } from "./premiumMintSheetCopy";
 // Shared "Picture to be minted" preview -- the picture that is (or will be)
 // sent to the mint as `thumbnail`. Call sites:
 //   - PremiumMintSheet.tsx (mint setup, phone) and PremiumMintStep.tsx
-//     (mint setup, desktop; the only one with `withShadow`, per the
-//     desktop frame 2724:3290) -- src is the data-URL built
+//     (mint setup, desktop) -- src is the data-URL built
 //     from the SVG about to be minted, or null while it's loading.
-//   - KeysAndSalesSheet.tsx (already-minted, phone) -- src is the picture
+//   - KeysAndSalesSheet.tsx (already-minted, phone) and
+//     KeysAndSalesPanel.tsx (already-minted, desktop) -- src is the picture
 //     the NFT canister actually minted, fetched over HTTP, or null while
 //     the canister lookup is loading.
 // Figma 2659:6101 (label + tile on their own), also part of 2483:3290 /
 // 2484:6252 / 2485:6252 / 2555:6058 / 2555:6135.
+//
+// The tile is plain (no shadow) everywhere: the frames' "Image shadow"
+// layer carries no effect, desktop 2724:3296 and phone alike (Dana,
+// NIC-577 follow-up). Label bottom -> tile top is 8, as the frames draw.
 //
 // The tile keeps its 120x84 size in every state (loading / failed / loaded)
 // so nothing around it shifts. A failed load falls back to the neutral
@@ -22,13 +26,7 @@ import { premiumMintSheetCopy as sc } from "./premiumMintSheetCopy";
 // picture is a portrait composite (cover, title, subtitle, @handle) and
 // the preview must show all of it -- the side bars show the tile's
 // placeholder fill.
-export function MintPicturePreview({
-  src,
-  withShadow = false,
-}: {
-  src: string | null;
-  withShadow?: boolean;
-}) {
+export function MintPicturePreview({ src }: { src: string | null }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const showImage = src != null && src !== failedSrc;
 
@@ -38,8 +36,7 @@ export function MintPicturePreview({
       <div
         className={
           "h-[calc(84*var(--fpx))] w-[calc(120*var(--fpx))] shrink-0 " +
-          "overflow-hidden rounded-[calc(8*var(--fpx))] bg-ink-border-5" +
-          (withShadow ? " shadow-purple-glow" : "")
+          "overflow-hidden rounded-[calc(8*var(--fpx))] bg-ink-border-5"
         }
       >
         {showImage && (

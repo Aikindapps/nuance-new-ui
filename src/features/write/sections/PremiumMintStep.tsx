@@ -187,7 +187,6 @@ export function PremiumMintStep({
             ? "data:image/svg+xml," + encodeURIComponent(svg)
             : null
         }
-        withShadow
       />
 
       <hr className="w-full border-t border-ink-border/10" />

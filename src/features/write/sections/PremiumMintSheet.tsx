@@ -254,7 +254,12 @@ export function PremiumMintSheet({
             </p>
           )}
           {editorCountError && (
-            <p className="text-label text-error">{c.keysCountError}</p>
+            <p
+              role="alert"
+              className="text-label font-medium text-brand-purple"
+            >
+              {c.keysCountError}
+            </p>
           )}
         </div>
 
