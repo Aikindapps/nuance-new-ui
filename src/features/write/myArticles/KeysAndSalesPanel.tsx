@@ -135,7 +135,7 @@ export function KeysAndSalesPanel({ headingId, postId, onDone, extraLoading }: P
         {loading ? (
           <SkeletonBar className="h-[calc(16*var(--fpx))] w-[calc(160*var(--fpx))]" />
         ) : isError ? (
-          <p className="text-label font-bold text-error">{sc.soldLineError}</p>
+          <p className="text-label font-medium text-brand-purple">{sc.soldLineError}</p>
         ) : (
           <p className="text-label font-bold text-ink">{sc.soldLine(sold, total)}</p>
         )}

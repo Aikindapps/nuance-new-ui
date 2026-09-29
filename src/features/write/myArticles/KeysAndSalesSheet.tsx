@@ -161,7 +161,7 @@ export function KeysAndSalesSheet({ titleId, postId, onDone }: Props) {
           {isPending ? (
             <SkeletonBar className="h-4 w-40" />
           ) : isError ? (
-            <p className="text-label font-bold text-error">{sc.soldLineError}</p>
+            <p className="text-label font-medium text-brand-purple">{sc.soldLineError}</p>
           ) : (
             <p className="text-body font-bold text-ink">{sc.soldLine(sold, total)}</p>
           )}
