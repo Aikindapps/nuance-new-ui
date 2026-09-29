@@ -750,8 +750,9 @@ export const tipModalCopy = {
   priceLoading: "Getting the {token} price...",
   // {token} -> the token whose Sonic price is unavailable.
   pricePaused: "We can't get the {token} price right now, so tipping in {token} is paused. You can still tip in NUA.",
-  // {token} -> the token the too-small amount was entered in.
-  tooSmall: "That's too little to send in {token}. Try more applause.",
+  // {token} -> the selected token; {min} -> the smallest applause count the
+  // back end can pay out in it right now (NIC-568, D-137). Copy by Uma.
+  tooSmall: "Tips in {token} start at {min} applause right now. Any less can't reach the writer.",
   overMax: "That’s more than your balance allows.",
   terms: "I understand this sends a real, irreversible token transfer.",
   applaudLabel: "Applaud",

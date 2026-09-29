@@ -15,6 +15,7 @@ import {
   hasQuote,
   planTip,
   maxAffordableApplauds,
+  minTipApplauds,
   formatExactE8s,
 } from "./tipAmount";
 import { useTipAuthor } from "./useTipAuthor";
@@ -84,10 +85,21 @@ export function TipModal({
     return tipAmountE8s(prices.data, token, amount);
   }, [amount, priceState, prices.data, token]);
 
+  // Smallest applaud count the back end can pay out in `token` at the current
+  // price (NIC-568, D-137). Only computed once the price is ready; NUA is 1.
+  const minApplauds = useMemo(() => {
+    if (priceState !== "ready") return null;
+    return minTipApplauds(prices.data, token, APPLAUD_CAP);
+  }, [priceState, prices.data, token]);
+
+  const belowMin = minApplauds !== null && amount < minApplauds;
+
   const plan = useMemo(() => {
-    if (amountE8s == null || amountE8s <= 0n || !balances.data) return null;
+    if (amountE8s == null || amountE8s <= 0n || belowMin || !balances.data) {
+      return null;
+    }
     return planTip(token, amount, amountE8s, balances.data[token], freeNuaE8s);
-  }, [amountE8s, balances.data, token, amount, freeNuaE8s]);
+  }, [amountE8s, belowMin, balances.data, token, amount, freeNuaE8s]);
 
   // Exact max applauds the reader can afford, found the same way the plan is
   // built (so Max can never pick an amount the transfer then rejects). Hidden
@@ -104,6 +116,16 @@ export function TipModal({
     );
   }, [priceState, balances.data, prices.data, token, freeNuaE8s]);
 
+  // Hide Max when it would pick an amount below the minimum (NIC-568). "Max 0"
+  // stays as it was: it picks no amount, so nothing gets refused.
+  const shownMax =
+    maxApplauds !== null &&
+    maxApplauds > 0 &&
+    minApplauds !== null &&
+    maxApplauds < minApplauds
+      ? null
+      : maxApplauds;
+
   // The single status/cost line under the amount input. First match wins.
   const costLine = useMemo(() => {
     if (token !== "NUA" && priceState === "loading") {
@@ -112,8 +134,11 @@ export function TipModal({
     if (token !== "NUA" && priceState === "unavailable") {
       return { text: fmt(c.pricePaused, { token }), tone: "muted" as const };
     }
-    if (amount > 0 && amountE8s === 0n) {
-      return { text: fmt(c.tooSmall, { token }), tone: "error" as const };
+    if (amount > 0 && minApplauds !== null && amount < minApplauds) {
+      return {
+        text: fmt(c.tooSmall, { token, min: String(minApplauds) }),
+        tone: "error" as const,
+      };
     }
     if (plan) {
       const template = plan.feeE8s === TOKENS[token].fee ? c.sendLine : c.sendLineFees;
@@ -127,7 +152,7 @@ export function TipModal({
       };
     }
     return null;
-  }, [token, priceState, amount, amountE8s, plan, c]);
+  }, [token, priceState, amount, minApplauds, plan, c]);
 
   const valid = terms && plan !== null && plan.affordable;
 
@@ -256,13 +281,13 @@ export function TipModal({
             <p className="text-label font-medium uppercase tracking-wide text-ink-60">
               {c.amountLabel}
             </p>
-            {maxApplauds !== null && (
+            {shownMax !== null && (
               <button
                 type="button"
-                onClick={() => setAmount(maxApplauds)}
+                onClick={() => setAmount(shownMax)}
                 className="text-label font-medium text-brand-purple"
               >
-                {c.maxLabel.replace("{max}", String(maxApplauds))}
+                {c.maxLabel.replace("{max}", String(shownMax))}
               </button>
             )}
           </div>

@@ -41,6 +41,53 @@ export function hasQuote(
   return tipAmountE8s(prices, token, 1) !== null;
 }
 
+/**
+ * Smallest tip (base units) the Nuance back end can pay out (NIC-568, D-137).
+ * The post bucket's payout sends floor(10% of the escrow) minus one fee to the
+ * DAO and traps when that is negative; at exactly 10 fees the DAO share is 0
+ * (a zero-amount transfer). So require a DAO share of at least 1 base unit:
+ * 10 * (fee + 1). ICP 100,010 e8s, ckBTC 110 sats, NUA 0.0100001 NUA. Needs no
+ * price.
+ */
+export function minPayableTipE8s(token: SupportedTokenSymbol): bigint {
+  return 10n * (TOKENS[token].fee + 1n);
+}
+
+/**
+ * Smallest applaud count in [1, cap] whose cost reaches `minPayableTipE8s`,
+ * found by binary search (`tipAmountE8s` never decreases as the count grows).
+ * Returns null when no price quote is available for `token` (same contract as
+ * `maxAffordableApplauds`), and cap + 1 when even `cap` applauds are below the
+ * minimum, so every amount the input allows counts as too small. NUA is 1.
+ */
+export function minTipApplauds(
+  prices: TokenPrice[] | undefined,
+  token: SupportedTokenSymbol,
+  cap: number,
+): number | null {
+  if (!hasQuote(prices, token)) return null;
+
+  const min = minPayableTipE8s(token);
+  const reachesMin = (n: number): boolean => {
+    const amountE8s = tipAmountE8s(prices, token, n);
+    return amountE8s != null && amountE8s >= min;
+  };
+
+  if (!reachesMin(cap)) return cap + 1;
+
+  let lo = 1;
+  let hi = cap;
+  while (lo < hi) {
+    const mid = lo + Math.floor((hi - lo) / 2);
+    if (reachesMin(mid)) {
+      hi = mid;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  return lo;
+}
+
 export type TipPlan = {
   token: SupportedTokenSymbol;
   applauds: number;

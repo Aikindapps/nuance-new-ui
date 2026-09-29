@@ -5,7 +5,7 @@ import { useAuth } from "../../../contexts/useAuth";
 import { TOKENS, NUA_LEDGER_CANISTER_ID } from "../../../config/tokens";
 import { toBase256 } from "../../../lib/tokenMath";
 import type { PostKeyProperties } from "../../../candid/PostCore/PostCore";
-import type { TipPlan } from "./tipAmount";
+import { minPayableTipE8s, type TipPlan } from "./tipAmount";
 import { transferErrText } from "../lib/transferErrText";
 
 // The tip transfer engine (mirrors prod clap-modal's executeTransaction).
@@ -14,8 +14,8 @@ import { transferErrText } from "../lib/transferErrText";
 // dialog already computed and displayed (tipAmount.ts). This function does
 // NOT re-derive the amount from prices or re-read Free NUA: what was shown is
 // what gets sent, by construction. Settlement (checkTippingByTokenSymbol) is
-// fire-and-forget -- the CANISTER splits the escrow (writer / publication /
-// DAO) and pays out; the frontend never computes the split.
+// fire-and-forget -- the CANISTER splits the escrow (10% to the Nuance DAO,
+// the rest to the writer) and pays out; the frontend never computes the split.
 export function useTipAuthor(postId: string, bucketCanisterId: string) {
   const {
     spendRestrictedTokensForTipping,
@@ -31,7 +31,11 @@ export function useTipAuthor(postId: string, bucketCanisterId: string) {
       const { token, amountE8s, restrictedE8s, regularE8s } = plan;
       const cfg = TOKENS[token];
 
-      if (amountE8s <= 0n) throw new Error("That amount is too small to send.");
+      // Below this the back end can't pay the tip out (NIC-568, D-137). The
+      // dialog already refuses it; this guard needs no price.
+      if (amountE8s < minPayableTipE8s(token)) {
+        throw new Error("That amount is too small to send.");
+      }
       if (restrictedE8s + regularE8s !== amountE8s) {
         throw new Error("Internal error: tip plan legs don't add up.");
       }
