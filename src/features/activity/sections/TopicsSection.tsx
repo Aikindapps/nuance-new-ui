@@ -7,6 +7,7 @@ import { useUnfollowTag } from "../../article/hooks/useUnfollowTag";
 import { useFollowTag } from "../../article/hooks/useFollowTag";
 import { useToast } from "../../../services/toast";
 import { IconClose } from "../../../components/ui/icons/IconClose";
+import { IconStar } from "../../../components/ui/icons/IconStar";
 import { activityTopicsCopy as c } from "../../../constants/copy";
 import type { PostTagModel__1 } from "../../../candid/PostCore/PostCore";
 
@@ -108,26 +109,6 @@ function TopicsEmpty() {
   );
 }
 
-// Outline star, 16x16, 1.5px stroke -- the "Star (follow indicator)" node.
-// Same glyph the /following/manage topic pills draw.
-function StarOutline() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 16 16"
-      fill="none"
-      className="size-[calc(16*var(--fpx))] shrink-0"
-    >
-      <path
-        d="M8 1.5l1.854 3.756 4.146.603-3 2.924.708 4.127L8 10.75l-3.708 1.96.708-4.127-3-2.924 4.146-.603L8 1.5z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function TopicPill({
   tag,
   onUnfollow,
@@ -143,7 +124,9 @@ function TopicPill({
         to={`/explore/topic/${encodeURIComponent(tag.tagName)}`}
         className="flex min-w-0 items-center gap-[calc(10*var(--fpx))] rounded-full text-brand-purple after:absolute after:inset-0 after:rounded-full after:content-[''] hover:underline"
       >
-        <StarOutline />
+        {/* Filled star = "following" (the 4.8 glyph); every pill here is a
+            followed topic. Display-only; the x is the only unfollow. */}
+        <IconStar filled className="size-[calc(16*var(--fpx))] shrink-0" />
         <span className="min-w-0 truncate text-[length:calc(22*var(--fpx))] font-medium leading-[calc(27/22)]">
           {tag.tagName}
         </span>
