@@ -48,6 +48,19 @@ import { CtaIconPicker } from "./CtaIconPicker";
 import { PublicationCtaBar } from "./PublicationCtaBar";
 import { isCtaEmpty } from "../lib/cta";
 import { CategoriesEditor, type CategoryRow } from "./CategoriesEditor";
+import {
+  CONFIRM_DIALOG_TITLE_ID,
+  ConfirmDialog,
+} from "../../../components/ui/ConfirmDialog";
+import {
+  categorySlug,
+  droppedCategories,
+  parseCategoryCount,
+} from "../lib/categories";
+import {
+  categoryDropWarningBody,
+  type CategoryInUse,
+} from "../lib/categoryDropWarning";
 
 // 5 MB pre-check enforced client-side BEFORE calling useImageUpload.
 // The shared useImageUpload hook has its own 10 MB cap (for article images);
@@ -221,7 +234,12 @@ function EmptyImageDropzone({
 }
 
 export function PublicationDetailsForm({ handle, canisterId, publication }: Props) {
-  const { updatePublicationDetails, updatePublicationStyling, updatePublicationCta } = useActors();
+  const {
+    updatePublicationDetails,
+    updatePublicationStyling,
+    updatePublicationCta,
+    getPostsByCategory,
+  } = useActors();
   const uploadImage = useImageUpload();
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -520,16 +538,10 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
 
   // ── Save handler ─────────────────────────────────────────────────────────────
 
-  const handleSave = useCallback(async () => {
-    // State 1: block submit while any field error is present; surface errors.
-    // Categories block silently -- their errors are already visible inline.
-    if (hasFieldErrors) {
-      setShowErrors(true);
-      return;
-    }
-    if (categoriesHaveError) {
-      return;
-    }
+  // The save itself: every canister write, the cache refresh and the toasts.
+  // Never throws (errors become the error toast). Reached from handleSave
+  // below, directly or via the category warning's "Save anyway".
+  const performSave = useCallback(async () => {
     setSaving(true);
     setSaveError(null);
     try {
@@ -603,8 +615,6 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
       setSaving(false);
     }
   }, [
-    hasFieldErrors,
-    categoriesHaveError,
     categoryRows,
     title,
     subtitle,
@@ -630,6 +640,91 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     updatePublicationCta,
     queryClient,
     toast,
+  ]);
+
+  // False once the form unmounts, so a category count that resolves after
+  // the editor has left never opens the warning on another page.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // "Save settings". State 1: block submit while any field error is present
+  // and surface errors; categories block silently (their errors are already
+  // inline). Then NIC-538 step 9 (D-143): if the save would drop saved
+  // categories (removed, or renamed to a new slug), count the published
+  // articles filed under each and, if any has articles, warn first --
+  // Cancel keeps every edit unsaved, "Save anyway" saves. A count that
+  // can't be read still warns (without a number) rather than saving
+  // silently; categories with 0 articles never warn.
+  const handleSave = useCallback(async () => {
+    if (hasFieldErrors) {
+      setShowErrors(true);
+      return;
+    }
+    if (categoriesHaveError) {
+      return;
+    }
+    const dropped = droppedCategories(
+      publication.categories,
+      categoryRows.map((r) => r.value),
+    );
+    if (dropped.length === 0) {
+      await performSave();
+      return;
+    }
+    setSaving(true);
+    let inUse: CategoryInUse[];
+    try {
+      const counted = await Promise.all(
+        dropped.map(async (name): Promise<CategoryInUse> => {
+          try {
+            // to = 1, never 0 (0 traps the canister) -- see useActors.
+            const res = await getPostsByCategory(
+              handle.toLowerCase(),
+              categorySlug(name),
+              0,
+              1,
+            );
+            return { name, count: parseCategoryCount(res.totalCount) };
+          } catch (err) {
+            console.error("[category count]", err);
+            return { name, count: null };
+          }
+        }),
+      );
+      inUse = counted.filter((c) => c.count !== 0);
+    } finally {
+      setSaving(false);
+    }
+    if (!mountedRef.current) return;
+    if (inUse.length === 0) {
+      await performSave();
+      return;
+    }
+    modal.open(
+      <ConfirmDialog
+        title={copy.categoryDropTitle}
+        body={categoryDropWarningBody(inUse)}
+        confirmLabel={copy.categoryDropConfirm}
+        cancelLabel={copy.categoryDropCancel}
+        closeAriaLabel={copy.categoryDropCloseAria}
+        onConfirm={performSave}
+      />,
+      { ariaLabelledBy: CONFIRM_DIALOG_TITLE_ID, dismissable: true },
+    );
+  }, [
+    hasFieldErrors,
+    categoriesHaveError,
+    publication.categories,
+    categoryRows,
+    performSave,
+    getPostsByCategory,
+    handle,
+    modal,
   ]);
 
   // Keep the ref pointed at the latest handleSave (for the Retry toast action).

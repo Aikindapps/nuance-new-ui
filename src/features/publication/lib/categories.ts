@@ -42,3 +42,32 @@ export function moveItem<T>(arr: readonly T[], from: number, to: number): T[] {
   next.splice(clampedTo, 0, item);
   return next;
 }
+
+// Saved categories that saving `next` would drop from the publication
+// (NIC-538 step 9, D-143): every saved name whose slug no longer appears
+// among `next`'s slugs -- removed, or renamed to a different slug. A rename
+// that keeps the slug ("Food" -> "food") is not a drop: the canister
+// still files the same articles under it. De-duplicated by slug, in saved
+// order. Blank names are skipped (they never had a category page).
+export function droppedCategories(
+  saved: readonly string[],
+  next: readonly string[],
+): string[] {
+  const kept = new Set(next.map(categorySlug));
+  const seen = new Set<string>();
+  const dropped: string[] = [];
+  for (const name of saved) {
+    if (name.trim() === "") continue;
+    const slug = categorySlug(name);
+    if (kept.has(slug) || seen.has(slug)) continue;
+    seen.add(slug);
+    dropped.push(name);
+  }
+  return dropped;
+}
+
+// PostCore returns article counts as nat-as-text. Anything else (e.g.
+// "Text length invalid") means the count could not be read -> null.
+export function parseCategoryCount(totalCount: string): number | null {
+  return /^\d+$/.test(totalCount) ? Number(totalCount) : null;
+}

@@ -1347,6 +1347,25 @@ export const publicationSettingsCopy = {
   categoryNameAria: "Category name",
   errorCategoryExists: "Category already exists",
   errorCategoryReserved: "That name is reserved.",
+  // Save-time warning when a save would drop a saved category that
+  // published articles are filed under (NIC-538 step 9, D-143). Built by
+  // categoryDropWarningBody (features/publication/lib/categoryDropWarning).
+  categoryDropTitle: "Save category changes?",
+  categoryDropOne:
+    "1 article is filed under {name}. It'll stay published but will only show under All.",
+  categoryDropMany:
+    "{count} articles are filed under {name}. They'll stay published but will only show under All.",
+  categoryDropUnknown:
+    "Articles may be filed under {name}. They'll stay published but will only show under All.",
+  categoryDropSeveral:
+    "Articles are filed under {list}. They'll stay published but will only show under All.",
+  categoryDropSeveralUnknown:
+    "Articles may be filed under {list}. They'll stay published but will only show under All.",
+  categoryDropListItem: "{name} ({count})",
+  categoryDropAnd: " and ",
+  categoryDropConfirm: "Save anyway",
+  categoryDropCancel: "Cancel",
+  categoryDropCloseAria: "Close",
 } as const;
 
 // NIC-527 / NIC-528 -- shared image-upload error copy (wording confirmed by

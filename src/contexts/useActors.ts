@@ -529,6 +529,21 @@ export type ActorsValue = {
   // be lowercase -- a mixed-case handle returns an empty record
   // ({handle: "", publishedCount: "0", ...}), which callers treat as "no data".
   getUsersPostCountsByHandles: (handles: string[]) => Promise<Array<UserPostCounts>>;
+  // Published articles a publication has filed under one category (NIC-538
+  // step 9 count; the reader category tabs will reuse it). Query method.
+  // handle MUST be lowercase (a mixed-case handle silently returns "0");
+  // category is the SLUG (categorySlug), which the canister compares
+  // against trim_category_name(post.category). Drafts and scheduled posts
+  // are not counted. Half-open (from, to) range: to MUST be >= 1 -- to = 0
+  // traps ("Natural subtraction underflow") for any category with
+  // articles. totalCount is nat-as-text, or "Text length invalid" for a
+  // handle/category over 64 chars.
+  getPostsByCategory: (
+    handle: string,
+    category: string,
+    from: number,
+    to: number,
+  ) => Promise<GetPostsByFollowers>;
   // Settle a tip: PostBucket reads the per-post subaccount balance, splits
   // 90% writer / 10% DAO, writes the Applaud record, and notifies the writer.
   // senderPrincipal is passed "" so the canister uses msg.caller. Called

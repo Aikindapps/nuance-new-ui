@@ -36,13 +36,16 @@ type Props = {
   disabled: boolean;
 };
 
-// Heading: 22/Bold/ink@80 (Figma "Categories" text layer).
+// Heading: 22/Bold/ink@80 (Figma "Categories" text layer); the
+// NUR/GT Walsheim/22/Bold token carries -2% tracking (as HomeLoggedIn).
 const headingClass =
-  "text-[length:calc(22*var(--fpx))] font-bold leading-[calc(32*var(--fpx))] text-ink/80";
+  "text-[length:calc(22*var(--fpx))] font-bold leading-[calc(32*var(--fpx))] tracking-[calc(-0.44*var(--fpx))] text-ink/80";
 
-// Helper: 16/Regular/ink@80 (Figma helper text layer -- NOT ink/60).
+// Helper: 16/Regular/ink@80 (Figma helper text layer -- NOT ink/60). At lg+
+// it spans the 824 content column like the design (2 lines, matching the
+// skeleton's h48), not the 448 fieldset; below lg it stays full width.
 const helperClass =
-  "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink/80";
+  "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink/80 lg:w-[calc(824*var(--fpx))] lg:max-w-none";
 
 // Inline field-error text -- same treatment as the rest of the form
 // (errorClass in PublicationDetailsForm.tsx).
@@ -330,11 +333,20 @@ export function CategoriesEditor({
           );
         })}
 
-        {/* Add-row (Frame 797) -- same drag slot position (no handle behaviour;
-            keeps the 24 space so inputs align), no remove button. */}
+        {/* Add-row (Frame 797, row 1:42366 = 296 wide) -- the drag glyph is
+            drawn (1:42367) but decorative only: an aria-hidden span, no
+            pointer or keyboard behaviour. A 32 trailing spacer stands in for
+            the remove button so the input is 264 wide and lines up with the
+            filled rows (phone too: the filled rows' remove button also
+            nets 32 there). */}
         <div className="flex flex-col gap-[calc(6*var(--fpx))]">
           <div className="flex flex-row items-center gap-[calc(8*var(--fpx))]">
-            <span className="shrink-0 size-[calc(24*var(--fpx))]" aria-hidden />
+            <span
+              className="shrink-0 flex items-center justify-center size-[calc(24*var(--fpx))] text-ink/60"
+              aria-hidden
+            >
+              <IconDrag className="size-[calc(24*var(--fpx))]" />
+            </span>
             <input
               type="text"
               value={addDraft}
@@ -355,6 +367,7 @@ export function CategoriesEditor({
               maxLength={CATEGORY_MAX_LENGTH}
               className={categoryInputClass(addError !== null)}
             />
+            <span className="shrink-0 size-[calc(32*var(--fpx))]" aria-hidden />
           </div>
           {addError && (
             <p role="alert" className={errorClass}>

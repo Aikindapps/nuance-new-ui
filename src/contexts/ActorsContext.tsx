@@ -498,6 +498,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await postCorePromise;
         return actor.getUsersPostCountsByHandles(handles);
       },
+      getPostsByCategory: async (handle, category, from, to) => {
+        const actor = await postCorePromise;
+        return actor.getPostsByCategory(handle, category, from, to);
+      },
       // NIC-41 Search Phase 1: PostRelations full-text search + PostCore
       // key-props fetch. searchPost is named differently from the PostBucket
       // method getPostsByPostIds (3-arg, bucket-scoped) to avoid collision.
