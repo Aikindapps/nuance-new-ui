@@ -242,11 +242,11 @@ export function PremiumMintView({
             onChange={(e) => setKeys(sanitizeKeys(e.target.value))}
             className="h-[calc(48*var(--fpx))] w-full rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink outline-none focus:border-brand-purple focus:bg-brand-purple-5"
           />
-          <p className="text-[length:calc(13*var(--fpx))] text-ink-60">
+          <p className="text-label font-medium text-ink-80">
             {c.keysInfo}
           </p>
           {minKeys != null && (
-            <p className="text-[length:calc(13*var(--fpx))] text-ink-60">
+            <p className="text-label font-medium text-ink-80">
               {c.keysMinHint
                 .replace("{count}", String(editorCount))
                 .replace("{min}", String(minKeys))}
