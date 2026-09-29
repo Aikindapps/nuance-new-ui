@@ -56,10 +56,12 @@ function railItemClass(isActive: boolean, disabled?: boolean): string {
 
 // ── NavRail ──────────────────────────────────────────────────────────────────
 
-// NIC-358: Activity hub sub-sections. All four render a bounded "Coming soon"
-// placeholder for now; the real content lands in the sibling card.
+// NIC-358: Activity hub sub-sections (the desktop rail). Keep in step with
+// SECTIONS in src/routes/Activity.tsx (phone tab strip + route check).
+// NIC-473 adds Topics second, per the SS8.3 frames.
 const ACTIVITY_SECTIONS: { slug: string; label: string }[] = [
   { slug: "following", label: activityCopy.sectionFollowing },
+  { slug: "topics", label: activityCopy.sectionTopics },
   { slug: "followers", label: activityCopy.sectionFollowers },
   { slug: "subscribers", label: activityCopy.sectionSubscribers },
   { slug: "subscriptions", label: activityCopy.sectionSubscriptions },
@@ -108,7 +110,7 @@ function NavRail({ active }: { active: AccountNavItem }) {
         {accountCopy.navMyArticles}
       </NavLink>
 
-      {/* Activity — accordion revealing the four section sub-rows (NIC-358) */}
+      {/* Activity -- accordion revealing the section sub-rows (NIC-358) */}
       <div className="flex flex-col">
         <button
           type="button"

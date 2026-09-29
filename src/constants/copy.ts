@@ -1132,6 +1132,7 @@ export const activityCopy = {
   navActivity: "Activity",
   ariaLabel: "Activity sections",
   sectionFollowing: "Following",
+  sectionTopics: "Topics",
   sectionFollowers: "Followers",
   sectionSubscribers: "Subscribers",
   sectionSubscriptions: "Subscriptions",
@@ -1187,6 +1188,27 @@ export const subscribersCopy = {
   sincePrefix: "since",
   walletNote:
     "Managing subscriber plans and payouts lives in your Wallet \u2014 arriving with monetization.",
+};
+
+// NIC-473 -- SS8.3 Topics section (topics the current user follows, D-68).
+// Pills with a display-only star and an x that unfollows; Undo toaster.
+export const activityTopicsCopy = {
+  title: "Topics",
+  countAriaLabel: "{count} topics followed",
+  listAriaLabel: "Topics you follow",
+  loadingAriaLabel: "Loading your topics",
+  unfollowAria: "Unfollow {tag}",
+  emptyHeading: "You\u2019re not following any topics yet",
+  emptyBody: "Follow topics to see them here and tune your feed.",
+  emptyCtaLabel: "Discover topics",
+  emptyCtaHref: "/explore/topics",
+  errorTitle: "Couldn\u2019t load your topics",
+  errorBody: "Something went wrong. Please try again.",
+  retryLabel: "Try again",
+  unfollowed: "Unfollowed {tag}",
+  undoLabel: "Undo",
+  unfollowError: "Couldn\u2019t unfollow {tag}. Please try again.",
+  refollowError: "Couldn\u2019t follow {tag} again. Please try again.",
 };
 
 // NIC-353 -- SS8.3 Subscriptions section (writers + publications the current
