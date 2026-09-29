@@ -525,6 +525,10 @@ export type ActorsValue = {
   // Published/draft/total counts for a handle. publishedCount + totalPostCount
   // are candid nat-as-text strings.
   getUserPostCounts: (handle: string) => Promise<UserPostCounts>;
+  // Batch variant of getUserPostCounts (NIC-562 Members roster). Handles must
+  // be lowercase -- a mixed-case handle returns an empty record
+  // ({handle: "", publishedCount: "0", ...}), which callers treat as "no data".
+  getUsersPostCountsByHandles: (handles: string[]) => Promise<Array<UserPostCounts>>;
   // Settle a tip: PostBucket reads the per-post subaccount balance, splits
   // 90% writer / 10% DAO, writes the Applaud record, and notifies the writer.
   // senderPrincipal is passed "" so the canister uses msg.caller. Called

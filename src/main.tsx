@@ -18,6 +18,7 @@ import { PublicationPerformance } from "./routes/PublicationPerformance";
 import { ManageSubscriptions } from "./routes/ManageSubscriptions";
 import { ManageSubscribers } from "./routes/ManageSubscribers";
 import { PublicationSettings } from "./routes/PublicationSettings";
+import { PublicationMembers } from "./routes/PublicationMembers";
 import { SearchResults, SearchRedirect } from "./routes/SearchResults";
 import { ExploreTopic } from "./routes/ExploreTopic";
 import { ExplorePublications } from "./routes/ExplorePublications";
@@ -195,6 +196,7 @@ const appRoutes = [
   { path: "/publication/:handle/manage/subscriptions", element: <ManageSubscriptions /> },
   { path: "/publication/:handle/manage/subscribers", element: <ManageSubscribers /> },
   { path: "/publication/:handle/manage/settings", element: <PublicationSettings /> },
+  { path: "/publication/:handle/manage/members", element: <PublicationMembers /> },
   { path: "/publication/:h", element: <PublicationHome /> },
   { path: "*", element: <NotFound /> },
 ];

@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import Skeleton from "@mui/material/Skeleton";
 import { usePublicationMembership } from "../features/publication/hooks/usePublicationMembership";
 import { ManageArticlesList } from "../features/publication/sections/ManageArticlesList";
-import { manageArticlesCopy, performanceCopy, publicationSettingsCopy } from "../constants/copy";
+import { manageArticlesCopy, performanceCopy, publicationSettingsCopy, publicationMembersCopy } from "../constants/copy";
 import { AccountShell } from "../components/account/AccountShell";
 
 // Normalise a handle param: strip a leading "@" and lowercase.
@@ -83,6 +83,14 @@ function ManageArticlesInner({ handle }: { handle: string }) {
           className="mt-2 ml-4 inline-flex items-center text-sm font-medium text-brand-purple hover:underline"
         >
           {publicationSettingsCopy.reachLink}
+        </Link>
+      )}
+      {membership.isEditor && (
+        <Link
+          to={`/publication/${handle}/manage/members`}
+          className="mt-2 ml-4 inline-flex items-center text-sm font-medium text-brand-purple hover:underline"
+        >
+          {publicationMembersCopy.reachLink}
         </Link>
       )}
       <div className="mt-8">

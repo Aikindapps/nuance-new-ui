@@ -1339,3 +1339,44 @@ export const imageUploadCopy = {
   uploadFailed:
     "Couldn\u2019t upload this image. Check your connection and try again.",
 } as const;
+
+// NIC-562 -- Publication Members screen (display only; editor-gated route).
+export const publicationMembersCopy = {
+  metaTitleSuffix: "\u2014 Nuance",
+  title: "Members",
+  notAuthorizedHeading: "Access restricted",
+  notAuthorizedBody:
+    "You need to be an editor of this publication to manage its members.",
+  errorHeading: "Something went wrong",
+  errorBody:
+    "We couldn't verify your access to this publication. Please try again.",
+  // Reach link shown in ManageArticles header (editor-only).
+  reachLink: "Members",
+  // Header actions.
+  addMember: "Add member",
+  addMemberComingSoon: "Adding members is coming soon.",
+  sort: "Sort",
+  sortByRole: "Role",
+  sortByName: "Name A\u2013Z",
+  // Group labels.
+  editorsGroup: "Editors",
+  writersGroup: "Writers",
+  // Row.
+  youPill: "You",
+  editorPill: "Editor",
+  writerPill: "Writer",
+  followerSingular: "follower",
+  followerPlural: "followers",
+  articleSingular: "article",
+  articlePlural: "articles",
+  // Show more.
+  showMore: "Show more",
+  // Empty (no writers).
+  emptyHeading: "No writers yet",
+  emptyBody: "Invite a writer to publish into your publication.",
+  emptyCta: "Invite a writer",
+  // Load error.
+  loadErrorHeading: "Something went wrong",
+  loadErrorBody: "We couldn't load your members. Try again.",
+  retry: "Retry",
+} as const;
