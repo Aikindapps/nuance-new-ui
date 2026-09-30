@@ -16,6 +16,7 @@ import { BlockMenuPlugin } from "./plugins/BlockMenuPlugin";
 import { LinkPopoverPlugin } from "./plugins/LinkPopoverPlugin";
 import { ImagesPlugin } from "./plugins/ImagesPlugin";
 import { AutosavePlugin, type AutosaveProps } from "./plugins/AutosavePlugin";
+import { useIsMobileViewport } from "../../../lib/useIsMobileViewport";
 
 // The Lexical body editor. Chunk 3: typing + history + lists + links, rendered
 // inside `.article-prose` so the body looks exactly like the published
@@ -34,6 +35,10 @@ export function Editor({
   // Exposes the editor instance to the action bar (HTML serialize on save).
   editorRef?: RefObject<LexicalEditor | null | undefined>;
 }) {
+  // Phone placeholder (NIC-539, Figma 2676:6222): ink 60%, and the phone
+  // article body size (18/28, the .article-prose phone rule) so it sits on
+  // the caret's line.
+  const isMobile = useIsMobileViewport();
   const initialConfig = createEditorConfig((error) => {
     // Always log. Re-throw only in dev so the EditorErrorBoundary surfaces it
     // loudly while developing; in prod swallow it so a recoverable editor
@@ -54,7 +59,13 @@ export function Editor({
             />
           }
           placeholder={
-            <p className="pointer-events-none absolute left-0 top-0 select-none font-serif text-[length:calc(22*var(--fpx))] leading-[calc(32*var(--fpx))] text-ink-40">
+            <p
+              className={
+                isMobile
+                  ? "pointer-events-none absolute left-0 top-0 select-none font-serif text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-ink-60"
+                  : "pointer-events-none absolute left-0 top-0 select-none font-serif text-[length:calc(22*var(--fpx))] leading-[calc(32*var(--fpx))] text-ink-40"
+              }
+            >
               {placeholder}
             </p>
           }

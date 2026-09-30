@@ -16,6 +16,10 @@ import { AutoGrowTextarea } from "./sections/AutoGrowTextarea";
 import { StatusTag } from "./sections/StatusTag";
 import { CoverImageDropzone } from "./sections/CoverImageDropzone";
 import { ActionBar } from "./sections/ActionBar";
+import { MobileActionBar } from "./sections/MobileActionBar";
+import { MobileEditorTopBar } from "./sections/MobileEditorTopBar";
+import { MobileMoreSheet } from "./sections/MobileMoreSheet";
+import { editorMobileCopy } from "./sections/editorMobileCopy";
 import { PublishView } from "./sections/PublishView";
 import {
   PremiumMintView,
@@ -199,6 +203,8 @@ export function WriteArticleForm({
     category: string;
   } | null>(null);
   const isMobile = useIsMobileViewport();
+  // Phone: the action pill's More sheet (Preview, Save) is open (NIC-539).
+  const [moreOpen, setMoreOpen] = useState(false);
 
   // Preview snapshot — populated when the writer clicks Preview; reading the
   // editor at click time keeps the overlay decoupled from the editor's live
@@ -474,6 +480,35 @@ export function WriteArticleForm({
     }
   }, [isPublished, tagIds, doSave, show, openPublish, publicationHandle, membersOnly]);
 
+  // Phone Save (More sheet, NIC-539): the same save as handleSave, but a
+  // failed save shows "Couldn't save changes." with Retry, which re-runs the
+  // latest version of this save (Figma 2685:6296).
+  const sheetSaveRef = useRef<() => void>(() => {});
+  const handleSheetSave = useCallback(async () => {
+    if (tagIds.length < 1) {
+      openPublish(isPublished ? "publish" : "draft");
+      return;
+    }
+    const post = await doSave(
+      isPublished ? false : true,
+      tagIds,
+      publicationHandle,
+      undefined,
+      isPublished && membersOnly,
+      null,
+      {
+        message: editorMobileCopy.saveFailedToast,
+        retry: () => sheetSaveRef.current(),
+      },
+    );
+    if (post) {
+      show(isPublished ? C.toasts.changesSaved : C.toasts.savedDraft, "success");
+    }
+  }, [isPublished, tagIds, doSave, show, openPublish, publicationHandle, membersOnly]);
+  useEffect(() => {
+    sheetSaveRef.current = () => void handleSheetSave();
+  }, [handleSheetSave]);
+
   const handleBack = useCallback(() => {
     if (!dirty) {
       navigate(back.to);
@@ -526,6 +561,9 @@ export function WriteArticleForm({
   ]);
 
   const statusText = dirty ? C.unsavedChanges : postId ? C.saved : C.notSavedYet;
+  const saving = saveMutation.isPending || migrateMutation.isPending;
+  const saveLabel = isPublished ? C.actionBar.saveChanges : C.actionBar.saveDraft;
+  const backLabel = back.fromPublication ? back.label : "Go back";
 
   // The limited-edition mint setup. Phone: bottom sheet via the modal
   // service; desktop: a step inside PublishView (mintStep). `close` leaves
@@ -566,24 +604,42 @@ export function WriteArticleForm({
     />
   );
 
+  // Phone (<=1023) is the 393 layout of the same screen (NIC-539, Figma
+  // 2676:6222 / 2678:6252 / 2681:3278): focused top bar, 16 inset, 34/40
+  // title, the floating pill and the More sheet. Desktop markup unchanged.
   return (
-    <article className="flex flex-col gap-[calc(50*var(--fpx))]">
-      {/* Breadcrumb row — Back + Draft status + saved-state. */}
-      <div className="flex items-center gap-3 px-6 py-3 lg:px-24">
-        <button
-          type="button"
-          onClick={handleBack}
-          aria-label={back.fromPublication ? back.label : "Go back"}
-          className="flex size-8 shrink-0 items-center justify-center rounded-[calc(4*var(--fpx))] text-brand-purple transition-colors hover:bg-brand-purple-5"
-        >
-          <IconBack className="size-[calc(18*var(--fpx))]" />
-        </button>
-        <StatusTag label={isPublished ? C.statusPublished : C.statusDraft} />
-        <span className="text-body text-ink-60">{statusText}</span>
-      </div>
+    <article className={isMobile ? "flex flex-col" : "flex flex-col gap-[calc(50*var(--fpx))]"}>
+      {isMobile ? (
+        <MobileEditorTopBar
+          onBack={handleBack}
+          backLabel={backLabel}
+          status={isPublished ? C.statusPublished : C.statusDraft}
+          caption={statusText}
+        />
+      ) : (
+        // Breadcrumb row: Back + Draft status + saved-state.
+        <div className="flex items-center gap-3 px-6 py-3 lg:px-24">
+          <button
+            type="button"
+            onClick={handleBack}
+            aria-label={backLabel}
+            className="flex size-8 shrink-0 items-center justify-center rounded-[calc(4*var(--fpx))] text-brand-purple transition-colors hover:bg-brand-purple-5"
+          >
+            <IconBack className="size-[calc(18*var(--fpx))]" />
+          </button>
+          <StatusTag label={isPublished ? C.statusPublished : C.statusDraft} />
+          <span className="text-body text-ink-60">{statusText}</span>
+        </div>
+      )}
 
       {/* Header — title, subtitle, cover dropzone. */}
-      <div className="flex flex-col gap-[calc(32*var(--fpx))] px-6 lg:px-24">
+      <div
+        className={
+          isMobile
+            ? "flex flex-col gap-[calc(16*var(--fpx))] px-[calc(16*var(--fpx))] pt-[calc(16*var(--fpx))]"
+            : "flex flex-col gap-[calc(32*var(--fpx))] px-6 lg:px-24"
+        }
+      >
         <AutoGrowTextarea
           value={title}
           onChange={(v) => {
@@ -592,7 +648,12 @@ export function WriteArticleForm({
           }}
           placeholder={C.titlePlaceholder}
           ariaLabel="Article title"
-          className="text-title-md font-extrabold text-ink md:text-title-lg lg:text-title-xl"
+          className={
+            isMobile
+              ? "text-[length:calc(34*var(--fpx))] font-extrabold leading-[calc(40*var(--fpx))] text-ink"
+              : "text-title-md font-extrabold text-ink md:text-title-lg lg:text-title-xl"
+          }
+          placeholderClassName={isMobile ? "placeholder:text-ink-border/20" : undefined}
         />
         <AutoGrowTextarea
           value={subtitle}
@@ -602,7 +663,12 @@ export function WriteArticleForm({
           }}
           placeholder={C.subtitlePlaceholder}
           ariaLabel="Article subtitle"
-          className="text-lg font-medium text-ink-80"
+          className={
+            isMobile
+              ? "-mt-[calc(8*var(--fpx))] text-[length:calc(20*var(--fpx))] font-medium leading-[calc(28*var(--fpx))] text-ink-60"
+              : "text-lg font-medium text-ink-80"
+          }
+          placeholderClassName={isMobile ? "placeholder:text-ink-60" : undefined}
         />
         <CoverImageDropzone
           value={coverUrl}
@@ -610,11 +676,12 @@ export function WriteArticleForm({
             setCoverUrl(url);
             setDirty(true);
           }}
+          phone={isMobile}
         />
       </div>
 
       {/* Body — Lexical editor in .article-prose. */}
-      <div className="px-6 lg:px-24">
+      <div className={isMobile ? "px-[calc(16*var(--fpx))] pt-[calc(16*var(--fpx))]" : "px-6 lg:px-24"}>
         <Editor
           placeholder={C.bodyPlaceholder}
           initialStateJson={source?.editorStateJson}
@@ -633,15 +700,52 @@ export function WriteArticleForm({
       {/* Clearance so the fixed action bar never covers the last line. */}
       <div aria-hidden className="h-[calc(140*var(--fpx))]" />
 
-      <ActionBar
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        onPreview={handlePreview}
-        onSave={handleSave}
-        saveLabel={isPublished ? C.actionBar.saveChanges : C.actionBar.saveDraft}
-        onContinue={() => openPublish("publish")}
-        saving={saveMutation.isPending || migrateMutation.isPending}
-      />
+      {isMobile ? (
+        // Off while the Publish panel is open, so its toasts keep their
+        // usual place.
+        !publishView && (
+          <MobileActionBar
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onMore={() => setMoreOpen(true)}
+            moreOpen={moreOpen}
+            onContinue={() => openPublish("publish")}
+            saving={saving}
+          />
+        )
+      ) : (
+        <ActionBar
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onPreview={handlePreview}
+          onSave={handleSave}
+          saveLabel={saveLabel}
+          onContinue={() => openPublish("publish")}
+          saving={saving}
+        />
+      )}
+
+      {isMobile && moreOpen && (
+        <MobileMoreSheet
+          onClose={() => setMoreOpen(false)}
+          onPreview={() => {
+            setMoreOpen(false);
+            handlePreview();
+          }}
+          onSave={() => {
+            setMoreOpen(false);
+            void handleSheetSave();
+          }}
+          saveLabel={saveLabel}
+          saving={saving}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onContinue={() => {
+            setMoreOpen(false);
+            openPublish("publish");
+          }}
+        />
+      )}
 
       {previewSnapshot && (
         <PreviewOverlay

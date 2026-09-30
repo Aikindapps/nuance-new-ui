@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $getSelection, $isRangeSelection } from "lexical";
+import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
 import { IconPlus } from "../../../../components/ui/icons/IconPlus";
 import { IconHeading2 } from "../../../../components/ui/icons/IconHeading2";
 import { IconHeading3 } from "../../../../components/ui/icons/IconHeading3";
@@ -20,22 +20,36 @@ import { INSERT_IMAGE_COMMAND } from "../nodes/ImageNode";
 import { useImageUpload } from "../../hooks/useImageUpload";
 import { useToast } from "../../../../services/toast";
 import { writeArticleCopy, imageUploadCopy } from "../../../../constants/copy";
+import { useIsMobileViewport } from "../../../../lib/useIsMobileViewport";
+import { InsertBlockSheet, type InsertBlockKind } from "./InsertBlockSheet";
 
 // "+" block-insert menu (Figma 1:37480) — a "+" in the left gutter, aligned to
 // the caret's block, opens the dark foldout: Heading 2 · Heading 3 · Quote ·
 // Insert image · Divider · Unordered list · Ordered list. "Insert image" is
 // stubbed (disabled) until Chunk 5 wires the Storage upload. Rendered inside
 // the editor's `relative` wrapper so the absolute "+" tracks the block.
+//
+// Phone (<=1023, NIC-539, Figma 2676:6222 / 2679:6263): there is no left
+// gutter, so a 40 "+" sits one line below the caret's block, flush with the
+// text; tapping it opens the Insert block bottom sheet instead of the
+// foldout.
 
 const ICON = "size-[calc(24*var(--fpx))]";
 
 export function BlockMenuPlugin() {
   const [editor] = useLexicalComposerContext();
-  const [pos, setPos] = useState<{ visible: boolean; top: number }>({
+  const [pos, setPos] = useState<{
+    visible: boolean;
+    top: number;
+    bottom: number;
+  }>({
     visible: false,
     top: 0,
+    bottom: 0,
   });
   const [open, setOpen] = useState(false);
+  const isMobile = useIsMobileViewport();
+  const [sheetOpen, setSheetOpen] = useState(false);
   const upload = useImageUpload();
   const { show } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -72,15 +86,27 @@ export function BlockMenuPlugin() {
           ? null
           : anchorNode.getTopLevelElementOrThrow();
       const dom = topEl ? editor.getElementByKey(topEl.getKey()) : null;
+      const wrapperRect = wrapper.getBoundingClientRect();
+      if (!dom && isMobile && !topEl && $getRoot().isEmpty()) {
+        // Phone: a new, empty document has no block yet (the caret sits on
+        // the root). The "+" still shows, one line below the first line.
+        const rootTop = root.getBoundingClientRect().top - wrapperRect.top;
+        const line = parseFloat(getComputedStyle(root).lineHeight) || 0;
+        setPos({ visible: true, top: rootTop, bottom: rootTop + line });
+        return;
+      }
       if (!dom) {
         setPos((p) => (p.visible ? { ...p, visible: false } : p));
         return;
       }
       const blockRect = dom.getBoundingClientRect();
-      const wrapperRect = wrapper.getBoundingClientRect();
-      setPos({ visible: true, top: blockRect.top - wrapperRect.top });
+      setPos({
+        visible: true,
+        top: blockRect.top - wrapperRect.top,
+        bottom: blockRect.bottom - wrapperRect.top,
+      });
     });
-  }, [editor]);
+  }, [editor, isMobile]);
 
   useEffect(() => editor.registerUpdateListener(() => update()), [editor, update]);
 
@@ -93,6 +119,48 @@ export function BlockMenuPlugin() {
     window.addEventListener("mousedown", onDown);
     return () => window.removeEventListener("mousedown", onDown);
   }, [open]);
+
+  if (isMobile) {
+    // Picking a row closes the sheet and applies the block at the caret
+    // (the editor keeps its selection while the sheet is open).
+    const pick = (kind: InsertBlockKind) => {
+      setSheetOpen(false);
+      if (kind === "image") fileRef.current?.click();
+      else if (kind === "h2" || kind === "h3") setHeading(editor, kind);
+      else if (kind === "quote") setQuote(editor);
+      else if (kind === "divider") insertDivider(editor);
+      else toggleList(editor, kind, false);
+    };
+    return (
+      <>
+        {pos.visible && (
+          <button
+            type="button"
+            aria-label="Insert block"
+            aria-haspopup="dialog"
+            aria-expanded={sheetOpen}
+            // Keep the caret in the editor while tapping.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setSheetOpen(true)}
+            className="absolute left-0 flex size-[calc(40*var(--fpx))] items-center justify-center rounded-[calc(8*var(--fpx))] text-ink"
+            style={{ top: `calc(${pos.bottom}px + 16 * var(--fpx))` }}
+          >
+            <IconPlus className="size-[calc(24*var(--fpx))]" />
+          </button>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => void handleImageFile(e.target.files?.[0])}
+        />
+        {sheetOpen && (
+          <InsertBlockSheet onClose={() => setSheetOpen(false)} onPick={pick} />
+        )}
+      </>
+    );
+  }
 
   if (!pos.visible) return null;
 

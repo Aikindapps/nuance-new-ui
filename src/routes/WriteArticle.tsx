@@ -17,6 +17,8 @@ import {
   type WriteReturn,
 } from "../features/write/lib/writeReturn";
 import { usePublicationMembership } from "../features/publication/hooks/usePublicationMembership";
+import { useIsMobileViewport } from "../lib/useIsMobileViewport";
+import { WriteLoadingMobile } from "../features/write/sections/WriteLoadingMobile";
 
 // Write Article — Figma Page 5 (PR #9, decision #36). Two entry points:
 //   /write                     — new article
@@ -26,14 +28,39 @@ import { usePublicationMembership } from "../features/publication/hooks/usePubli
 // variant. The editor chunk is lazy (all @lexical/* out of the home bundle).
 const CONTAINER = "mx-auto max-w-[calc(932*var(--fpx))]";
 
-function Shell({ children }: { children: ReactNode }) {
+// `focused` = the editor and its loading state: on a phone (<=1023) they are
+// a focused writing mode with their own top bar and no site header
+// (NIC-539). The message screens keep the header (they have no Back bar).
+function Shell({
+  children,
+  focused = false,
+}: {
+  children: ReactNode;
+  focused?: boolean;
+}) {
+  const isMobile = useIsMobileViewport();
+  const hideHeader = focused && isMobile;
   return (
     <div className="min-h-screen bg-white">
       <title>{writeArticleCopy.metadata.title}</title>
       <meta name="description" content={writeArticleCopy.metadata.description} />
-      <HeaderLoggedIn />
-      <main className={`${CONTAINER} pt-12 lg:pt-20`}>{children}</main>
+      {!hideHeader && <HeaderLoggedIn />}
+      <main className={hideHeader ? CONTAINER : `${CONTAINER} pt-12 lg:pt-20`}>
+        {children}
+      </main>
     </div>
+  );
+}
+
+// Loading an article: phone = skeleton editor (Figma 2683:3283); desktop =
+// the plain line, unchanged.
+function LoadingArticle({ back }: { back: WriteReturn }) {
+  const isMobile = useIsMobileViewport();
+  if (isMobile) return <WriteLoadingMobile back={back} />;
+  return (
+    <p className="px-6 py-12 text-body text-ink-60 lg:px-24">
+      {writeArticleCopy.loadingArticle}
+    </p>
   );
 }
 
@@ -72,10 +99,8 @@ export function WriteArticle() {
   if (parsed) {
     if (editQuery.isPending) {
       return (
-        <Shell>
-          <p className="px-6 py-12 text-body text-ink-60 lg:px-24">
-            {writeArticleCopy.loadingArticle}
-          </p>
+        <Shell focused>
+          <LoadingArticle back={back} />
         </Shell>
       );
     }
@@ -121,10 +146,8 @@ export function WriteArticle() {
       // screen: the save would be refused by the canister anyway.
       if (membership.isLoading) {
         return (
-          <Shell>
-            <p className="px-6 py-12 text-body text-ink-60 lg:px-24">
-              {writeArticleCopy.loadingArticle}
-            </p>
+          <Shell focused>
+            <LoadingArticle back={back} />
           </Shell>
         );
       }
@@ -150,7 +173,7 @@ export function WriteArticle() {
       }
     }
     return (
-      <Shell>
+      <Shell focused>
         <WriteArticleForm
           key={parsed.postId}
           initial={editQuery.data}
@@ -162,7 +185,7 @@ export function WriteArticle() {
   }
 
   return (
-    <Shell>
+    <Shell focused>
       <WriteArticleForm
         key="new"
         initialPublication={initialPublication}

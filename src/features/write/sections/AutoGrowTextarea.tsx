@@ -6,6 +6,8 @@ type Props = {
   placeholder: string;
   ariaLabel: string;
   className?: string;
+  // Placeholder colour utility (the phone title uses its own, NIC-539).
+  placeholderClassName?: string;
 };
 
 // A single-field textarea that grows with its content — used for the title and
@@ -17,6 +19,7 @@ export function AutoGrowTextarea({
   placeholder,
   ariaLabel,
   className = "",
+  placeholderClassName = "placeholder:text-ink-40",
 }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -35,7 +38,7 @@ export function AutoGrowTextarea({
       placeholder={placeholder}
       aria-label={ariaLabel}
       rows={1}
-      className={`w-full resize-none overflow-hidden bg-transparent outline-none placeholder:text-ink-40 ${className}`}
+      className={`w-full resize-none overflow-hidden bg-transparent outline-none ${placeholderClassName} ${className}`}
     />
   );
 }

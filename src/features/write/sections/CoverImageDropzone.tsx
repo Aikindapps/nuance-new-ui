@@ -2,16 +2,22 @@ import { useRef, useState } from "react";
 import { writeArticleCopy, imageUploadCopy } from "../../../constants/copy";
 import { useToast } from "../../../services/toast";
 import { useImageUpload } from "../hooks/useImageUpload";
+import { IllustrationNoImages } from "../../../components/ui/icons/IllustrationNoImages";
 
 // Cover image dropzone (Figma NUR/Add image, node 1:37145). Click or drag/drop
 // an image → Storage chunked upload (useImageUpload) → the returned URL becomes
 // the article's headerImage. Once set, shows the cover with a Remove button.
+// `phone` = the 393 empty dropzone (NIC-539, Figma 2676:6222): 361x119,
+// radius 16, 2% fill, the two-photos illustration beside a 16/22 prompt.
+// Padding is 16/48/16/24 net of the 2px border (Figma strokes sit inside).
 export function CoverImageDropzone({
   value,
   onChange,
+  phone = false,
 }: {
   value: string;
   onChange: (url: string) => void;
+  phone?: boolean;
 }) {
   const upload = useImageUpload();
   const { show } = useToast();
@@ -79,13 +85,30 @@ export function CoverImageDropzone({
           setDragOver(false);
           void handleFile(e.dataTransfer.files?.[0]);
         }}
-        className={`flex w-full items-center gap-[calc(22*var(--fpx))] rounded-card border-2 py-[calc(16*var(--fpx))] pl-[calc(24*var(--fpx))] pr-[calc(48*var(--fpx))] text-left transition-colors ${
-          dragOver
-            ? "border-brand-purple bg-brand-purple-5"
-            : "border-ink-border-10 bg-ink-border-5"
-        }`}
+        className={
+          phone
+            ? `flex w-full items-center gap-[calc(22*var(--fpx))] rounded-[calc(16*var(--fpx))] border-2 py-[calc(14*var(--fpx))] pl-[calc(22*var(--fpx))] pr-[calc(46*var(--fpx))] text-left transition-colors ${
+                dragOver
+                  ? "border-brand-purple bg-brand-purple-5"
+                  : "border-ink-border-10 bg-ink-border/2"
+              }`
+            : `flex w-full items-center gap-[calc(22*var(--fpx))] rounded-card border-2 py-[calc(16*var(--fpx))] pl-[calc(24*var(--fpx))] pr-[calc(48*var(--fpx))] text-left transition-colors ${
+                dragOver
+                  ? "border-brand-purple bg-brand-purple-5"
+                  : "border-ink-border-10 bg-ink-border-5"
+              }`
+        }
       >
-        <p className="text-[length:calc(22*var(--fpx))] font-medium leading-[calc(32*var(--fpx))] text-ink-60">
+        {phone && (
+          <IllustrationNoImages className="h-[calc(87*var(--fpx))] w-[calc(108.75*var(--fpx))] shrink-0 text-ink-border" />
+        )}
+        <p
+          className={
+            phone
+              ? "text-[length:calc(16*var(--fpx))] font-medium leading-[calc(22*var(--fpx))] text-ink-60"
+              : "text-[length:calc(22*var(--fpx))] font-medium leading-[calc(32*var(--fpx))] text-ink-60"
+          }
+        >
           {uploading ? (
             "Uploading…"
           ) : (

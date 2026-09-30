@@ -4,9 +4,9 @@ import { IconRedo } from "../../../components/ui/icons/IconRedo";
 import { IconPreview } from "../../../components/ui/icons/IconPreview";
 
 // Bottom action bar (Figma NUR / Action bar, "Writing"): fixed, centered,
-// purple-gradient pill. Undo · Redo │ Preview · Save · Continue. The AI "SEO"
-// button is the deferred AI feature (decision #36); everything else from
-// the Figma action bar is wired.
+// purple-gradient pill. Undo, Redo | Preview, Save, Continue. There is no
+// SEO control: Nuance has no SEO feature (D-32). Phone uses MobileActionBar
+// (NIC-539).
 export function ActionBar({
   onUndo,
   onRedo,

@@ -69,6 +69,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           hide();
         }}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        // A page with a floating bottom bar sets --toast-bottom so toasts
+        // sit above it (phone Write editor, NIC-539). Unset = MUI's own
+        // offsets (8px phone, 24px from 600px up).
+        sx={{
+          bottom: {
+            xs: "var(--toast-bottom, 8px)",
+            sm: "var(--toast-bottom, 24px)",
+          },
+        }}
       >
         {active ? (
           <Alert
