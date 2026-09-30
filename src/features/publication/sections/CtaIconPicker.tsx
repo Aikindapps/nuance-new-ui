@@ -94,7 +94,7 @@ export function CtaIconPicker({ value, onChange }: Props) {
             <>
               {/* Placeholder glyph when no selection yet (mirrors frame 1914:9461 "heart" placeholder) */}
               <CtaIcon name="heart" className="size-[calc(24*var(--fpx))] text-ink" />
-              <span className="text-[length:calc(18*var(--fpx))] leading-[calc(22*var(--fpx))] text-ink/80">
+              <span className="text-[length:calc(18*var(--fpx))] leading-[calc(22*var(--fpx))] text-ink/60">
                 {copy.bannerIconPickerPlaceholder}
               </span>
             </>

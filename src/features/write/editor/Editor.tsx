@@ -63,7 +63,7 @@ export function Editor({
               className={
                 isMobile
                   ? "pointer-events-none absolute left-0 top-0 select-none font-serif text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-ink-60"
-                  : "pointer-events-none absolute left-0 top-0 select-none font-serif text-[length:calc(22*var(--fpx))] leading-[calc(32*var(--fpx))] text-ink-40"
+                  : "pointer-events-none absolute left-0 top-0 select-none font-serif text-[length:calc(22*var(--fpx))] leading-[calc(32*var(--fpx))] text-ink-60"
               }
             >
               {placeholder}

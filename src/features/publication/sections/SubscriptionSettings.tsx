@@ -175,7 +175,7 @@ function PlanCard({
             aria-describedby={errorId}
             className={`w-[calc(62*var(--fpx))] rounded-[calc(6*var(--fpx))] border px-[calc(16*var(--fpx))] py-[calc(10*var(--fpx))] text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink focus:border-brand-purple focus:outline-none ${
               enabled
-                ? "border-[color:rgba(55,58,73,0.1)] bg-[rgba(55,58,73,0.05)]"
+                ? "border-[color:rgba(55,58,73,0.1)] bg-[rgba(55,58,73,0.05)] placeholder:text-ink-60"
                 : "border-transparent bg-[rgba(55,58,73,0.05)] text-ink/40"
             }`}
           />
@@ -428,7 +428,7 @@ function SubscriptionSettingsForm({
               onChange={(e) => setPaymentAddress(e.target.value)}
               aria-invalid={paymentTrimmed !== "" && !paymentValid}
               aria-describedby="subscription-payment-address-error"
-              className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink focus:border-brand-purple focus:outline-none"
+              className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink placeholder:text-ink-60 focus:border-brand-purple focus:outline-none"
             />
             {/* Error info-slot BELOW the input; empty collapses */}
             <p

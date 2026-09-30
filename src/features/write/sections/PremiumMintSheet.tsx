@@ -162,6 +162,7 @@ export function PremiumMintSheet({
     "h-[calc(48*var(--fpx))] w-[calc(140*var(--fpx))] " +
     "rounded-[calc(6*var(--fpx))] bg-ink-border-5 " +
     "px-[calc(16*var(--fpx))] text-body text-ink outline-none " +
+    "placeholder:text-ink-60 " +
     "focus:border-brand-purple focus:bg-brand-purple-5";
   const inputOk = " border border-ink-border-10";
   const inputErr = " border-[1.5px] border-brand-purple";

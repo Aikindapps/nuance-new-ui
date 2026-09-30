@@ -310,7 +310,7 @@ export function TipModal({
                 if (n <= APPLAUD_CAP) setAmount(n);
               }
             }}
-            className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink focus:border-brand-purple focus:outline-none"
+            className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink placeholder:text-ink-60 focus:border-brand-purple focus:outline-none"
           />
           {costLine && (
             <p

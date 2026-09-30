@@ -186,7 +186,7 @@ export function TransferKeyModal({
             onChange={(e) => setReceiver(e.target.value)}
             aria-invalid={!!receiverTrimmed && (receiverAccountId == null || isSelf)}
             aria-describedby="transfer-key-receiver-error"
-            className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink focus:border-brand-purple focus:outline-none"
+            className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink placeholder:text-ink-60 focus:border-brand-purple focus:outline-none"
           />
           <p
             id="transfer-key-receiver-error"

@@ -542,6 +542,8 @@ function ProfileEditInner({ user }: ProfileEditInnerProps) {
     "px-[calc(16*var(--fpx))] h-[calc(48*var(--fpx))]",
     "text-[length:calc(16*var(--fpx))] leading-[calc(19*var(--fpx))] text-ink",
     "bg-white outline-none",
+    // Empty-field placeholder at Black/60% (NIC-583).
+    "placeholder:text-ink-60",
     "focus:border-brand-purple",
     "transition-colors",
   ].join(" ");

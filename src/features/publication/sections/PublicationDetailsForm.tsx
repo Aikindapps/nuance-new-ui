@@ -810,6 +810,8 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
     "px-[calc(16*var(--fpx))] h-[calc(48*var(--fpx))]",
     "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink",
     "bg-ink/5 outline-none",
+    // Empty-field placeholder at Black/60% (NIC-583).
+    "placeholder:text-ink-60",
     "focus:border-brand-purple",
     "transition-colors",
   ].join(" ");
@@ -1112,13 +1114,17 @@ export function PublicationDetailsForm({ handle, canisterId, publication }: Prop
                   "w-full appearance-none rounded-[calc(6*var(--fpx))]",
                   "border border-ink-border/10",
                   "px-[calc(16*var(--fpx))] h-[calc(48*var(--fpx))] pr-[calc(40*var(--fpx))]",
-                  "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink",
+                  "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))]",
+                  // "Select a font" rests at Black/60% (NIC-583, Figma
+                  // 1844:7892); a chosen font shows at full ink. The options
+                  // keep full ink so the open list looks as before.
+                  fontType === "" ? "text-ink-60" : "text-ink",
                   "bg-ink/5 outline-none focus:border-brand-purple transition-colors",
                 ].join(" ")}
               >
-                <option value="">{copy.fontPlaceholder}</option>
+                <option value="" className="text-ink">{copy.fontPlaceholder}</option>
                 {FONT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
+                  <option key={o.value} value={o.value} className="text-ink">
                     {o.label}
                   </option>
                 ))}

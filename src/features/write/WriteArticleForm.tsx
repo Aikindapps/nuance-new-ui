@@ -668,7 +668,7 @@ export function WriteArticleForm({
               ? "-mt-[calc(8*var(--fpx))] text-[length:calc(20*var(--fpx))] font-medium leading-[calc(28*var(--fpx))] text-ink-60"
               : "text-lg font-medium text-ink-80"
           }
-          placeholderClassName={isMobile ? "placeholder:text-ink-60" : undefined}
+          placeholderClassName="placeholder:text-ink-60"
         />
         <CoverImageDropzone
           value={coverUrl}

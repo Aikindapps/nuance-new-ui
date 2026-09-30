@@ -226,7 +226,7 @@ export function WithdrawModal({ onClose }: { onClose: () => void }) {
             onChange={(e) => setReceiver(e.target.value)}
             aria-invalid={receiverState === "invalid" || receiverState === "self"}
             aria-describedby="withdraw-receiver-error"
-            className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink focus:border-brand-purple focus:outline-none"
+            className="rounded-card border border-ink-border-10 bg-ink-border-5 px-4 py-3 text-body text-ink placeholder:text-ink-60 focus:border-brand-purple focus:outline-none"
           />
           <p id="withdraw-receiver-error" className="text-label text-error empty:hidden">
             {receiverState === "invalid"
@@ -258,7 +258,7 @@ export function WithdrawModal({ onClose }: { onClose: () => void }) {
               }}
               aria-invalid={amountTooHigh}
               aria-describedby="withdraw-amount-error"
-              className="w-full rounded-card border border-ink-border-10 bg-ink-border-5 py-3 pl-4 pr-16 text-body text-ink focus:border-brand-purple focus:outline-none"
+              className="w-full rounded-card border border-ink-border-10 bg-ink-border-5 py-3 pl-4 pr-16 text-body text-ink placeholder:text-ink-60 focus:border-brand-purple focus:outline-none"
             />
             <button
               type="button"

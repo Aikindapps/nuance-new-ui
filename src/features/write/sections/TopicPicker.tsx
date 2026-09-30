@@ -68,7 +68,7 @@ export function TopicPicker({
             onChange={(e) => setFilter(e.target.value)}
             placeholder={selected.length === 0 ? c.topicsPlaceholder : ""}
             aria-label={c.topicsPlaceholder}
-            className="min-w-[120px] flex-1 bg-transparent text-body outline-none placeholder:text-ink-40"
+            className="min-w-[120px] flex-1 bg-transparent text-body outline-none placeholder:text-ink-60"
           />
         )}
       </div>
