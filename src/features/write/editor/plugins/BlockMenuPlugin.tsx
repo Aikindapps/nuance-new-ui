@@ -6,7 +6,12 @@ import {
   type ReactNode,
 } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
+import {
+  $getRoot,
+  $getSelection,
+  $isParagraphNode,
+  $isRangeSelection,
+} from "lexical";
 import { IconPlus } from "../../../../components/ui/icons/IconPlus";
 import { IconHeading2 } from "../../../../components/ui/icons/IconHeading2";
 import { IconHeading3 } from "../../../../components/ui/icons/IconHeading3";
@@ -32,7 +37,10 @@ import { InsertBlockSheet, type InsertBlockKind } from "./InsertBlockSheet";
 // Phone (<=1023, NIC-539, Figma 2676:6222 / 2679:6263): there is no left
 // gutter, so a 40 "+" sits one line below the caret's block, flush with the
 // text; tapping it opens the Insert block bottom sheet instead of the
-// foldout.
+// foldout. It only goes on a free line and never covers text (NIC-589):
+// below the block when the caret's block is the last one (or the document is
+// empty); mid-article, centred on the caret's line when that line is an empty
+// paragraph, and hidden when the caret's block has text.
 
 const ICON = "size-[calc(24*var(--fpx))]";
 
@@ -42,10 +50,13 @@ export function BlockMenuPlugin() {
     visible: boolean;
     top: number;
     bottom: number;
+    // Phone only: the "+" sits on the caret's own (empty) line.
+    onLine: boolean;
   }>({
     visible: false,
     top: 0,
     bottom: 0,
+    onLine: false,
   });
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobileViewport();
@@ -92,7 +103,12 @@ export function BlockMenuPlugin() {
         // the root). The "+" still shows, one line below the first line.
         const rootTop = root.getBoundingClientRect().top - wrapperRect.top;
         const line = parseFloat(getComputedStyle(root).lineHeight) || 0;
-        setPos({ visible: true, top: rootTop, bottom: rootTop + line });
+        setPos({
+          visible: true,
+          top: rootTop,
+          bottom: rootTop + line,
+          onLine: false,
+        });
         return;
       }
       if (!dom) {
@@ -100,11 +116,20 @@ export function BlockMenuPlugin() {
         return;
       }
       const blockRect = dom.getBoundingClientRect();
-      setPos({
-        visible: true,
-        top: blockRect.top - wrapperRect.top,
-        bottom: blockRect.bottom - wrapperRect.top,
-      });
+      const top = blockRect.top - wrapperRect.top;
+      const bottom = blockRect.bottom - wrapperRect.top;
+      if (isMobile && topEl && topEl.getNextSibling() !== null) {
+        // Phone, mid-article (NIC-589): an empty paragraph is a free line, so
+        // the "+" sits on it. A block with text gets no "+" (the selection
+        // toolbar changes it; Return then "+" adds a block).
+        if ($isParagraphNode(topEl) && topEl.isEmpty()) {
+          setPos({ visible: true, top, bottom, onLine: true });
+        } else {
+          setPos((p) => (p.visible ? { ...p, visible: false } : p));
+        }
+        return;
+      }
+      setPos({ visible: true, top, bottom, onLine: false });
     });
   }, [editor, isMobile]);
 
@@ -143,7 +168,11 @@ export function BlockMenuPlugin() {
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setSheetOpen(true)}
             className="absolute left-0 flex size-[calc(40*var(--fpx))] items-center justify-center rounded-[calc(8*var(--fpx))] text-ink"
-            style={{ top: `calc(${pos.bottom}px + 16 * var(--fpx))` }}
+            style={{
+              top: pos.onLine
+                ? `calc(${(pos.top + pos.bottom) / 2}px - 20 * var(--fpx))`
+                : `calc(${pos.bottom}px + 16 * var(--fpx))`,
+            }}
           >
             <IconPlus className="size-[calc(24*var(--fpx))]" />
           </button>

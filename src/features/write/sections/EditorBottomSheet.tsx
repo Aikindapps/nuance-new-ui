@@ -8,7 +8,9 @@ import { editorMobileCopy } from "./editorMobileCopy";
 // handle, an 18/28 bold title, 52-high rows with a hairline under every row
 // but the last, and an outlined Cancel. Escape closes too. `above` is drawn
 // over the scrim just above the panel (the More sheet lifts the action pill
-// there).
+// there). Inner spacing per the frames (NIC-589): 16 above the handle, 20
+// handle to title, 2 title to rows, 6 last row to Cancel, 24 below Cancel
+// (Insert block 512 tall, More 252).
 export function EditorBottomSheet({
   title,
   onClose,
@@ -40,7 +42,7 @@ export function EditorBottomSheet({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="flex flex-col rounded-t-[calc(16*var(--fpx))] bg-white pb-[calc(16*var(--fpx))] pt-[calc(12*var(--fpx))]"
+            className="flex flex-col rounded-t-[calc(16*var(--fpx))] bg-white pb-[calc(24*var(--fpx))] pt-[calc(16*var(--fpx))]"
           >
             <div
               aria-hidden
@@ -48,15 +50,15 @@ export function EditorBottomSheet({
             />
             <h2
               id={titleId}
-              className="mt-[calc(16*var(--fpx))] px-[calc(24*var(--fpx))] text-[length:calc(18*var(--fpx))] font-bold leading-[calc(28*var(--fpx))] text-ink"
+              className="mt-[calc(20*var(--fpx))] px-[calc(24*var(--fpx))] text-[length:calc(18*var(--fpx))] font-bold leading-[calc(28*var(--fpx))] text-ink"
             >
               {title}
             </h2>
-            <ul className="mt-[calc(8*var(--fpx))] flex flex-col">{children}</ul>
+            <ul className="mt-[calc(2*var(--fpx))] flex flex-col">{children}</ul>
             <button
               type="button"
               onClick={onClose}
-              className="mx-[calc(24*var(--fpx))] mt-[calc(16*var(--fpx))] flex h-[calc(48*var(--fpx))] items-center justify-center rounded-[calc(8*var(--fpx))] border border-brand-purple bg-white text-[length:calc(18*var(--fpx))] font-medium leading-[calc(28*var(--fpx))] text-brand-purple"
+              className="mx-[calc(24*var(--fpx))] mt-[calc(6*var(--fpx))] flex h-[calc(48*var(--fpx))] items-center justify-center rounded-[calc(8*var(--fpx))] border border-brand-purple bg-white text-[length:calc(18*var(--fpx))] font-medium leading-[calc(28*var(--fpx))] text-brand-purple"
             >
               {editorMobileCopy.cancel}
             </button>
