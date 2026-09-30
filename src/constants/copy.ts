@@ -217,7 +217,13 @@ export const writeArticleCopy = {
     personalOption: "My profile",
     categoryLabel: "Select category",
     categoryPlaceholder: "Select category",
-    categoryComingSoon: "Category selection is coming soon.",
+    // Category field (NIC-536).
+    categoryNone: "No category",
+    categoryLoading: "Loading categories\u2026",
+    categoryLoadError: "Couldn't load categories.",
+    categoryAddPlaceholder: "Type to add a new category",
+    categoryAddAria: "Add a new category",
+    categoryAddFailed: "Couldn't add the category. Please try again.",
     lockedPublicationHelper:
       "Credited to @{writer}. This article stays in {publication}.",
     topicsDescription: "Add or change tags to help know your readers what it's about.",

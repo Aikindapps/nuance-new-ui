@@ -7,12 +7,35 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useActors } from "../../../contexts/useActors";
+import type { ActorsValue } from "../../../contexts/useActors";
 import type { Publication } from "../../../candid/Publisher/declarations/Publisher.did";
 
 export type PublicationSettingsData = {
   publication: Publication;
   canisterId: string;
 };
+
+// The read itself, exported so a write can re-read the record FRESH (not
+// from the cache) right before it saves (NIC-536: add a category while
+// publishing).
+export async function fetchPublicationSettings(
+  actors: ActorsValue,
+  handle: string,
+): Promise<PublicationSettingsData> {
+  const cans = await actors.getPublicationCanisters();
+  const match = cans.find(
+    ([h]) => h.toLowerCase() === handle.toLowerCase(),
+  );
+  if (!match) {
+    throw new Error(`No canister found for publication "${handle}"`);
+  }
+  const [, canisterId] = match;
+  const res = await actors.getPublicationQuery(canisterId, handle);
+  if (res.__kind__ === "err") {
+    throw new Error(res.err);
+  }
+  return { publication: res.ok, canisterId };
+}
 
 export function usePublicationSettings(handle: string) {
   const actors = useActors();
@@ -23,21 +46,7 @@ export function usePublicationSettings(handle: string) {
     queryKey: ["publication-settings", handle],
     enabled,
     staleTime: 2 * 60 * 1000,
-    queryFn: async () => {
-      const cans = await actors.getPublicationCanisters();
-      const match = cans.find(
-        ([h]) => h.toLowerCase() === handle.toLowerCase(),
-      );
-      if (!match) {
-        throw new Error(`No canister found for publication "${handle}"`);
-      }
-      const [, canisterId] = match;
-      const res = await actors.getPublicationQuery(canisterId, handle);
-      if (res.__kind__ === "err") {
-        throw new Error(res.err);
-      }
-      return { publication: res.ok, canisterId };
-    },
+    queryFn: () => fetchPublicationSettings(actors, handle),
   });
 
   const publication = query.data?.publication ?? null;

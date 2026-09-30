@@ -20,6 +20,7 @@ import {
 } from "../lib/publishSchedule";
 import { useIsMobileViewport } from "../../../lib/useIsMobileViewport";
 import { PREMIUM_MINT_VIEW_TITLE_ID } from "./PremiumMintView";
+import { PublishCategoryField } from "./PublishCategoryField";
 
 export const PUBLISH_VIEW_TITLE_ID = "publish-view-title";
 
@@ -43,6 +44,7 @@ export function PublishView({
   alreadyPublished,
   lockedPublication,
   mintStep,
+  initialCategory,
 }: {
   mode: "draft" | "publish";
   initialTagIds: string[];
@@ -56,9 +58,14 @@ export function PublishView({
     isMembersOnly: boolean,
     scheduledPublishedDate: bigint | null,
     retry: () => void,
+    category: string,
   ) => Promise<boolean>;
   coverPresent?: boolean;
-  onMintPremium?: (tagIds: string[], publicationHandle: string) => void;
+  onMintPremium?: (
+    tagIds: string[],
+    publicationHandle: string,
+    category: string,
+  ) => void;
   articleSavedToCanister?: boolean;
   savedPublicationHandle?: string | null;
   initialMembersOnly?: boolean;
@@ -74,6 +81,9 @@ export function PublishView({
   // null/undefined = the normal Publish content. Ignored on phone, where
   // the mint setup is a bottom sheet opened through the modal service.
   mintStep?: ReactNode;
+  // The article's category in the publication it is being saved to
+  // (NIC-536), exactly as stored; "" = none.
+  initialCategory?: string;
 }) {
   const c = writeArticleCopy.publish;
   const cp = writeArticleCopy.premium;
@@ -85,6 +95,8 @@ export function PublishView({
     : pickedPubHandle;
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  const [category, setCategory] = useState(initialCategory ?? "");
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const [membersOnly, setMembersOnly] = useState(initialMembersOnly ?? false);
   const [accessOpen, setAccessOpen] = useState(false);
   const [pubDate, setPubDate] = useState(() =>
@@ -121,6 +133,11 @@ export function PublishView({
   // any draft save, and a writer's submit-for-review is a draft the editor
   // manages inside the publication. So the field is publish-mode only.
   const showAccess = mode === "publish" && !submitForReview;
+  // Category (NIC-536): only an editor of the selected publication files
+  // the article; a writer's submission is filed later by the editor, and
+  // My profile has no categories. The field hides itself when the
+  // publication has none.
+  const showCategory = pubHandle !== null && selectedPub?.isEditor === true;
   // Publish date & time (NIC-418): hidden in Draft mode, hidden for a
   // writer's "Submit for review", and hidden when editing an already
   // published article - a future date there would rewrite the live
@@ -157,6 +174,8 @@ export function PublishView({
           setTimeOpen(false);
         } else if (open) {
           setOpen(false);
+        } else if (categoryOpen) {
+          setCategoryOpen(false);
         } else {
           onBack();
         }
@@ -164,7 +183,7 @@ export function PublishView({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, accessOpen, timeOpen, onBack, mintShown]);
+  }, [open, accessOpen, timeOpen, categoryOpen, onBack, mintShown]);
 
   // Swapping to the mint step starts it at the top of the page; coming
   // Back puts focus on "Mint as premium" again (which also scrolls it
@@ -220,6 +239,7 @@ export function PublishView({
         showAccess && effectiveMembersOnly,
         ms === null ? null : BigInt(ms),
         confirm,
+        pubHandle === null ? "" : category,
       );
       if (ok) onBack();
     } finally {
@@ -233,10 +253,10 @@ export function PublishView({
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
-    if (!open && !accessOpen && !timeOpen) return;
+    if (!open && !accessOpen && !timeOpen && !categoryOpen) return;
     const listbox = scrollRef.current?.querySelector('[role="listbox"]');
     listbox?.scrollIntoView({ block: "nearest" });
-  }, [isMobile, open, accessOpen, timeOpen]);
+  }, [isMobile, open, accessOpen, timeOpen, categoryOpen]);
 
   const displayLabel = pubHandle ?? c.personalOption;
 
@@ -325,7 +345,7 @@ export function PublishView({
                 <li role="option" aria-selected={pubHandle === null}>
                   <button
                     type="button"
-                    onClick={() => { setPubHandle(null); setOpen(false); }}
+                    onClick={() => { setPubHandle(null); setCategory(""); setOpen(false); }}
                     className={[
                       "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
                       pubHandle === null
@@ -344,7 +364,12 @@ export function PublishView({
                   >
                     <button
                       type="button"
-                      onClick={() => { setPubHandle(pub.publicationName); setOpen(false); }}
+                      onClick={() => {
+                        // Another publication = another category list.
+                        if (pub.publicationName !== pubHandle) setCategory("");
+                        setPubHandle(pub.publicationName);
+                        setOpen(false);
+                      }}
                       className={[
                         "flex w-full items-center gap-[calc(16*var(--fpx))] rounded-[calc(6*var(--fpx))] px-[calc(16*var(--fpx))] py-[calc(13*var(--fpx))] text-left text-[length:calc(18*var(--fpx))] leading-[calc(28*var(--fpx))] text-white",
                         pubHandle === pub.publicationName
@@ -362,26 +387,18 @@ export function PublishView({
         </div>
       )}
 
-      {/* Select category (disabled / gated F-cat / NIC-57) — shown only when a publication is selected (NIC-72) */}
-      {pubHandle !== null && (
-        <div className="flex flex-col gap-[calc(6*var(--fpx))]">
-          <label className="text-label font-bold text-ink">
-            {c.categoryLabel}
-          </label>
-          <div
-            role="combobox"
-            aria-disabled="true"
-            aria-expanded="false"
-            aria-label={c.categoryLabel}
-            className="flex h-[calc(48*var(--fpx))] w-full cursor-not-allowed select-none items-center justify-between rounded-[calc(6*var(--fpx))] border-2 border-ink-border-10 bg-ink-border-5 px-[calc(16*var(--fpx))] text-body text-ink-60 opacity-50"
-          >
-            <span>{c.categoryPlaceholder}</span>
-            <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0" />
-          </div>
-          <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(4*var(--fpx))]">
-            {c.categoryComingSoon}
-          </p>
-        </div>
+      {/* Category (NIC-536, Figma 890:6572): editors of the selected
+          publication only; hidden when it has no categories. Remounted per
+          publication so its list and any in-flight add belong to one. */}
+      {showCategory && pubHandle !== null && (
+        <PublishCategoryField
+          key={pubHandle}
+          handle={pubHandle}
+          value={category}
+          onChange={setCategory}
+          open={categoryOpen}
+          onOpenChange={setCategoryOpen}
+        />
       )}
 
       {/* Divider — hidden for personal-only users (NIC-72) */}
@@ -531,7 +548,7 @@ export function PublishView({
                   disabled={selected.length < 1 || saving}
                   onClick={() => {
                     if (selected.length >= 1 && pubHandle !== null) {
-                      onMintPremium!(selected, pubHandle);
+                      onMintPremium!(selected, pubHandle, category);
                     }
                   }}
                 >
@@ -605,7 +622,7 @@ export function PublishView({
                     disabled={selected.length < 1 || saving}
                     onClick={() => {
                       if (selected.length >= 1 && pubHandle !== null) {
-                        onMintPremium!(selected, pubHandle);
+                        onMintPremium!(selected, pubHandle, category);
                       }
                     }}
                   >

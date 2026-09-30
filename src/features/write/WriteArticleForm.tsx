@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { REDO_COMMAND, UNDO_COMMAND, type LexicalEditor } from "lexical";
 import { IconBack } from "../../components/ui/icons/IconBack";
 import { writeArticleCopy } from "../../constants/copy";
@@ -67,6 +68,20 @@ export function WriteArticleForm({
   const { show } = useToast();
   const saveMutation = useSavePost();
   const migrateMutation = useMigratePost();
+  const queryClient = useQueryClient();
+  // A publication save changes that publication's Manage Articles rows
+  // (status, category): mark its cached list stale so the next visit
+  // re-reads it (NIC-536). The route handle may differ in case.
+  const markManageArticlesStale = useCallback(
+    (pub: string) =>
+      void queryClient.invalidateQueries({
+        predicate: (q) =>
+          q.queryKey[0] === "manage-articles" &&
+          typeof q.queryKey[1] === "string" &&
+          q.queryKey[1].toLowerCase() === pub.toLowerCase(),
+      }),
+    [queryClient],
+  );
 
   // Profile — used to build the publication-write model and to populate the
   // "Publish to" selector in the dialog. myPublications is memoized to keep a
@@ -102,8 +117,12 @@ export function WriteArticleForm({
     initial?.isPublication && initial.creatorHandle
       ? initial.creatorHandle
       : myHandle;
-  const lockedCategory =
-    lockedPubHandle !== null ? (initial?.category ?? "") : "";
+  // The article's category in its publication (NIC-536), exactly as stored
+  // (never trimmed). Seeded from an existing publication article, updated
+  // when the Publish panel confirms; personal saves always send "".
+  const [articleCategory, setArticleCategory] = useState(
+    lockedPubHandle !== null ? (initial?.category ?? "") : "",
+  );
 
   // Editing → seed from the loaded article. New → restore the browser autosave.
   const restored = useMemo(
@@ -174,7 +193,11 @@ export function WriteArticleForm({
   const [publishView, setPublishView] = useState<{ mode: "draft" | "publish" } | null>(null);
   // Desktop: the limited-edition mint setup open as a step inside the
   // Publish view (null = the Publish content). Phone uses a bottom sheet.
-  const [mintTarget, setMintTarget] = useState<{ tags: string[]; pubH: string } | null>(null);
+  const [mintTarget, setMintTarget] = useState<{
+    tags: string[];
+    pubH: string;
+    category: string;
+  } | null>(null);
   const isMobile = useIsMobileViewport();
 
   // Preview snapshot — populated when the writer clicks Preview; reading the
@@ -239,6 +262,7 @@ export function WriteArticleForm({
       isMembersOnly: boolean = false,
       scheduled: bigint | null = null,
       failure?: { message: string; retry: () => void },
+      category: string = articleCategory,
     ): Promise<Post | null> => {
       const editor = editorRef.current;
       if (!editor) return null;
@@ -299,10 +323,12 @@ export function WriteArticleForm({
             // subscribers-only publish AND a scheduled publish
             // migrate as a draft first, then publish with one
             // direct publication save that carries the flag(s)
-            // (never live as public).
+            // (never live as public). The migrate never carries a
+            // category either (NIC-536), so a chosen category takes the
+            // same route; that second save keeps the requested draft state.
             const publishMembersOnly = !isDraft && isMembersOnly;
             const twoStepPublish =
-              publishMembersOnly || scheduleMs != null;
+              publishMembersOnly || scheduleMs != null || category !== "";
             const migrated = await migrateMutation.mutateAsync({
               bucketCanisterId: saved.bucketCanisterId,
               postId: saved.postId,
@@ -317,9 +343,9 @@ export function WriteArticleForm({
                   subtitle: subtitle.trim(),
                   content,
                   headerImage: coverUrl,
-                  isDraft: false,
+                  isDraft,
                   tagIds: tags,
-                  category: "",
+                  category,
                   handle: target,
                   creatorHandle: myHandle,
                   isPublication: true,
@@ -329,6 +355,7 @@ export function WriteArticleForm({
                     : {}),
                 })
               : migrated;
+            markManageArticlesStale(target);
             clearDraft(postId || DRAFT_NEW_ID);
             setPostId(result.postId);
             setTagIds(tags);
@@ -346,7 +373,7 @@ export function WriteArticleForm({
             headerImage: coverUrl,
             isDraft: premium ? false : isDraft,
             tagIds: tags,
-            category: lockedCategory,
+            category,
             handle: target,
             creatorHandle: creditHandle,
             isPublication: true,
@@ -357,6 +384,7 @@ export function WriteArticleForm({
               : {}),
           };
           const post = await saveMutation.mutateAsync(pubModel);
+          markManageArticlesStale(target);
           clearDraft(postId || DRAFT_NEW_ID);
           setPostId(post.postId);
           setTagIds(tags);
@@ -419,7 +447,8 @@ export function WriteArticleForm({
       isPublished,
       lockedPubHandle,
       creditHandle,
-      lockedCategory,
+      articleCategory,
+      markManageArticlesStale,
     ],
   );
 
@@ -502,7 +531,12 @@ export function WriteArticleForm({
   // service; desktop: a step inside PublishView (mintStep). `close` leaves
   // the setup (Back); Publish = save with premium, then close, toast and
   // navigate to the article.
-  const mintView = (tags: string[], pubH: string, close: () => void) => (
+  const mintView = (
+    tags: string[],
+    pubH: string,
+    category: string,
+    close: () => void,
+  ) => (
     <PremiumMintView
       post={{ title, subtitle, coverUrl }}
       handle={creditHandle}
@@ -510,7 +544,16 @@ export function WriteArticleForm({
       publicationHandle={pubH}
       onCancel={close}
       onMint={async (premium) => {
-        const post = await doSave(false, tags, pubH, premium);
+        const post = await doSave(
+          false,
+          tags,
+          pubH,
+          premium,
+          false,
+          null,
+          undefined,
+          category,
+        );
         if (post) {
           close();
           setPublishView(null);
@@ -618,6 +661,7 @@ export function WriteArticleForm({
           articleSavedToCanister={postId !== ""}
           savedPublicationHandle={savedPubHandle}
           initialMembersOnly={membersOnly}
+          initialCategory={articleCategory}
           alreadyPublished={isPublished}
           lockedPublication={
             lockedPubLabel !== null
@@ -626,21 +670,26 @@ export function WriteArticleForm({
           }
           mintStep={
             mintTarget
-              ? mintView(mintTarget.tags, mintTarget.pubH, () => setMintTarget(null))
+              ? mintView(
+                  mintTarget.tags,
+                  mintTarget.pubH,
+                  mintTarget.category,
+                  () => setMintTarget(null),
+                )
               : null
           }
-          onMintPremium={(tags, pubH) => {
+          onMintPremium={(tags, pubH, category) => {
             // Guard: migrate path not needed (article is new, already in this
             // pub, or an existing publication article locked to its own pub).
             const migrateNotNeeded =
               lockedPubHandle !== null || postId === "" || savedPubHandle === pubH;
             if (!migrateNotNeeded) return;
             if (!isMobile) {
-              setMintTarget({ tags, pubH });
+              setMintTarget({ tags, pubH, category });
               return;
             }
             modal.open(
-              mintView(tags, pubH, () => modal.close()),
+              mintView(tags, pubH, category, () => modal.close()),
               { ariaLabelledBy: PREMIUM_MINT_VIEW_TITLE_ID, dismissable: false },
             );
           }}
@@ -655,11 +704,13 @@ export function WriteArticleForm({
             chosenMembersOnly,
             scheduledPublishedDate,
             retry,
+            chosenCategory,
           ) => {
             if (chosenPub !== publicationHandle) {
               userChangedTarget.current = true;
             }
             setPublicationHandle(chosenPub);
+            setArticleCategory(chosenCategory);
             // A writer submitting into a publication routes the article to the
             // editor review queue — saved as a publication draft (isDraft:true)
             // rather than published, since only editors may publish (NIC-269).
@@ -682,6 +733,7 @@ export function WriteArticleForm({
               chosenMembersOnly,
               scheduledPublishedDate,
               failure,
+              chosenCategory,
             );
             if (post) {
               if (publishView.mode === "publish") {
