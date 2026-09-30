@@ -6,7 +6,7 @@ type Props = {
   placeholder: string;
   ariaLabel: string;
   className?: string;
-  // Placeholder colour utility (the phone title uses its own, NIC-539).
+  // Placeholder colour utility. Default = Black/60%, the placeholder rule (NIC-583, NIC-600).
   placeholderClassName?: string;
 };
 
@@ -19,7 +19,7 @@ export function AutoGrowTextarea({
   placeholder,
   ariaLabel,
   className = "",
-  placeholderClassName = "placeholder:text-ink-40",
+  placeholderClassName = "placeholder:text-ink-60",
 }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
 

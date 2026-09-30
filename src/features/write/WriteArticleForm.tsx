@@ -653,7 +653,6 @@ export function WriteArticleForm({
               ? "text-[length:calc(34*var(--fpx))] font-extrabold leading-[calc(40*var(--fpx))] text-ink"
               : "text-title-md font-extrabold text-ink md:text-title-lg lg:text-title-xl"
           }
-          placeholderClassName={isMobile ? "placeholder:text-ink-border/20" : undefined}
         />
         <AutoGrowTextarea
           value={subtitle}
