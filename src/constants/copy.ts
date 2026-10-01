@@ -999,6 +999,42 @@ export const subscriptionPurchaseCopy = {
   noPlansBody:
     "This author hasn\u2019t set up any subscription plans yet. Check back later.",
   noPlansClose: "Close",
+
+  // ── Pay by card (Stripe), publications only — NIC-621 (design NIC-616) ──
+  card: {
+    // Tab bar, shown only when both wallet plans and card plans exist (D-168).
+    tabsAria: "Payment method",
+    tabWallet: "Pay with wallet",
+    tabCard: "Pay with card",
+    // Card picker (frame 3085:11951).
+    intro:
+      "When you subscribe to this publication, you get unlimited access to all membership content. Paying by card, you\u2019re charged at the start of each period and it renews automatically until you cancel.",
+    billedWeekly: "billed weekly",
+    billedMonthly: "billed monthly",
+    billedYearly: "billed yearly",
+    stripeNote:
+      "You\u2019ll finish paying on Stripe\u2019s secure checkout page, then come back here.",
+    continueToPayment: "Continue to payment",
+    // Taking you to Stripe (frame 3088:12960).
+    redirectingTitle: "Taking you to secure checkout\u2026",
+    redirectingBody:
+      "Stripe\u2019s secure checkout opens in a new tab. Finish paying there and you\u2019ll be brought back to Nuance.",
+    redirectingCancel: "Cancel",
+    // Couldn't open checkout (frame 3089:12973). The NoWallet body drops the
+    // wallet clause when the publication has no wallet plans.
+    checkoutErrorTitle: "Couldn\u2019t open checkout",
+    checkoutErrorBody:
+      "We couldn\u2019t reach Stripe, so you haven\u2019t been charged. Please try again in a moment, or pay with your Nuance wallet instead.",
+    checkoutErrorBodyNoWallet:
+      "We couldn\u2019t reach Stripe, so you haven\u2019t been charged. Please try again in a moment.",
+    payWithWallet: "Pay with wallet",
+    tryAgain: "Try again",
+    // Already subscribed (frame 3089:12982). {handle} → publication handle.
+    alreadyTitle: "You\u2019re already subscribed",
+    alreadyBody:
+      "You already have an active subscription to {handle}, so we didn\u2019t open checkout. You can see it under Subscriptions in your profile.",
+    alreadyClose: "Close",
+  },
 };
 
 // §4.8 (un)follow-tag article topic pills (NIC-157). {tag} → display-case tag name.

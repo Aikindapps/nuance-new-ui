@@ -10,6 +10,13 @@ import type {
 } from "../../../candid/Subscription/Subscription";
 import { SubscriptionTimeInterval } from "../../../candid/Subscription/Subscription";
 import canisterIds from "../../../config/canister_ids.json";
+import { subscriptionPurchaseCopy } from "../../../constants/copy";
+import {
+  cardTiers,
+  createCardCheckout,
+  openCheckoutTab,
+  type CardTier,
+} from "./cardCheckout";
 
 const SUBSCRIPTION_CANISTER_ID: string = canisterIds.Subscription.ic;
 
@@ -23,6 +30,14 @@ const SUBSCRIPTION_CANISTER_ID: string = canisterIds.Subscription.ic;
 // error (paid=false) → confirm (retry)
 // error (paid=true)  → closed ONLY (funds being auto-returned — no retry)
 // success       → closed / read article
+//
+// Card path (NIC-621, publications only; frames 3085:11951 / 3088:12960 /
+// 3089:12973 / 3089:12982):
+// confirm (method=card) → redirecting       (Continue to payment; Stripe tab opened)
+// redirecting           → closed            (checkout URL loaded in the Stripe tab)
+//                       → alreadySubscribed (server 409)
+//                       → checkoutError     (server unreachable / any other failure)
+// checkoutError         → redirecting (Try again) | confirm, method=wallet (Pay with wallet)
 
 export type SubscriptionPurchaseStage =
   | "loading"
@@ -31,7 +46,13 @@ export type SubscriptionPurchaseStage =
   | "processing"
   | "success"
   | "insufficient"
-  | "error";
+  | "error"
+  | "redirecting"
+  | "alreadySubscribed"
+  | "checkoutError";
+
+/** Which picker the confirm screen shows (tabs only when both exist, D-168). */
+export type PaymentMethodTab = "wallet" | "card";
 
 export type SubscriptionPurchaseState = {
   stage: SubscriptionPurchaseStage;
@@ -53,9 +74,29 @@ export type SubscriptionPurchaseState = {
    * (funds are being auto-returned by pendingStuckTokensHeartbeatExternal).
    */
   paid: boolean;
+  /** Picker shown on the confirm screen. */
+  method: PaymentMethodTab;
+  /** The card plan the reader has selected (card picker). */
+  cardSelected: SubscriptionTimeInterval | null;
 };
 
 export type SubscriptionPurchaseHook = SubscriptionPurchaseState & {
+  /** Card plans on offer (publications with an active Stripe account only). */
+  cardPlans: CardTier[];
+  /** True when the writer/publication has at least one wallet (NUA) plan. */
+  hasWalletPlans: boolean;
+  /** Switch the confirm screen's picker (tab bar). */
+  setMethod: (method: PaymentMethodTab) => void;
+  /** Pick a plan on the card picker. */
+  selectCard: (interval: SubscriptionTimeInterval) => void;
+  /**
+   * Continue to payment (card). MUST be called synchronously from the click
+   * handler: it opens the Stripe tab before its first await. Resolves true
+   * once Stripe is loading in that tab (the caller closes the modal).
+   */
+  startCardCheckout: () => Promise<boolean>;
+  /** "Pay with wallet" on a card error: back to the picker, wallet tab. */
+  payWithWallet: () => void;
   /** Pick a plan interval on the confirm screen. */
   select: (interval: SubscriptionTimeInterval) => void;
   /** Execute the full payment sequence. Call with terms checked and a plan selected. */
@@ -76,6 +117,11 @@ type Props = {
    * backend keys subscriptions on (isReaderSubscriber(postOwnerPrincipal, …)).
    */
   writerPrincipalId: string;
+  /**
+   * Card payments are offered for publications only (NIC-616 scope; an
+   * individual writer's card path is NIC-619).
+   */
+  isPublication?: boolean;
 };
 
 // Map a SubscriptionTimeInterval to the WriterSubscriptionDetails fee field.
@@ -109,6 +155,7 @@ function hasAnyPlan(details: WriterSubscriptionDetails): boolean {
 
 export function useSubscriptionPurchase({
   writerPrincipalId,
+  isPublication = false,
 }: Props): SubscriptionPurchaseHook {
   const actors = useActors();
   const { principal } = useAuth();
@@ -122,6 +169,8 @@ export function useSubscriptionPurchase({
     balance: null,
     errorMessage: null,
     paid: false,
+    method: "wallet",
+    cardSelected: null,
   });
 
   // Double-submit guard (mirrors useNftPurchase).
@@ -141,6 +190,8 @@ export function useSubscriptionPurchase({
         balance: null,
         errorMessage: null,
         paid: false,
+        method: "wallet",
+        cardSelected: null,
       });
 
       try {
@@ -179,8 +230,9 @@ export function useSubscriptionPurchase({
         }
 
         const details = result.ok;
+        const hasCard = isPublication && cardTiers(details).length > 0;
 
-        if (!hasAnyPlan(details)) {
+        if (!hasAnyPlan(details) && !hasCard) {
           setState((s) => ({
             ...s,
             stage: "noplans",
@@ -195,6 +247,8 @@ export function useSubscriptionPurchase({
           stage: "confirm",
           details,
           writerPrincipalId: writerId,
+          // Wallet first when it exists (today's default); card-only → card.
+          method: hasAnyPlan(details) ? "wallet" : "card",
         }));
       } catch (e: unknown) {
         if (cancelled) return;
@@ -212,7 +266,7 @@ export function useSubscriptionPurchase({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [writerPrincipalId]);
+  }, [writerPrincipalId, isPublication]);
 
   // ── SELECT ───────────────────────────────────────────────────────────────
   const select = useCallback((interval: SubscriptionTimeInterval) => {
@@ -432,5 +486,80 @@ export function useSubscriptionPurchase({
     });
   }, []);
 
-  return { ...state, select, confirm, retry };
+  // ── CARD (NIC-621) ───────────────────────────────────────────────────────
+  const cardPlans = isPublication ? cardTiers(state.details) : [];
+  const hasWalletPlans = state.details !== null && hasAnyPlan(state.details);
+
+  const setMethod = useCallback((method: PaymentMethodTab) => {
+    setState((s) => (s.stage === "confirm" ? { ...s, method } : s));
+  }, []);
+
+  const selectCard = useCallback((interval: SubscriptionTimeInterval) => {
+    setState((s) => ({ ...s, cardSelected: interval }));
+  }, []);
+
+  const payWithWallet = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      stage: "confirm",
+      method: "wallet",
+      errorMessage: null,
+    }));
+  }, []);
+
+  const startCardCheckout = useCallback((): Promise<boolean> => {
+    if (inFlightRef.current) return Promise.resolve(false);
+    const { cardSelected, writerPrincipalId, details } = state;
+    const readerId = principal?.toText() ?? null;
+    const tier = cardTiers(details).find((t) => t.interval === cardSelected);
+    if (!isPublication || !tier || !readerId || !writerPrincipalId) {
+      return Promise.resolve(false);
+    }
+
+    inFlightRef.current = true;
+    // Synchronous, inside the click: the browser allows this tab.
+    const tab = openCheckoutTab(subscriptionPurchaseCopy.card.redirectingTitle);
+    setState((s) => ({ ...s, stage: "redirecting", errorMessage: null }));
+
+    return (async () => {
+      const res = await createCardCheckout({
+        authorize: actors.authorizeForProxy,
+        priceId: tier.priceId,
+        writerId: writerPrincipalId,
+        readerId,
+      });
+      inFlightRef.current = false;
+
+      if (res.kind === "url") {
+        if (tab && !tab.closed) {
+          tab.location.href = res.url;
+        } else {
+          // Tab blocked or closed by the reader: continue in this tab.
+          window.location.assign(res.url);
+        }
+        return true;
+      }
+
+      if (tab && !tab.closed) tab.close();
+      setState((s) => ({
+        ...s,
+        stage: res.kind === "already" ? "alreadySubscribed" : "checkoutError",
+        errorMessage: res.kind === "error" ? res.message : null,
+      }));
+      return false;
+    })();
+  }, [actors, isPublication, principal, state]);
+
+  return {
+    ...state,
+    select,
+    confirm,
+    retry,
+    cardPlans,
+    hasWalletPlans,
+    setMethod,
+    selectCard,
+    startCardCheckout,
+    payWithWallet,
+  };
 }

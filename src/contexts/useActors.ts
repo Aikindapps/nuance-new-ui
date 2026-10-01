@@ -384,6 +384,10 @@ export type ActorsValue = {
   disperseTokensForSuccessfulSubscription: (eventId: string) => Promise<SubVoidResult>;
   // Trigger recovery heartbeat for stuck payment events (fire-and-forget).
   pendingStuckTokensHeartbeatExternal: () => Promise<void>;
+  // Card payments (NIC-621): store a one-off nonce on the Subscription
+  // canister under the caller's principal; the card-payment server checks and
+  // consumes it (valid 2 minutes).
+  authorizeForProxy: (nonce: string) => Promise<void>;
   // Spend restricted ("Free") NUA toward a subscription — mirrors
   // spendRestrictedTokensForTipping but for the subscription flow.
   spendRestrictedTokensForSubscription: (

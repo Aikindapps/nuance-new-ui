@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import Button from "@mui/material/Button";
 import { useNavigate } from "react-router-dom";
 import { Popup } from "../../../components/ui/Popup";
@@ -9,6 +9,7 @@ import { useSubscriptionPurchase } from "./useSubscriptionPurchase";
 import { useSubscriptionRates } from "./useSubscriptionRates";
 import { SubscriptionTimeInterval } from "../../../candid/Subscription/Subscription";
 import type { WriterSubscriptionDetails } from "../../../candid/Subscription/Subscription";
+import { fmtUsd } from "./cardCheckout";
 
 export const SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID =
   "subscription-purchase-modal-title";
@@ -134,6 +135,62 @@ function periodPhrase(interval: SubscriptionTimeInterval): string {
   }
 }
 
+// Card plan sub-line under the USD price (frame 3085:11951).
+function billedLine(interval: SubscriptionTimeInterval): string {
+  switch (interval) {
+    case SubscriptionTimeInterval.Weekly:
+      return subscriptionPurchaseCopy.card.billedWeekly;
+    case SubscriptionTimeInterval.Monthly:
+      return subscriptionPurchaseCopy.card.billedMonthly;
+    default:
+      return subscriptionPurchaseCopy.card.billedYearly;
+  }
+}
+
+// "Pay with wallet" / "Pay with card" tab bar (NUR/Tab bar; same type and
+// underline as components/ui/Tab, as buttons because they switch in place).
+function MethodTabs({
+  method,
+  onSelect,
+}: {
+  method: "wallet" | "card";
+  onSelect: (m: "wallet" | "card") => void;
+}) {
+  const c = subscriptionPurchaseCopy.card;
+  const tabs: { id: "wallet" | "card"; label: string }[] = [
+    { id: "wallet", label: c.tabWallet },
+    { id: "card", label: c.tabCard },
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label={c.tabsAria}
+      className="flex border-b border-ink-border/10"
+    >
+      {tabs.map((t) => {
+        const active = method === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onSelect(t.id)}
+            className={[
+              "relative flex items-center justify-center px-[calc(25*var(--fpx))] py-3 text-body transition-colors rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-purple",
+              active
+                ? "font-bold text-brand-purple after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-brand-purple"
+                : "font-medium text-ink-80 hover:text-ink",
+            ].join(" ")}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Modal props ────────────────────────────────────────────────────────────
 
 type Props = {
@@ -153,7 +210,7 @@ export function SubscriptionPurchaseModal({
   onClose,
   onPurchased,
 }: Props) {
-  const purchase = useSubscriptionPurchase({ writerPrincipalId });
+  const purchase = useSubscriptionPurchase({ writerPrincipalId, isPublication });
   useEffect(() => { if (purchase.stage === "success") onPurchased?.(); }, [purchase.stage, onPurchased]);
   const navigate = useNavigate();
   const [terms, setTerms] = useState(false);
@@ -161,10 +218,56 @@ export function SubscriptionPurchaseModal({
   const c = subscriptionPurchaseCopy;
   const variant = isPublication ? c.pub : c.author;
 
-  const isProcessing = purchase.stage === "processing";
+  const isProcessing =
+    purchase.stage === "processing" || purchase.stage === "redirecting";
 
-  // Non-dismissable while processing (same pattern as NftPurchaseModal).
+  // Non-dismissable while processing (same pattern as NftPurchaseModal), and
+  // while the checkout session is being created (card).
   const handleClose = isProcessing ? () => undefined : onClose;
+
+  // Card offer (NIC-621): publications with an active Stripe account and at
+  // least one card price. Tabs only when wallet plans exist too (D-168).
+  const hasCard = purchase.cardPlans.length > 0;
+  const showTabs = hasCard && purchase.hasWalletPlans;
+  const onCardTab = hasCard && purchase.method === "card";
+  const cc = c.card;
+
+  // Keep the popup's TOP edge still when switching tabs (card 943 / wallet
+  // 972 high in the frames): the dialog centres its content, so shift the
+  // popup down by half of its growth since the picker opened.
+  // (Written straight to the wrapper's style: a ResizeObserver also catches
+  // late growth such as the conversion lines arriving.)
+  const popupRef = useRef<HTMLDivElement>(null);
+  const pinTop = showTabs && purchase.stage === "confirm";
+  useLayoutEffect(() => {
+    const el = popupRef.current;
+    if (!el) return;
+    if (!pinTop) {
+      el.style.top = "0px";
+      return;
+    }
+    let baseHeight: number | null = null;
+    const apply = () => {
+      const h = el.offsetHeight;
+      if (baseHeight === null) baseHeight = h;
+      el.style.top = `${(h - baseHeight) / 2}px`;
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [pinTop]);
+
+  // Card: selected tier + Continue to payment. startCardCheckout opens the
+  // Stripe tab synchronously, so it is called straight from the click.
+  const selectedCardTier = purchase.cardPlans.find(
+    (t) => t.interval === purchase.cardSelected,
+  );
+  const continueToPayment = () => {
+    void purchase.startCardCheckout().then((opened) => {
+      if (opened) onClose();
+    });
+  };
 
   // Formatted amount for the selected plan (used in processing copy).
   const selectedRawFee =
@@ -189,7 +292,13 @@ export function SubscriptionPurchaseModal({
                 ? c.insufficientTitle
                 : purchase.stage === "error"
                   ? c.errorTitle
-                  : "";
+                  : purchase.stage === "redirecting"
+                    ? cc.redirectingTitle
+                    : purchase.stage === "checkoutError"
+                      ? cc.checkoutErrorTitle
+                      : purchase.stage === "alreadySubscribed"
+                        ? cc.alreadyTitle
+                        : "";
 
   // Rates for conversion lines on the confirm screen.
   const rates = useSubscriptionRates(
@@ -204,12 +313,13 @@ export function SubscriptionPurchaseModal({
       ? ORDERED_INTERVALS.filter((i) => purchase.details![feeField(i)]).length
       : 0) === 1;
 
-  return (
+  const popup = (
     <Popup
       titleId={SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID}
       title={title}
       onClose={handleClose}
       closeAriaLabel={c.closeAria}
+      widthClassName={hasCard ? "w-[calc(864*var(--fpx))]" : undefined}
     >
       {/* ── LOADING ── */}
       {purchase.stage === "loading" && (
@@ -233,11 +343,125 @@ export function SubscriptionPurchaseModal({
       )}
 
       {/* ── CONFIRM (frames 1:6561 / 1:6792) ── */}
-      {purchase.stage === "confirm" && purchase.details && (
+      {purchase.stage === "confirm" && purchase.details && onCardTab && (
+        <>
+          <div className="mt-6 flex flex-col gap-6">
+            {/* Intro paragraph (card variant, frame 3085:11951) */}
+            <p className="text-body text-ink">{cc.intro}</p>
+
+            {showTabs && (
+              <MethodTabs method={purchase.method} onSelect={purchase.setMethod} />
+            )}
+
+            {/* Duration label */}
+            <p className="text-body font-medium text-ink">
+              {c.confirmDurationLabel}
+            </p>
+
+            {/* Card plan cards — USD, Week / Month / Year only (D-164).
+                At most 3 tiers, so the row splits into as many equal columns
+                as there are tiers (frame 3085:11951); one tier is centred. */}
+            <div
+              className={
+                purchase.cardPlans.length === 1
+                  ? "flex justify-center"
+                  : purchase.cardPlans.length === 2
+                    ? "grid grid-cols-2 gap-4"
+                    : "grid grid-cols-2 gap-4 sm:grid-cols-3"
+              }
+            >
+              {purchase.cardPlans.map((tier) => {
+                const isSelected = purchase.cardSelected === tier.interval;
+                return (
+                  <div
+                    key={tier.interval}
+                    className={[
+                      "flex flex-col gap-4 rounded-2xl p-8 transition-colors",
+                      purchase.cardPlans.length === 1 ? "w-1/2 sm:w-1/4" : "",
+                      isSelected
+                        ? "border border-[#5405D4] bg-[rgba(84,5,212,0.05)]"
+                        : "border border-[rgba(84,5,212,0.40)]",
+                    ].join(" ")}
+                  >
+                    <div className="flex flex-col gap-2">
+                      <span className="text-body font-medium text-ink">
+                        {INTERVAL_LABELS[tier.interval]}
+                      </span>
+                      <span className="text-[22px] font-bold leading-8 text-ink">
+                        {fmtUsd(tier.usdCents)}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-0 whitespace-nowrap text-[16px] leading-6 text-ink opacity-60">
+                      <span>{billedLine(tier.interval)}</span>
+                    </div>
+
+                    {isSelected ? (
+                      <Button
+                        variant="outlined"
+                        onClick={() => purchase.selectCard(tier.interval)}
+                        sx={secondaryButtonSx}
+                      >
+                        Selected
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        onClick={() => purchase.selectCard(tier.interval)}
+                        sx={primaryButtonSx}
+                      >
+                        Select
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Stripe hand-off note (card tab only) */}
+            <p className="text-body text-ink">{cc.stripeNote}</p>
+
+            {/* Terms checkbox */}
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={terms}
+                onChange={(e) => setTerms(e.target.checked)}
+                className="size-4 accent-[var(--color-brand-purple)]"
+              />
+              <span className="text-label text-ink">{c.confirmTerms}</span>
+            </label>
+          </div>
+
+          <FooterRow>
+            <Button
+              variant="outlined"
+              onClick={onClose}
+              sx={secondaryButtonSx}
+            >
+              {c.confirmCancel}
+            </Button>
+            <Button
+              variant="contained"
+              disabled={!selectedCardTier || !terms}
+              onClick={continueToPayment}
+              sx={primaryButtonSx}
+            >
+              {cc.continueToPayment}
+            </Button>
+          </FooterRow>
+        </>
+      )}
+
+      {purchase.stage === "confirm" && purchase.details && !onCardTab && (
         <>
           <div className="mt-6 flex flex-col gap-6">
             {/* Intro paragraph */}
             <p className="text-body text-ink">{variant.confirmIntro}</p>
+
+            {showTabs && (
+              <MethodTabs method={purchase.method} onSelect={purchase.setMethod} />
+            )}
 
             {/* Duration label */}
             <p className="text-body font-medium text-ink">
@@ -522,6 +746,84 @@ export function SubscriptionPurchaseModal({
           </FooterRow>
         </>
       )}
+
+      {/* ── TAKING YOU TO STRIPE (frame 3088:12960) ── */}
+      {purchase.stage === "redirecting" && (
+        <>
+          <div className="mt-6 flex flex-col gap-0">
+            <p className="text-body text-ink">{cc.redirectingBody}</p>
+            <Spinner />
+          </div>
+
+          <FooterRow>
+            <Button
+              variant="outlined"
+              disabled
+              sx={{ ...secondaryButtonSx, opacity: 0.4 }}
+            >
+              {cc.redirectingCancel}
+            </Button>
+          </FooterRow>
+        </>
+      )}
+
+      {/* ── COULDN'T OPEN CHECKOUT (frame 3089:12973) ── */}
+      {purchase.stage === "checkoutError" && (
+        <>
+          <div className="mt-6 flex flex-col gap-6">
+            <p className="text-body text-ink">
+              {purchase.hasWalletPlans
+                ? cc.checkoutErrorBody
+                : cc.checkoutErrorBodyNoWallet}
+            </p>
+          </div>
+
+          <FooterRow>
+            {purchase.hasWalletPlans && (
+              <Button
+                variant="outlined"
+                onClick={purchase.payWithWallet}
+                sx={secondaryButtonSx}
+              >
+                {cc.payWithWallet}
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              onClick={continueToPayment}
+              sx={primaryButtonSx}
+            >
+              {cc.tryAgain}
+            </Button>
+          </FooterRow>
+        </>
+      )}
+
+      {/* ── ALREADY SUBSCRIBED (frame 3089:12982) ── */}
+      {purchase.stage === "alreadySubscribed" && (
+        <>
+          <div className="mt-6 flex flex-col gap-6">
+            <p className="text-body text-ink">
+              {cc.alreadyBody.replace("{handle}", handle)}
+            </p>
+          </div>
+
+          <FooterRow>
+            <Button variant="contained" onClick={onClose} sx={primaryButtonSx}>
+              {cc.alreadyClose}
+            </Button>
+          </FooterRow>
+        </>
+      )}
     </Popup>
+  );
+
+  // Wallet-only (no card offer): exactly today's markup.
+  if (!showTabs) return popup;
+
+  return (
+    <div ref={popupRef} style={{ position: "relative" }}>
+      {popup}
+    </div>
   );
 }

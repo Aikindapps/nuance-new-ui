@@ -25,6 +25,9 @@ type PopupProps = {
   closeAriaLabel: string;
   children: ReactNode;
   footer?: ReactNode;
+  // Width utility; defaults to the 696 design-pixel card. The pay-by-card
+  // subscribe window passes the 864 card (NIC-621, frames 3085:11951 ff.).
+  widthClassName?: string;
 };
 
 export function Popup({
@@ -34,9 +37,10 @@ export function Popup({
   closeAriaLabel,
   children,
   footer,
+  widthClassName = "w-[calc(696*var(--fpx))]",
 }: PopupProps) {
   return (
-    <div className="w-[calc(696*var(--fpx))] max-w-[calc(100vw-32px)] rounded-modal bg-white px-6 py-8 md:px-12 md:py-10">
+    <div className={`${widthClassName} max-w-[calc(100vw-32px)] rounded-modal bg-white px-6 py-8 md:px-12 md:py-10`}>
       {/* Header row: title + close (Figma layer "Header" inside NUR / Popup) */}
       <div className="flex items-center justify-between">
         <h2 id={titleId} className="text-title-md font-bold text-ink">

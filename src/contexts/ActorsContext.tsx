@@ -379,6 +379,12 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = createSubscriptionActor(await agentPromise);
         return actor.pendingStuckTokensHeartbeatExternal();
       },
+      // Card payments (NIC-621): store a one-off nonce under the caller's own
+      // principal so the card-payment server can verify the request.
+      authorizeForProxy: async (nonce) => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.authorizeForProxy(nonce);
+      },
       spendRestrictedTokensForSubscription: async (eventId, amount) => {
         const actor = await userPromise;
         return actor.spendRestrictedTokensForSubscription(eventId, amount);
