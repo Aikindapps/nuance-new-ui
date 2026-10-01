@@ -198,20 +198,22 @@ function MethodTabs({
   );
 }
 
-// -- Phone bottom sheet (NIC-626) ---------------------------------------------
-// Below the 1024 seam, a publication or writer that offers card payment gets
-// the "NUR / Subscribe sheet (phone)" bottom sheet (component set 3054:68659)
-// instead of the centred popup. Same purchase hook, stages and copy as the
-// popup above; only the layout differs: plans are stacked full-width rows
-// (the whole row is the tap target), buttons are stacked full width with the
-// primary on top, the spinner is 48. The wallet tab and the wallet payment
-// states have no phone frame of their own; they follow the same recipe.
+// -- Phone bottom sheet (NIC-626, NIC-629) ------------------------------------
+// Below the 1024 seam, EVERY Subscribe (publication or writer, with or
+// without card payment) gets the "NUR / Subscribe sheet (phone)" bottom sheet
+// (component set 3054:68659) instead of the centred popup. Same purchase
+// hook, stages and copy as the popup above; only the layout differs: plans
+// are stacked full-width rows (the whole row is the tap target), buttons are
+// stacked full width with the primary on top, the spinner is 48. The sheet
+// opens straight away with its spinner inside while the plans load. The
+// wallet-only picker, the wallet tab and the wallet payment states have no
+// phone frame of their own; they follow the same recipe (Dana, NIC-629).
 
 // 48 spinner (frame 3059:6151): the popup's 64 spinner scaled to 48 (ring
-// 4.5), 32 below the text.
-function SheetSpinner() {
+// 4.5), 32 below the text (`top` overrides that gap).
+function SheetSpinner({ top = "mt-8" }: { top?: string }) {
   return (
-    <div className="relative mx-auto mt-8 size-12">
+    <div className={`relative mx-auto ${top} size-12`}>
       <svg
         className="absolute inset-0 size-12"
         viewBox="0 0 64 64"
@@ -322,9 +324,11 @@ function SubscribePhoneSheet({
 }: SubscribePhoneSheetProps) {
   const c = subscriptionPurchaseCopy;
   const cc = c.card;
-  // The sheet is only used when there is a card offer, so tabs = wallet too.
-  const showTabs = purchase.hasWalletPlans;
-  const onCardTab = purchase.method === "card";
+  // Tabs only when both methods exist (D-168 / D-172); wallet-only and
+  // card-only open straight on their plans.
+  const hasCard = purchase.cardPlans.length > 0;
+  const showTabs = hasCard && purchase.hasWalletPlans;
+  const onCardTab = hasCard && purchase.method === "card";
 
   const primary = (label: string, onClick: () => void, disabled = false) => (
     <Button
@@ -368,7 +372,14 @@ function SubscribePhoneSheet({
   let body: ReactNode = null;
   let footer: ReactNode = null;
 
-  if (purchase.stage === "confirm" && purchase.details) {
+  if (purchase.stage === "loading") {
+    // Plans loading: the sheet is already open, spinner inside, no title
+    // (as the desktop window); 24 above and below the spinner.
+    body = <SheetSpinner top="mt-1" />;
+  } else if (purchase.stage === "noplans") {
+    body = <p className="mt-4 text-body text-ink">{c.noPlansBody}</p>;
+    footer = primary(c.noPlansClose, onClose);
+  } else if (purchase.stage === "confirm" && purchase.details) {
     const details = purchase.details;
     const tabs = showTabs && (
       <div className="mt-6">
@@ -736,9 +747,9 @@ export function SubscriptionPurchaseModal({
       ? ORDERED_INTERVALS.filter((i) => purchase.details![feeField(i)]).length
       : 0) === 1;
 
-  // Phone (NIC-626): a publication or writer with a card offer gets the
-  // bottom sheet. Without a card offer the phone keeps today's popup.
-  if (isMobile && hasCard) {
+  // Phone (NIC-626, NIC-629): every Subscribe uses the bottom sheet, from
+  // the first frame (it shows its own spinner while the plans load).
+  if (isMobile) {
     return (
       <SubscribePhoneSheet
         purchase={purchase}
