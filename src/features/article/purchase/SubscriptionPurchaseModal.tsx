@@ -199,8 +199,8 @@ function MethodTabs({
 }
 
 // -- Phone bottom sheet (NIC-626) ---------------------------------------------
-// Below the 1024 seam, a publication that offers card payment gets the
-// "NUR / Subscribe sheet (phone)" bottom sheet (component set 3054:68659)
+// Below the 1024 seam, a publication or writer that offers card payment gets
+// the "NUR / Subscribe sheet (phone)" bottom sheet (component set 3054:68659)
 // instead of the centred popup. Same purchase hook, stages and copy as the
 // popup above; only the layout differs: plans are stacked full-width rows
 // (the whole row is the tap target), buttons are stacked full width with the
@@ -390,7 +390,7 @@ function SubscribePhoneSheet({
       );
       body = (
         <div className="mt-4 flex flex-col">
-          <p className="text-body text-ink">{cc.intro}</p>
+          <p className="text-body text-ink">{variant.cardIntro}</p>
           {tabs}
           {duration}
           <div className="mt-3 flex flex-col gap-3">
@@ -592,7 +592,7 @@ function SubscribePhoneSheet({
     // Already subscribed (frame 3063:6469).
     body = (
       <p className="mt-4 text-body text-ink">
-        {cc.alreadyBody.replace("{handle}", handle)}
+        {variant.cardAlreadyBody.replace("{handle}", handle)}
       </p>
     );
     footer = primary(cc.alreadyClose, onClose);
@@ -632,7 +632,7 @@ export function SubscriptionPurchaseModal({
   onClose,
   onPurchased,
 }: Props) {
-  const purchase = useSubscriptionPurchase({ writerPrincipalId, isPublication });
+  const purchase = useSubscriptionPurchase({ writerPrincipalId });
   useEffect(() => { if (purchase.stage === "success") onPurchased?.(); }, [purchase.stage, onPurchased]);
   const navigate = useNavigate();
   const [terms, setTerms] = useState(false);
@@ -648,7 +648,7 @@ export function SubscriptionPurchaseModal({
   // while the checkout session is being created (card).
   const handleClose = isProcessing ? () => undefined : onClose;
 
-  // Card offer (NIC-621): publications with an active Stripe account and at
+  // Card offer (NIC-621; writers NIC-631): an active Stripe account and at
   // least one card price. Tabs only when wallet plans exist too (D-168).
   const hasCard = purchase.cardPlans.length > 0;
   const showTabs = hasCard && purchase.hasWalletPlans;
@@ -736,8 +736,8 @@ export function SubscriptionPurchaseModal({
       ? ORDERED_INTERVALS.filter((i) => purchase.details![feeField(i)]).length
       : 0) === 1;
 
-  // Phone (NIC-626): a publication with a card offer gets the bottom sheet.
-  // Without a card offer the phone keeps today's popup.
+  // Phone (NIC-626): a publication or writer with a card offer gets the
+  // bottom sheet. Without a card offer the phone keeps today's popup.
   if (isMobile && hasCard) {
     return (
       <SubscribePhoneSheet
@@ -793,8 +793,8 @@ export function SubscriptionPurchaseModal({
       {purchase.stage === "confirm" && purchase.details && onCardTab && (
         <>
           <div className="mt-6 flex flex-col gap-6">
-            {/* Intro paragraph (card variant, frame 3085:11951) */}
-            <p className="text-body text-ink">{cc.intro}</p>
+            {/* Intro paragraph (card variant, frames 3085:11951 / 3104:3299) */}
+            <p className="text-body text-ink">{variant.cardIntro}</p>
 
             {showTabs && (
               <MethodTabs method={purchase.method} onSelect={purchase.setMethod} />
@@ -1251,7 +1251,7 @@ export function SubscriptionPurchaseModal({
         <>
           <div className="mt-6 flex flex-col gap-6">
             <p className="text-body text-ink">
-              {cc.alreadyBody.replace("{handle}", handle)}
+              {variant.cardAlreadyBody.replace("{handle}", handle)}
             </p>
           </div>
 

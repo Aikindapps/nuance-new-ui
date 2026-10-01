@@ -31,8 +31,8 @@ const SUBSCRIPTION_CANISTER_ID: string = canisterIds.Subscription.ic;
 // error (paid=true)  → closed ONLY (funds being auto-returned — no retry)
 // success       → closed / read article
 //
-// Card path (NIC-621, publications only; frames 3085:11951 / 3088:12960 /
-// 3089:12973 / 3089:12982):
+// Card path (NIC-621 publications, NIC-631 individual writers; frames
+// 3085:11951 / 3088:12960 / 3089:12973 / 3089:12982, writer 3104:3299):
 // confirm (method=card) → redirecting       (Continue to payment; Stripe tab opened)
 // redirecting           → closed            (checkout URL loaded in the Stripe tab)
 //                       → alreadySubscribed (server 409)
@@ -81,7 +81,7 @@ export type SubscriptionPurchaseState = {
 };
 
 export type SubscriptionPurchaseHook = SubscriptionPurchaseState & {
-  /** Card plans on offer (publications with an active Stripe account only). */
+  /** Card plans on offer (publication or writer with an active Stripe account). */
   cardPlans: CardTier[];
   /** True when the writer/publication has at least one wallet (NUA) plan. */
   hasWalletPlans: boolean;
@@ -117,11 +117,6 @@ type Props = {
    * backend keys subscriptions on (isReaderSubscriber(postOwnerPrincipal, …)).
    */
   writerPrincipalId: string;
-  /**
-   * Card payments are offered for publications only (NIC-616 scope; an
-   * individual writer's card path is NIC-619).
-   */
-  isPublication?: boolean;
 };
 
 // Map a SubscriptionTimeInterval to the WriterSubscriptionDetails fee field.
@@ -155,7 +150,6 @@ function hasAnyPlan(details: WriterSubscriptionDetails): boolean {
 
 export function useSubscriptionPurchase({
   writerPrincipalId,
-  isPublication = false,
 }: Props): SubscriptionPurchaseHook {
   const actors = useActors();
   const { principal } = useAuth();
@@ -230,7 +224,9 @@ export function useSubscriptionPurchase({
         }
 
         const details = result.ok;
-        const hasCard = isPublication && cardTiers(details).length > 0;
+        // Card offer: same rule for publications and writers (NIC-631) --
+        // an active Stripe account with at least one card price.
+        const hasCard = cardTiers(details).length > 0;
 
         if (!hasAnyPlan(details) && !hasCard) {
           setState((s) => ({
@@ -266,7 +262,7 @@ export function useSubscriptionPurchase({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [writerPrincipalId, isPublication]);
+  }, [writerPrincipalId]);
 
   // ── SELECT ───────────────────────────────────────────────────────────────
   const select = useCallback((interval: SubscriptionTimeInterval) => {
@@ -486,8 +482,8 @@ export function useSubscriptionPurchase({
     });
   }, []);
 
-  // ── CARD (NIC-621) ───────────────────────────────────────────────────────
-  const cardPlans = isPublication ? cardTiers(state.details) : [];
+  // ── CARD (NIC-621; writers NIC-631) ──────────────────────────────────────
+  const cardPlans = cardTiers(state.details);
   const hasWalletPlans = state.details !== null && hasAnyPlan(state.details);
 
   const setMethod = useCallback((method: PaymentMethodTab) => {
@@ -512,7 +508,7 @@ export function useSubscriptionPurchase({
     const { cardSelected, writerPrincipalId, details } = state;
     const readerId = principal?.toText() ?? null;
     const tier = cardTiers(details).find((t) => t.interval === cardSelected);
-    if (!isPublication || !tier || !readerId || !writerPrincipalId) {
+    if (!tier || !readerId || !writerPrincipalId) {
       return Promise.resolve(false);
     }
 
@@ -548,7 +544,7 @@ export function useSubscriptionPurchase({
       }));
       return false;
     })();
-  }, [actors, isPublication, principal, state]);
+  }, [actors, principal, state]);
 
   return {
     ...state,

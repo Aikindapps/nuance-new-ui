@@ -936,6 +936,12 @@ export const subscriptionPurchaseCopy = {
     // {period} → "the coming week/month/year" or "life" for Lifetime.
     successBody:
       "{handle} says thanks! You can now read all the articles of {handle} for {period}. You can manage your subscriptions in your profile.",
+    // Pay by card (NIC-621): card tab intro (frame 3085:11951) and Already
+    // subscribed body (frame 3089:12982). {handle} → publication handle.
+    cardIntro:
+      "When you subscribe to this publication, you get unlimited access to all membership content. Paying by card, you\u2019re charged at the start of each period and it renews automatically until you cancel.",
+    cardAlreadyBody:
+      "You already have an active subscription to {handle}, so we didn\u2019t open checkout. You can see it under Subscriptions in your profile.",
   },
 
   // ── Confirm state — author variant (frame 1:6792) ──
@@ -948,6 +954,13 @@ export const subscriptionPurchaseCopy = {
     // {period} → "the coming week/month/year" or "life" for Lifetime.
     successBody:
       "{handle} says thanks! You can now read all the articles of @{handle} for {period}. You can manage your subscriptions in your profile.",
+    // Pay by card for an individual writer (NIC-631, design NIC-619: card tab
+    // 3104:3299). Wherever the publication flow names the publication, the
+    // writer flow says @handle. {handle} → author handle.
+    cardIntro:
+      "When you subscribe to this author, you get unlimited access to all membership content. Paying by card, you\u2019re charged at the start of each period and it renews automatically until you cancel.",
+    cardAlreadyBody:
+      "You already have an active subscription to @{handle}, so we didn\u2019t open checkout. You can see it under Subscriptions in your profile.",
   },
 
   // ── Shared confirm-screen strings ──
@@ -1000,15 +1013,15 @@ export const subscriptionPurchaseCopy = {
     "This author hasn\u2019t set up any subscription plans yet. Check back later.",
   noPlansClose: "Close",
 
-  // ── Pay by card (Stripe), publications only — NIC-621 (design NIC-616) ──
+  // ── Pay by card (Stripe) — NIC-621 (design NIC-616), writers NIC-631
+  // (design NIC-619). The card intro and Already subscribed body differ by
+  // target, so they live in `pub` / `author` above. ──
   card: {
     // Tab bar, shown only when both wallet plans and card plans exist (D-168).
     tabsAria: "Payment method",
     tabWallet: "Pay with wallet",
     tabCard: "Pay with card",
     // Card picker (frame 3085:11951).
-    intro:
-      "When you subscribe to this publication, you get unlimited access to all membership content. Paying by card, you\u2019re charged at the start of each period and it renews automatically until you cancel.",
     billedWeekly: "billed weekly",
     billedMonthly: "billed monthly",
     billedYearly: "billed yearly",
@@ -1021,7 +1034,7 @@ export const subscriptionPurchaseCopy = {
       "Stripe\u2019s secure checkout opens in a new tab. Finish paying there and you\u2019ll be brought back to Nuance.",
     redirectingCancel: "Cancel",
     // Couldn't open checkout (frame 3089:12973). The NoWallet body drops the
-    // wallet clause when the publication has no wallet plans.
+    // wallet clause when there are no wallet plans.
     checkoutErrorTitle: "Couldn\u2019t open checkout",
     checkoutErrorBody:
       "We couldn\u2019t reach Stripe, so you haven\u2019t been charged. Please try again in a moment, or pay with your Nuance wallet instead.",
@@ -1029,10 +1042,8 @@ export const subscriptionPurchaseCopy = {
       "We couldn\u2019t reach Stripe, so you haven\u2019t been charged. Please try again in a moment.",
     payWithWallet: "Pay with wallet",
     tryAgain: "Try again",
-    // Already subscribed (frame 3089:12982). {handle} → publication handle.
+    // Already subscribed (frame 3089:12982); body is pub/author.cardAlreadyBody.
     alreadyTitle: "You\u2019re already subscribed",
-    alreadyBody:
-      "You already have an active subscription to {handle}, so we didn\u2019t open checkout. You can see it under Subscriptions in your profile.",
     alreadyClose: "Close",
   },
 };

@@ -1,8 +1,8 @@
 import { SubscriptionTimeInterval } from "../../../candid/Subscription/Subscription";
 import type { WriterSubscriptionDetails } from "../../../candid/Subscription/Subscription";
 
-// Pay a publication subscription by card (Stripe) -- NIC-621 (epic NIC-620,
-// design NIC-616).
+// Pay a publication's or an individual writer's subscription by card (Stripe)
+// -- NIC-621 (epic NIC-620, design NIC-616); writers NIC-631 (design NIC-619).
 //
 // Nuance's off-chain card-payment server (Aikindapps/nuance `stripe-proxy`)
 // creates the Stripe Checkout Session. Every call is authorised the same way:
@@ -17,7 +17,8 @@ import type { WriterSubscriptionDetails } from "../../../candid/Subscription/Sub
 export const CARD_SERVER_URL =
   "https://nuance-stripe-proxy.onrender.com/prod/stripe";
 
-// One card plan the publication sells: Stripe price id + USD amount in cents.
+// One card plan the publication or writer sells: Stripe price id + USD amount
+// in cents.
 export type CardTier = {
   interval: SubscriptionTimeInterval;
   priceId: string;
@@ -34,9 +35,9 @@ const CARD_INTERVALS = [
 ] as const;
 
 // The card plans a reader can buy, in display order. Empty unless the
-// publication's Stripe account is active (charges + transfers enabled). The
-// first entry per interval wins (updateStripePriceTier upserts, so there is
-// only ever one).
+// publication's or writer's Stripe account is active (charges + transfers
+// enabled). The first entry per interval wins (updateStripePriceTier upserts,
+// so there is only ever one).
 export function cardTiers(details: WriterSubscriptionDetails | null): CardTier[] {
   if (!details || !details.stripeIsActive) return [];
   const tiers: CardTier[] = [];
