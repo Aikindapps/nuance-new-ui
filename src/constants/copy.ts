@@ -942,6 +942,9 @@ export const subscriptionPurchaseCopy = {
       "When you subscribe to this publication, you get unlimited access to all membership content. Paying by card, you\u2019re charged at the start of each period and it renews automatically until you cancel.",
     cardAlreadyBody:
       "You already have an active subscription to {handle}, so we didn\u2019t open checkout. You can see it under Subscriptions in your profile.",
+    // No subscription plans body (NIC-638, Dana's reading on NIC-635).
+    noPlansBody:
+      "This publication hasn\u2019t set up any subscription plans yet. Check back later.",
   },
 
   // ── Confirm state — author variant (frame 1:6792) ──
@@ -961,6 +964,9 @@ export const subscriptionPurchaseCopy = {
       "When you subscribe to this author, you get unlimited access to all membership content. Paying by card, you\u2019re charged at the start of each period and it renews automatically until you cancel.",
     cardAlreadyBody:
       "You already have an active subscription to @{handle}, so we didn\u2019t open checkout. You can see it under Subscriptions in your profile.",
+    // No subscription plans body (frames 3185:15747 / 3187:15754).
+    noPlansBody:
+      "This author hasn\u2019t set up any subscription plans yet. Check back later.",
   },
 
   // ── Shared confirm-screen strings ──
@@ -1009,8 +1015,7 @@ export const subscriptionPurchaseCopy = {
 
   // ── No-plans state (graceful: author hasn't configured subscriptions) ──
   noPlansTitle: "No subscription plans",
-  noPlansBody:
-    "This author hasn\u2019t set up any subscription plans yet. Check back later.",
+  // The body differs by target: pub.noPlansBody / author.noPlansBody (NIC-638).
   noPlansClose: "Close",
 
   // ── Pay by card (Stripe) — NIC-621 (design NIC-616), writers NIC-631

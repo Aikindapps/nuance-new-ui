@@ -377,7 +377,7 @@ function SubscribePhoneSheet({
     // (as the desktop window); 24 above and below the spinner.
     body = <SheetSpinner top="mt-1" />;
   } else if (purchase.stage === "noplans") {
-    body = <p className="mt-4 text-body text-ink">{c.noPlansBody}</p>;
+    body = <p className="mt-4 text-body text-ink">{variant.noPlansBody}</p>;
     footer = primary(c.noPlansClose, onClose);
   } else if (purchase.stage === "confirm" && purchase.details) {
     const details = purchase.details;
@@ -790,7 +790,7 @@ export function SubscriptionPurchaseModal({
       {purchase.stage === "noplans" && (
         <>
           <div className="mt-6">
-            <p className="text-body text-ink">{c.noPlansBody}</p>
+            <p className="text-body text-ink">{variant.noPlansBody}</p>
           </div>
           <FooterRow>
             <Button variant="contained" onClick={onClose} sx={primaryButtonSx}>
