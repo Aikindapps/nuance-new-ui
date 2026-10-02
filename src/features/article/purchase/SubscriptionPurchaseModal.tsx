@@ -203,8 +203,8 @@ function MethodTabs({
 // -- Who you're subscribing to (NIC-633) ---------------------------------------
 // The publication's logo or the writer's photo + name under the title, on the
 // plan picker only. Desktop (frames 1:6561 / 1:6792 / 3085:11951): avatar 88,
-// 24 under the header row, name 24 to its right, the intro 32 below (NIC-640:
-// the row's 8 bottom padding + the intro's own 24). Phone
+// 20 under the header row (title + close, NIC-644), name 24 to its right, the
+// intro 32 below (NIC-640: the row's 8 bottom padding + the intro's own 24). Phone
 // (3050:6022): avatar 48, 16 under the title, name 16 to its right, the intro
 // 16 below. Name 22/32 medium. No display name -> "@handle"; no photo -> the
 // house initial avatar. Publications keep the house rounded-square logo,
@@ -222,7 +222,7 @@ function IdentityRow({
 }) {
   const name = profile?.displayName || `@${profile?.handle || handle}`;
   return (
-    <div className={`flex items-center ${phone ? "mt-4 gap-4" : "mt-6 gap-6 pb-2"}`}>
+    <div className={`flex items-center ${phone ? "mt-4 gap-4" : "mt-5 gap-6 pb-2"}`}>
       <Avatar
         src={profile?.avatar ?? ""}
         label={profile?.displayName || profile?.handle || handle}
