@@ -12,6 +12,8 @@ import type { WriterSubscriptionDetails } from "../../../candid/Subscription/Sub
 import { fmtUsd } from "./cardCheckout";
 import { useIsMobileViewport } from "../../../lib/useIsMobileViewport";
 import { SubscribeSheet } from "./SubscribeSheet";
+import { Avatar } from "../../../components/ui/Avatar";
+import type { UserListItem } from "../../../candid/User/User";
 
 export const SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID =
   "subscription-purchase-modal-title";
@@ -198,6 +200,46 @@ function MethodTabs({
   );
 }
 
+// -- Who you're subscribing to (NIC-633) ---------------------------------------
+// The publication's logo or the writer's photo + name under the title, on the
+// plan picker only. Desktop (frames 1:6561 / 1:6792 / 3085:11951): avatar 88,
+// 32 under the header row, name 24 to its right, the intro 24 below. Phone
+// (3050:6022): avatar 48, 16 under the title, name 16 to its right, the intro
+// 16 below. Name 22/32 medium. No display name -> "@handle"; no photo -> the
+// house initial avatar. Publications keep the house rounded-square logo,
+// writers the round photo.
+function IdentityRow({
+  profile,
+  handle,
+  isPublication,
+  phone = false,
+}: {
+  profile: UserListItem | null;
+  handle: string;
+  isPublication: boolean;
+  phone?: boolean;
+}) {
+  const name = profile?.displayName || `@${profile?.handle || handle}`;
+  return (
+    <div className={`flex items-center ${phone ? "mt-4 gap-4" : "mt-8 gap-6"}`}>
+      <Avatar
+        src={profile?.avatar ?? ""}
+        label={profile?.displayName || profile?.handle || handle}
+        sizeClass={phone ? "size-12" : "size-[calc(88*var(--fpx))]"}
+        textClass={
+          phone
+            ? "text-[length:calc(20*var(--fpx))]"
+            : "text-[length:calc(36*var(--fpx))]"
+        }
+        rounded={isPublication ? "card" : "full"}
+      />
+      <span className="min-w-0 break-words text-[length:calc(22*var(--fpx))] font-medium leading-8 text-ink">
+        {name}
+      </span>
+    </div>
+  );
+}
+
 // -- Phone bottom sheet (NIC-626, NIC-629) ------------------------------------
 // Below the 1024 seam, EVERY Subscribe (publication or writer, with or
 // without card payment) gets the "NUR / Subscribe sheet (phone)" bottom sheet
@@ -298,6 +340,8 @@ type SubscribePhoneSheetProps = {
   title: string;
   handle: string;
   variant: typeof subscriptionPurchaseCopy.pub;
+  // Avatar + name row, shown under the title on the plan picker (NIC-633).
+  identity: ReactNode;
   rates: ReturnType<typeof useSubscriptionRates>;
   terms: boolean;
   onTermsChange: (checked: boolean) => void;
@@ -313,6 +357,7 @@ function SubscribePhoneSheet({
   title,
   handle,
   variant,
+  identity,
   rates,
   terms,
   onTermsChange,
@@ -619,6 +664,7 @@ function SubscribePhoneSheet({
       hero={hero}
       footer={footer}
     >
+      {purchase.stage === "confirm" && purchase.details && identity}
       {body}
     </SubscribeSheet>
   );
@@ -629,6 +675,9 @@ function SubscribePhoneSheet({
 type Props = {
   isPublication: boolean;
   handle: string;
+  // The publication's (or writer's) User record for the avatar + name row;
+  // null when it could not be loaded (falls back to "@handle").
+  profile: UserListItem | null;
   writerPrincipalId: string;
   onClose: () => void;
   onPurchased?: () => void;
@@ -639,6 +688,7 @@ type Props = {
 export function SubscriptionPurchaseModal({
   isPublication,
   handle,
+  profile,
   writerPrincipalId,
   onClose,
   onPurchased,
@@ -747,6 +797,15 @@ export function SubscriptionPurchaseModal({
       ? ORDERED_INTERVALS.filter((i) => purchase.details![feeField(i)]).length
       : 0) === 1;
 
+  const identity = (phone: boolean) => (
+    <IdentityRow
+      profile={profile}
+      handle={handle}
+      isPublication={isPublication}
+      phone={phone}
+    />
+  );
+
   // Phone (NIC-626, NIC-629): every Subscribe uses the bottom sheet, from
   // the first frame (it shows its own spinner while the plans load).
   if (isMobile) {
@@ -756,6 +815,7 @@ export function SubscriptionPurchaseModal({
         title={title}
         handle={handle}
         variant={variant}
+        identity={identity(true)}
         rates={rates}
         terms={terms}
         onTermsChange={setTerms}
@@ -801,6 +861,8 @@ export function SubscriptionPurchaseModal({
       )}
 
       {/* ── CONFIRM (frames 1:6561 / 1:6792) ── */}
+      {purchase.stage === "confirm" && purchase.details && identity(false)}
+
       {purchase.stage === "confirm" && purchase.details && onCardTab && (
         <>
           <div className="mt-6 flex flex-col gap-6">
