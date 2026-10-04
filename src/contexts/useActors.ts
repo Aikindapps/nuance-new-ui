@@ -388,6 +388,13 @@ export type ActorsValue = {
   // canister under the caller's principal; the card-payment server checks and
   // consumes it (valid 2 minutes).
   authorizeForProxy: (nonce: string) => Promise<void>;
+  // Card payments (NIC-622): is the reader an active subscriber of this
+  // publication or writer right now? The same check the card-payment server
+  // makes before it refuses a checkout (409).
+  isReaderSubscriber: (
+    writerPrincipalId: string,
+    readerPrincipalId: string,
+  ) => Promise<boolean>;
   // Spend restricted ("Free") NUA toward a subscription — mirrors
   // spendRestrictedTokensForTipping but for the subscription flow.
   spendRestrictedTokensForSubscription: (

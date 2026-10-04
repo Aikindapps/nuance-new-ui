@@ -17,6 +17,18 @@ import {
   openCheckoutTab,
   type CardTier,
 } from "./cardCheckout";
+import {
+  CONFIRM_LIMIT_MS,
+  CONFIRM_POLL_MS,
+  cardReturnUrl,
+  clearCardPending,
+  isCardPending,
+  markCardPending,
+  readCardPlan,
+  saveCardPlan,
+  type CardPlan,
+  type CardReturn,
+} from "./cardReturn";
 
 const SUBSCRIPTION_CANISTER_ID: string = canisterIds.Subscription.ic;
 
@@ -38,6 +50,17 @@ const SUBSCRIPTION_CANISTER_ID: string = canisterIds.Subscription.ic;
 //                       → alreadySubscribed (server 409)
 //                       → checkoutError     (server unreachable / any other failure)
 // checkoutError         → redirecting (Try again) | confirm, method=wallet (Pay with wallet)
+//
+// Back from Stripe (NIC-622; frames 3088:12969 / 3091:3298 / 3091:3306 /
+// 3093:16866). Stripe returns the reader to the article in the tab it opened;
+// the article opens this window with `cardReturn`:
+// cancel:  loading → cancelled → confirm, method=card (Try again)
+//                              | confirm, method=wallet (Pay with wallet)
+// success: confirming → subscribed       (subscription seen; read every 2 s)
+//                     → paymentReceived  (not seen 15 s after the return)
+// Duplicate-payment guard: for 10 minutes after a success return, until that
+// subscription shows up, Continue to payment (any tab) → paymentReceived,
+// with no Stripe tab and no server call.
 
 export type SubscriptionPurchaseStage =
   | "loading"
@@ -49,7 +72,11 @@ export type SubscriptionPurchaseStage =
   | "error"
   | "redirecting"
   | "alreadySubscribed"
-  | "checkoutError";
+  | "checkoutError"
+  | "cancelled"
+  | "confirming"
+  | "subscribed"
+  | "paymentReceived";
 
 /** Which picker the confirm screen shows (tabs only when both exist, D-168). */
 export type PaymentMethodTab = "wallet" | "card";
@@ -97,6 +124,13 @@ export type SubscriptionPurchaseHook = SubscriptionPurchaseState & {
   startCardCheckout: () => Promise<boolean>;
   /** "Pay with wallet" on a card error: back to the picker, wallet tab. */
   payWithWallet: () => void;
+  /** "Try again" after cancelling on Stripe: back to the picker, card tab. */
+  backToCardPicker: () => void;
+  /**
+   * Success return: the card plan the reader picked before Stripe (for the
+   * "charged $5.00 every month" line); null when this browser has no record.
+   */
+  paidPlan: CardPlan | null;
   /** Pick a plan interval on the confirm screen. */
   select: (interval: SubscriptionTimeInterval) => void;
   /** Execute the full payment sequence. Call with terms checked and a plan selected. */
@@ -117,6 +151,8 @@ type Props = {
    * backend keys subscriptions on (isReaderSubscriber(postOwnerPrincipal, …)).
    */
   writerPrincipalId: string;
+  /** Set when the reader has just come back from Stripe Checkout (NIC-622). */
+  cardReturn?: CardReturn | null;
 };
 
 // Map a SubscriptionTimeInterval to the WriterSubscriptionDetails fee field.
@@ -150,13 +186,21 @@ function hasAnyPlan(details: WriterSubscriptionDetails): boolean {
 
 export function useSubscriptionPurchase({
   writerPrincipalId,
+  cardReturn = null,
 }: Props): SubscriptionPurchaseHook {
   const actors = useActors();
   const { principal } = useAuth();
   const freeNua = useFreeNuaBalance();
 
   const [state, setState] = useState<SubscriptionPurchaseState>({
-    stage: "loading",
+    // Success return: Confirming straight away (Payment received if there
+    // is no signed-in reader to confirm for).
+    stage:
+      cardReturn === "success"
+        ? principal && writerPrincipalId
+          ? "confirming"
+          : "paymentReceived"
+        : "loading",
     details: null,
     writerPrincipalId: null,
     selected: null,
@@ -172,7 +216,9 @@ export function useSubscriptionPurchase({
 
   // ── LOAD EFFECT ──────────────────────────────────────────────────────────
   // Runs once on mount: resolve writerPrincipalId then fetch plan details.
+  // A success return from Stripe skips it: its states need no plans.
   useEffect(() => {
+    if (cardReturn === "success") return;
     let cancelled = false;
 
     async function load() {
@@ -234,6 +280,26 @@ export function useSubscriptionPurchase({
             stage: "noplans",
             details,
             writerPrincipalId: writerId,
+          }));
+          return;
+        }
+
+        // Back from Stripe without paying (NIC-622): "You haven't been
+        // charged", over the card picker with the plan picked before Stripe.
+        if (cardReturn === "cancel" && hasCard) {
+          const readerId = principal?.toText() ?? "";
+          const plan = readerId ? readCardPlan(readerId, writerId) : null;
+          setState((s) => ({
+            ...s,
+            stage: "cancelled",
+            details,
+            writerPrincipalId: writerId,
+            method: "card",
+            cardSelected: cardTiers(details).some(
+              (t) => t.interval === plan?.interval,
+            )
+              ? (plan?.interval ?? null)
+              : null,
           }));
           return;
         }
@@ -503,6 +569,15 @@ export function useSubscriptionPurchase({
     }));
   }, []);
 
+  const backToCardPicker = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      stage: "confirm",
+      method: "card",
+      errorMessage: null,
+    }));
+  }, []);
+
   const startCardCheckout = useCallback((): Promise<boolean> => {
     if (inFlightRef.current) return Promise.resolve(false);
     const { cardSelected, writerPrincipalId, details } = state;
@@ -512,7 +587,16 @@ export function useSubscriptionPurchase({
       return Promise.resolve(false);
     }
 
+    // Duplicate-payment guard (NIC-622), read now -- the success return may
+    // have landed in another tab since this window opened.
+    if (isCardPending(readerId, writerPrincipalId, Date.now())) {
+      setState((s) => ({ ...s, stage: "paymentReceived", errorMessage: null }));
+      return Promise.resolve(false);
+    }
+
     inFlightRef.current = true;
+    // For the tab Stripe returns to (the "charged $X every ..." line).
+    saveCardPlan(readerId, writerPrincipalId, tier);
     // Synchronous, inside the click: the browser allows this tab.
     const tab = openCheckoutTab(subscriptionPurchaseCopy.card.redirectingTitle);
     setState((s) => ({ ...s, stage: "redirecting", errorMessage: null }));
@@ -523,6 +607,7 @@ export function useSubscriptionPurchase({
         priceId: tier.priceId,
         writerId: writerPrincipalId,
         readerId,
+        returnUrl: cardReturnUrl(),
       });
       inFlightRef.current = false;
 
@@ -546,6 +631,62 @@ export function useSubscriptionPurchase({
     })();
   }, [actors, principal, state]);
 
+  // ── BACK FROM STRIPE, PAID (NIC-622) ─────────────────────────────────────
+  // Confirming your payment: read the reader's subscription now and every
+  // 2 s after each answer. Seen → You are now subscribed!; not seen 15 s
+  // after the return → Payment received (Close only -- never a retry or a
+  // second payment). The duplicate-payment guard is set for the whole wait
+  // and cleared only once the subscription has been seen.
+  const [paidPlan] = useState<CardPlan | null>(() => {
+    const readerId = principal?.toText() ?? "";
+    return cardReturn === "success" && readerId
+      ? readCardPlan(readerId, writerPrincipalId)
+      : null;
+  });
+
+  useEffect(() => {
+    if (cardReturn !== "success") return;
+    const readerId = principal?.toText() ?? "";
+    if (!readerId || !writerPrincipalId) return;
+    markCardPending(readerId, writerPrincipalId, Date.now());
+
+    let done = false;
+    let next: ReturnType<typeof setTimeout> | undefined;
+    const finish = (stage: SubscriptionPurchaseStage) => {
+      done = true;
+      clearTimeout(next);
+      clearTimeout(limit);
+      setState((s) => ({ ...s, stage }));
+    };
+    const limit = setTimeout(() => {
+      if (!done) finish("paymentReceived");
+    }, CONFIRM_LIMIT_MS);
+    const read = async () => {
+      let active = false;
+      try {
+        active = await actors.isReaderSubscriber(writerPrincipalId, readerId);
+      } catch {
+        // Not reachable right now: same as not there yet.
+      }
+      if (done) return;
+      if (active) {
+        clearCardPending(readerId, writerPrincipalId);
+        finish("subscribed");
+        return;
+      }
+      next = setTimeout(() => void read(), CONFIRM_POLL_MS);
+    };
+    void read();
+
+    return () => {
+      done = true;
+      clearTimeout(next);
+      clearTimeout(limit);
+    };
+    // A return is a one-off event: this runs once per window.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return {
     ...state,
     select,
@@ -557,5 +698,7 @@ export function useSubscriptionPurchase({
     selectCard,
     startCardCheckout,
     payWithWallet,
+    backToCardPicker,
+    paidPlan,
   };
 }

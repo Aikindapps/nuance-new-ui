@@ -72,6 +72,9 @@ type CheckoutArgs = {
   priceId: string;
   writerId: string;
   readerId: string;
+  // This page's address: Stripe sends the reader back here (NIC-622). The
+  // server ignores it until its change on petition NIC-624 (item 5) ships.
+  returnUrl: string;
   fetchImpl?: typeof fetch;
 };
 
@@ -85,6 +88,7 @@ export async function createCardCheckout({
   priceId,
   writerId,
   readerId,
+  returnUrl,
   fetchImpl = fetch,
 }: CheckoutArgs): Promise<CardCheckoutResult> {
   const nonce = newNonce();
@@ -99,7 +103,7 @@ export async function createCardCheckout({
     res = await fetchImpl(`${CARD_SERVER_URL}/checkout`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId, writerId, readerId, nonce }),
+      body: JSON.stringify({ priceId, writerId, readerId, nonce, returnUrl }),
     });
   } catch (e: unknown) {
     return { kind: "error", message: e instanceof Error ? e.message : "network error" };

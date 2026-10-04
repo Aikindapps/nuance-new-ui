@@ -945,6 +945,16 @@ export const subscriptionPurchaseCopy = {
     // No subscription plans body (NIC-638, Dana's reading on NIC-635).
     noPlansBody:
       "This publication hasn\u2019t set up any subscription plans yet. Check back later.",
+    // Back from Stripe (NIC-622): You are now subscribed! (frame 3091:3306)
+    // and Payment received (frame 3093:16866). {handle} → publication handle;
+    // {amount} → "$5.00"; {period} → week / month / year. NoPlan: this
+    // browser has no record of the plan picked before Stripe.
+    cardSuccessBody:
+      "{handle} says thanks! You can now read all the articles of {handle}. Your card will be charged {amount} every {period} until you cancel. You can manage or cancel it under Subscriptions in your profile.",
+    cardSuccessBodyNoPlan:
+      "{handle} says thanks! You can now read all the articles of {handle}. You can manage or cancel your subscription under Subscriptions in your profile.",
+    cardReceivedBody:
+      "Your subscription to {handle} will appear shortly. Stripe is still confirming your payment, so you don\u2019t need to pay again. Once it\u2019s active, you\u2019ll find it under Subscriptions in your profile.",
   },
 
   // ── Confirm state — author variant (frame 1:6792) ──
@@ -967,6 +977,15 @@ export const subscriptionPurchaseCopy = {
     // No subscription plans body (frames 3185:15747 / 3187:15754).
     noPlansBody:
       "This author hasn\u2019t set up any subscription plans yet. Check back later.",
+    // Back from Stripe (NIC-622; NIC-619 handoff item 5). {name} → the
+    // writer's display name (else @handle); {handle} → author handle;
+    // {amount} / {period} as for publications.
+    cardSuccessBody:
+      "{name} says thanks! You can now read all the articles of @{handle}. Your card will be charged {amount} every {period} until you cancel. You can manage or cancel it under Subscriptions in your profile.",
+    cardSuccessBodyNoPlan:
+      "{name} says thanks! You can now read all the articles of @{handle}. You can manage or cancel your subscription under Subscriptions in your profile.",
+    cardReceivedBody:
+      "Your subscription to @{handle} will appear shortly. Stripe is still confirming your payment, so you don\u2019t need to pay again. Once it\u2019s active, you\u2019ll find it under Subscriptions in your profile.",
   },
 
   // ── Shared confirm-screen strings ──
@@ -1050,6 +1069,24 @@ export const subscriptionPurchaseCopy = {
     // Already subscribed (frame 3089:12982); body is pub/author.cardAlreadyBody.
     alreadyTitle: "You\u2019re already subscribed",
     alreadyClose: "Close",
+    // Back from Stripe without paying (frame 3088:12969). The NoWallet body
+    // drops the wallet clause when there are no wallet plans.
+    cancelledTitle: "You haven\u2019t been charged",
+    cancelledBody:
+      "You left Stripe checkout before finishing, so you haven\u2019t been subscribed. You can try again, or pay with your Nuance wallet instead.",
+    cancelledBodyNoWallet:
+      "You left Stripe checkout before finishing, so you haven\u2019t been subscribed. You can try again.",
+    // Back from Stripe, paid (frame 3091:3298): spinner, no buttons.
+    confirmingTitle: "Confirming your payment\u2026",
+    confirmingBody:
+      "You\u2019ve paid on Stripe. We\u2019re confirming it now \u2014 this usually takes a few seconds. You won\u2019t be charged again.",
+    // Payment received (frame 3093:16866); body is pub/author.cardReceivedBody.
+    receivedTitle: "Payment received",
+    receivedClose: "Close",
+    // {period} in pub/author.cardSuccessBody.
+    periodWeek: "week",
+    periodMonth: "month",
+    periodYear: "year",
   },
 };
 

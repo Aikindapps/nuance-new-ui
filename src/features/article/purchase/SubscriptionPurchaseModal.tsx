@@ -10,6 +10,7 @@ import { useSubscriptionRates } from "./useSubscriptionRates";
 import { SubscriptionTimeInterval } from "../../../candid/Subscription/Subscription";
 import type { WriterSubscriptionDetails } from "../../../candid/Subscription/Subscription";
 import { fmtUsd } from "./cardCheckout";
+import type { CardReturn } from "./cardReturn";
 import { useIsMobileViewport } from "../../../lib/useIsMobileViewport";
 import { SubscribeSheet } from "./SubscribeSheet";
 import { Avatar } from "../../../components/ui/Avatar";
@@ -20,9 +21,11 @@ export const SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID =
 
 // ── Shared helpers (mirrors NftPurchaseModal) ──────────────────────────────
 
-function Spinner() {
+// `margin`: Confirming your payment (frame 3091:3298) has no buttons, so its
+// spinner sits 32 below the text and right on the window's bottom padding.
+function Spinner({ margin = "my-6" }: { margin?: string }) {
   return (
-    <div className="relative mx-auto my-6 size-16">
+    <div className={`relative mx-auto ${margin} size-16`}>
       <svg
         className="absolute inset-0 size-16"
         viewBox="0 0 64 64"
@@ -136,6 +139,18 @@ function periodPhrase(interval: SubscriptionTimeInterval): string {
       return "the coming year";
     case SubscriptionTimeInterval.LifeTime:
       return "life";
+  }
+}
+
+// "every month" in the card success body (frame 3091:3306).
+function cardPeriod(interval: SubscriptionTimeInterval): string {
+  switch (interval) {
+    case SubscriptionTimeInterval.Weekly:
+      return subscriptionPurchaseCopy.card.periodWeek;
+    case SubscriptionTimeInterval.Monthly:
+      return subscriptionPurchaseCopy.card.periodMonth;
+    default:
+      return subscriptionPurchaseCopy.card.periodYear;
   }
 }
 
@@ -680,6 +695,8 @@ type Props = {
   // null when it could not be loaded (falls back to "@handle").
   profile: UserListItem | null;
   writerPrincipalId: string;
+  // The reader has just come back from Stripe Checkout (NIC-622).
+  cardReturn?: CardReturn | null;
   onClose: () => void;
   onPurchased?: () => void;
 };
@@ -691,11 +708,12 @@ export function SubscriptionPurchaseModal({
   handle,
   profile,
   writerPrincipalId,
+  cardReturn = null,
   onClose,
   onPurchased,
 }: Props) {
-  const purchase = useSubscriptionPurchase({ writerPrincipalId });
-  useEffect(() => { if (purchase.stage === "success") onPurchased?.(); }, [purchase.stage, onPurchased]);
+  const purchase = useSubscriptionPurchase({ writerPrincipalId, cardReturn });
+  useEffect(() => { if (purchase.stage === "success" || purchase.stage === "subscribed") onPurchased?.(); }, [purchase.stage, onPurchased]);
   const navigate = useNavigate();
   const [terms, setTerms] = useState(false);
   const isMobile = useIsMobileViewport();
@@ -704,10 +722,13 @@ export function SubscriptionPurchaseModal({
   const variant = isPublication ? c.pub : c.author;
 
   const isProcessing =
-    purchase.stage === "processing" || purchase.stage === "redirecting";
+    purchase.stage === "processing" ||
+    purchase.stage === "redirecting" ||
+    purchase.stage === "confirming";
 
-  // Non-dismissable while processing (same pattern as NftPurchaseModal), and
-  // while the checkout session is being created (card).
+  // Non-dismissable while processing (same pattern as NftPurchaseModal),
+  // while the checkout session is being created (card), and while a card
+  // payment is being confirmed after Stripe.
   const handleClose = isProcessing ? () => undefined : onClose;
 
   // Card offer (NIC-621; writers NIC-631): an active Stripe account and at
@@ -783,7 +804,33 @@ export function SubscriptionPurchaseModal({
                       ? cc.checkoutErrorTitle
                       : purchase.stage === "alreadySubscribed"
                         ? cc.alreadyTitle
-                        : "";
+                        : purchase.stage === "cancelled"
+                          ? cc.cancelledTitle
+                          : purchase.stage === "confirming"
+                            ? cc.confirmingTitle
+                            : purchase.stage === "subscribed"
+                              ? variant.successTitle
+                              : purchase.stage === "paymentReceived"
+                                ? cc.receivedTitle
+                                : "";
+
+  // Back from Stripe (NIC-622): card-only states, shown in the 864 card
+  // window even when the plans were never loaded (success return).
+  const cardReturnStage =
+    purchase.stage === "cancelled" ||
+    purchase.stage === "confirming" ||
+    purchase.stage === "subscribed" ||
+    purchase.stage === "paymentReceived";
+
+  // You are now subscribed! body (frame 3091:3306; writer copy NIC-619).
+  const paidPlan = purchase.paidPlan;
+  const cardSuccessBody = (
+    paidPlan ? variant.cardSuccessBody : variant.cardSuccessBodyNoPlan
+  )
+    .replace("{name}", profile?.displayName || `@${handle}`)
+    .replace(/{handle}/g, handle)
+    .replace("{amount}", paidPlan ? fmtUsd(paidPlan.usdCents) : "")
+    .replace("{period}", paidPlan ? cardPeriod(paidPlan.interval) : "");
 
   // Rates for conversion lines on the confirm screen.
   const rates = useSubscriptionRates(
@@ -838,7 +885,9 @@ export function SubscriptionPurchaseModal({
       title={title}
       onClose={handleClose}
       closeAriaLabel={c.closeAria}
-      widthClassName={hasCard ? "w-[calc(864*var(--fpx))]" : undefined}
+      widthClassName={
+        hasCard || cardReturnStage ? "w-[calc(864*var(--fpx))]" : undefined
+      }
     >
       {/* ── LOADING ── */}
       {purchase.stage === "loading" && (
@@ -1332,6 +1381,81 @@ export function SubscriptionPurchaseModal({
           <FooterRow>
             <Button variant="contained" onClick={onClose} sx={primaryButtonSx}>
               {cc.alreadyClose}
+            </Button>
+          </FooterRow>
+        </>
+      )}
+
+      {/* ── CHECKOUT CANCELLED: NOT CHARGED (frame 3088:12969) ── */}
+      {purchase.stage === "cancelled" && (
+        <>
+          <div className="mt-6 flex flex-col gap-6">
+            <p className="text-body text-ink">
+              {purchase.hasWalletPlans
+                ? cc.cancelledBody
+                : cc.cancelledBodyNoWallet}
+            </p>
+          </div>
+
+          <FooterRow>
+            {purchase.hasWalletPlans && (
+              <Button
+                variant="outlined"
+                onClick={purchase.payWithWallet}
+                sx={secondaryButtonSx}
+              >
+                {cc.payWithWallet}
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              onClick={purchase.backToCardPicker}
+              sx={primaryButtonSx}
+            >
+              {cc.tryAgain}
+            </Button>
+          </FooterRow>
+        </>
+      )}
+
+      {/* ── CONFIRMING YOUR PAYMENT (frame 3091:3298): no buttons ── */}
+      {purchase.stage === "confirming" && (
+        <div className="mt-6 flex flex-col gap-0">
+          <p className="text-body text-ink">{cc.confirmingBody}</p>
+          <Spinner margin="mt-8" />
+        </div>
+      )}
+
+      {/* ── YOU ARE NOW SUBSCRIBED! (frame 3091:3306) ── */}
+      {purchase.stage === "subscribed" && (
+        <>
+          <div className="mt-6 flex flex-col gap-6">
+            <p className="text-body text-ink">{cardSuccessBody}</p>
+            <div className="flex justify-center">
+              <IconPartySuccess className="size-60" />
+            </div>
+          </div>
+
+          <FooterRow>
+            <Button variant="contained" onClick={onClose} sx={primaryButtonSx}>
+              {c.successClose}
+            </Button>
+          </FooterRow>
+        </>
+      )}
+
+      {/* ── PAYMENT RECEIVED (frame 3093:16866): Close only ── */}
+      {purchase.stage === "paymentReceived" && (
+        <>
+          <div className="mt-6 flex flex-col gap-6">
+            <p className="text-body text-ink">
+              {variant.cardReceivedBody.replace("{handle}", handle)}
+            </p>
+          </div>
+
+          <FooterRow>
+            <Button variant="contained" onClick={onClose} sx={primaryButtonSx}>
+              {cc.receivedClose}
             </Button>
           </FooterRow>
         </>

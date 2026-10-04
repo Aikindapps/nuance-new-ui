@@ -385,6 +385,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = createSubscriptionActor(await agentPromise);
         return actor.authorizeForProxy(nonce);
       },
+      isReaderSubscriber: async (writerPrincipalId, readerPrincipalId) => {
+        const actor = createSubscriptionActor(await agentPromise);
+        return actor.isReaderSubscriber(writerPrincipalId, readerPrincipalId);
+      },
       spendRestrictedTokensForSubscription: async (eventId, amount) => {
         const actor = await userPromise;
         return actor.spendRestrictedTokensForSubscription(eventId, amount);

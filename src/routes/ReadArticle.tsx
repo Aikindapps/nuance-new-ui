@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useRef, type ReactNode } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Header } from "../components/ui/Header";
 import { HeaderLoggedIn } from "../components/ui/HeaderLoggedIn";
 import { useAuth } from "../contexts/useAuth";
 import { parseArticleSegment } from "../lib/articleUrl";
-import { useArticle } from "../features/article/hooks/useArticle";
+import { useArticle, type ArticleData } from "../features/article/hooks/useArticle";
 import { useComments } from "../features/article/hooks/useComments";
 import { usePostMeta } from "../features/article/hooks/usePostMeta";
 import { useRegisterView } from "../features/article/hooks/useRegisterView";
@@ -31,6 +31,11 @@ import {
   SubscriptionPurchaseModal,
   SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID,
 } from "../features/article/purchase/SubscriptionPurchaseModal";
+import {
+  readCardReturn,
+  withoutCardReturn,
+  type CardReturn,
+} from "../features/article/purchase/cardReturn";
 import {
   LoginModal,
   LOGIN_MODAL_TITLE_ID,
@@ -117,9 +122,51 @@ export function ReadArticle() {
 
   // Modal service + auth — must be called unconditionally (hooks rule).
   const modal = useModal();
-  const { isAuthenticated, principal } = useAuth();
+  const { isAuthenticated, principal, status } = useAuth();
   const queryClient = useQueryClient();
   const handlePurchased = () => { queryClient.invalidateQueries({ queryKey: ["article", bucketCanisterId, postId] }); };
+
+  // The Subscribe window for this article's publication or writer.
+  // `cardReturn`: the reader has just come back from Stripe (NIC-622).
+  const openSubscribeWindow = (
+    { post, author, publication }: Pick<ArticleData, "post" | "author" | "publication">,
+    cardReturn: CardReturn | null,
+  ) => {
+    const subHandle = post.isPublication
+      ? post.handle
+      : post.creatorHandle || post.handle;
+    modal.open(
+      <SubscriptionPurchaseModal
+        isPublication={post.isPublication}
+        handle={subHandle}
+        profile={post.isPublication ? publication : author}
+        writerPrincipalId={post.postOwnerPrincipal}
+        cardReturn={cardReturn}
+        onClose={modal.close}
+        onPurchased={handlePurchased}
+      />,
+      {
+        ariaLabelledBy: SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID,
+        dismissable: false,
+      },
+    );
+  };
+
+  // Back from Stripe Checkout (NIC-622): the card-payment server returns the
+  // reader to this article with ?stripe_checkout=success|cancel, in the tab
+  // Stripe ran in. Once the article and the sign-in are ready: drop the flag
+  // from the address (a reload must not replay it) and, signed in, open the
+  // Subscribe window on the matching state. Once per page load.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const cardReturn = readCardReturn(searchParams);
+  const cardReturnHandled = useRef(false);
+  useEffect(() => {
+    if (!cardReturn || cardReturnHandled.current) return;
+    if (status === "loading" || !article.data) return;
+    cardReturnHandled.current = true;
+    setSearchParams(withoutCardReturn(searchParams), { replace: true });
+    if (isAuthenticated) openSubscribeWindow(article.data, cardReturn);
+  });
 
 
   if (!parsed) {
@@ -196,23 +243,7 @@ export function ReadArticle() {
       modal.open(<LoginModal />, { ariaLabelledBy: LOGIN_MODAL_TITLE_ID });
       return;
     }
-    const subHandle = post.isPublication
-      ? post.handle
-      : post.creatorHandle || post.handle;
-    modal.open(
-      <SubscriptionPurchaseModal
-        isPublication={post.isPublication}
-        handle={subHandle}
-        profile={post.isPublication ? publication : author}
-        writerPrincipalId={post.postOwnerPrincipal}
-        onClose={modal.close}
-        onPurchased={handlePurchased}
-      />,
-      {
-        ariaLabelledBy: SUBSCRIPTION_PURCHASE_MODAL_TITLE_ID,
-        dismissable: false,
-      },
-    );
+    openSubscribeWindow({ post, author, publication }, null);
   };
 
   // Open the NFT purchase modal (auth-guarded). Logged-out → LoginModal;
