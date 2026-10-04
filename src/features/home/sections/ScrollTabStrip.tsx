@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 // Horizontal-scroll tab strip with a right-edge fade hinting more tabs on
 // narrow viewports (mobile 393, NIC-326). The fade ("F-fade") is a
@@ -7,6 +7,10 @@ import type { ReactNode } from "react";
 // (the page background) so it blends on both the logged-in (bg-white) and
 // logged-out home. Inline linear-gradient avoids Tailwind-v4 gradient-util
 // naming drift.
+// NIC-669: the fade shows only while the strip can still scroll right. Once
+// it is scrolled to its end (or every tab fits) the fade is gone, so it no
+// longer lightens the last tab. Re-checked on scroll and whenever the strip
+// or a tab changes size (window resize, web fonts loading).
 export function ScrollTabStrip({
   ariaLabel,
   children,
@@ -14,22 +18,45 @@ export function ScrollTabStrip({
   ariaLabel: string;
   children: ReactNode;
 }) {
+  const navRef = useRef<HTMLElement>(null);
+  const [moreToTheRight, setMoreToTheRight] = useState(true);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const update = () => {
+      setMoreToTheRight(nav.scrollWidth - nav.clientWidth - nav.scrollLeft > 1);
+    };
+    update();
+    nav.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(nav);
+    for (const tab of Array.from(nav.children)) observer.observe(tab);
+    return () => {
+      nav.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <div className="relative">
       <nav
+        ref={navRef}
         aria-label={ariaLabel}
         className="scrollbar-hide flex items-center overflow-x-auto border-b border-ink-border/20"
       >
         {children}
       </nav>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-px right-0 top-0 w-12 md:hidden"
-        style={{
-          backgroundImage:
-            "linear-gradient(to left, var(--color-surface), transparent)",
-        }}
-      />
+      {moreToTheRight && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-px right-0 top-0 w-12 md:hidden"
+          style={{
+            backgroundImage:
+              "linear-gradient(to left, var(--color-surface), transparent)",
+          }}
+        />
+      )}
     </div>
   );
 }
