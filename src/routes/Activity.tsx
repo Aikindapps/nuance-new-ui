@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 import { AccountShell } from "../components/account/AccountShell";
@@ -20,6 +21,10 @@ import { SubscriptionsSection } from "../features/activity/sections/Subscription
 //   subscriptions-> SubscriptionsSection (NIC-353)
 // Desktop section switching is the rail accordion; phone (< lg) switches via
 // a horizontal ScrollTabStrip.
+// NIC-628: the phone strip is wider than the screen, so the active tab is
+// scrolled into view (sideways only) on load and on every section change --
+// at rest "Subscriptions" was off the right edge. Measured again once the web
+// fonts have loaded, since they change the tab widths.
 
 const SECTIONS: { slug: string; label: string }[] = [
   { slug: "following", label: activityCopy.sectionFollowing },
@@ -32,6 +37,25 @@ const SECTIONS: { slug: string; label: string }[] = [
 export function Activity() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { section } = useParams<{ section: string }>();
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let live = true;
+    const reveal = () => {
+      const nav = stripRef.current?.querySelector("nav");
+      const tab = nav?.querySelector('[aria-current="page"]');
+      if (!live || !nav || !tab) return;
+      const n = nav.getBoundingClientRect();
+      const t = tab.getBoundingClientRect();
+      if (t.left < n.left) nav.scrollLeft += t.left - n.left;
+      else if (t.right > n.right) nav.scrollLeft += t.right - n.right;
+    };
+    reveal();
+    void document.fonts?.ready.then(reveal);
+    return () => {
+      live = false;
+    };
+  }, [section, authLoading, isAuthenticated]);
 
   // Auth guard — same shape as FollowingManage / MyArticles.
   if (authLoading) return null;
@@ -46,7 +70,7 @@ export function Activity() {
       <title>{activityCopy.metaTitle}</title>
 
       {/* Phone (< lg): horizontal tab strip — desktop uses the rail accordion. */}
-      <div className="lg:hidden">
+      <div ref={stripRef} className="lg:hidden">
         <ScrollTabStrip ariaLabel={activityCopy.ariaLabel}>
           {SECTIONS.map((s) => (
             <Tab

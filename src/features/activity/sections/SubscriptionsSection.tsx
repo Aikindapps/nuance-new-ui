@@ -31,8 +31,11 @@ import { subscriptionsCopy as c } from "../../../constants/copy";
 // put "Manage in Stripe" in it (ended card rows too -- the billing page is
 // where the card gets updated), wallet rows leave it empty so the meta
 // columns line up. Card rows show the card status line (copy cardActive /
-// cardCancels / cardEnded, full dates). A list with no card row, and the
-// phone layout (NIC-628), are unchanged.
+// cardCancels / cardEnded, full dates). A list with no card row is unchanged.
+// NIC-628: phone (< 1024), frame 3064:6674. The card note leads the same way;
+// a card row's meta column is a fixed 114 wide (its status line wraps rather
+// than squeezing the name) and a full-width "Manage in Stripe" sits 12 under
+// the row. Wallet rows keep the shipped phone row (no slot, no button).
 
 const INITIAL_VISIBLE = 10;
 const PAGE_SIZE = 10;
@@ -93,11 +96,12 @@ export function SubscriptionsSection() {
   }
 
   const slice = rows.slice(0, visible);
-  const cardUi = !isMobile && rows.some((r) => r.paidByCard);
+  const hasCard = rows.some((r) => r.paidByCard);
+  const cardUi = !isMobile && hasCard;
 
   return (
     <>
-      <ActivityNoteBand text={cardUi ? c.cardNote : c.walletNote} />
+      <ActivityNoteBand text={hasCard ? c.cardNote : c.walletNote} />
       <div role="list" aria-label={c.listAriaLabel}>
         {slice.map((row, idx) => (
           <div key={row.principalId} role="listitem">
@@ -106,6 +110,19 @@ export function SubscriptionsSection() {
               user={row.user}
               isPublication={row.isPublication}
               subLine={`@${row.user.handle}`}
+              below={
+                isMobile && row.paidByCard ? (
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    sx={secondaryButtonSx}
+                    disabled={manage.busy}
+                    onClick={manage.open}
+                  >
+                    {c.manageInStripe}
+                  </Button>
+                ) : undefined
+              }
               right={
                 cardUi ? (
                   <div className="flex items-center gap-[calc(24*var(--fpx))]">
@@ -128,6 +145,15 @@ export function SubscriptionsSection() {
                         </Button>
                       )}
                     </div>
+                  </div>
+                ) : isMobile && row.paidByCard ? (
+                  <div className="w-[calc(114*var(--fpx))]">
+                    <SubscriptionMeta
+                      interval={row.interval}
+                      renewsMs={row.endTimeMs}
+                      renewsPrefix={c.renewsPrefix}
+                      statusLine={cardStatus(row, nowMs)}
+                    />
                   </div>
                 ) : (
                   <SubscriptionMeta

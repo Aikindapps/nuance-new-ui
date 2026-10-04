@@ -149,15 +149,20 @@ export function ShowMoreButton({
 // avatar and a `/publication/<handle>` profile link (writers keep the round
 // avatar and `/<handle>` link). Optional + defaulted, so read-only callers
 // (Followers) that omit it are unchanged.
+// `below` (NIC-628, phone card subscriptions) puts a full-width block 12
+// under the row's avatar/name/right line, inside the same 16 row padding.
+// Omitted, the row renders exactly as before.
 export function ActivityUserRow({
   user,
   subLine,
   right,
+  below,
   isPublication = false,
 }: {
   user: UserListItem;
   subLine?: string;
   right?: ReactNode;
+  below?: ReactNode;
   isPublication?: boolean;
 }) {
   const name = user.displayName || user.handle;
@@ -165,8 +170,14 @@ export function ActivityUserRow({
     ? `/publication/${user.handle.toLowerCase()}`
     : `/${user.handle.toLowerCase()}`;
 
-  return (
-    <div className="flex items-center gap-[calc(16*var(--fpx))] py-[calc(16*var(--fpx))]">
+  const line = (
+    <div
+      className={
+        below
+          ? "flex items-center gap-[calc(16*var(--fpx))]"
+          : "flex items-center gap-[calc(16*var(--fpx))] py-[calc(16*var(--fpx))]"
+      }
+    >
       <Link to={profilePath} className="shrink-0" tabIndex={-1}>
         <Avatar
           src={user.avatar}
@@ -192,6 +203,13 @@ export function ActivityUserRow({
       </div>
 
       {right && <div className="shrink-0">{right}</div>}
+    </div>
+  );
+  if (!below) return line;
+  return (
+    <div className="py-[calc(16*var(--fpx))]">
+      {line}
+      <div className="mt-[calc(12*var(--fpx))]">{below}</div>
     </div>
   );
 }
