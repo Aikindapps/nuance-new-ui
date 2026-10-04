@@ -358,6 +358,8 @@ type SubscribePhoneSheetProps = {
   variant: typeof subscriptionPurchaseCopy.pub;
   // Avatar + name row, shown under the title on the plan picker (NIC-633).
   identity: ReactNode;
+  // You are now subscribed! body after Stripe, same text as the popup (NIC-627).
+  cardSuccessBody: string;
   rates: ReturnType<typeof useSubscriptionRates>;
   terms: boolean;
   onTermsChange: (checked: boolean) => void;
@@ -374,6 +376,7 @@ function SubscribePhoneSheet({
   handle,
   variant,
   identity,
+  cardSuccessBody,
   rates,
   terms,
   onTermsChange,
@@ -668,6 +671,43 @@ function SubscribePhoneSheet({
       </p>
     );
     footer = primary(cc.alreadyClose, onClose);
+  } else if (purchase.stage === "cancelled") {
+    // Back from Stripe without paying (frame 3059:6354). Card-only drops the
+    // wallet clause and Pay with wallet, as the popup does.
+    body = (
+      <p className="mt-4 text-body text-ink">
+        {purchase.hasWalletPlans ? cc.cancelledBody : cc.cancelledBodyNoWallet}
+      </p>
+    );
+    footer = (
+      <>
+        {primary(cc.tryAgain, purchase.backToCardPicker)}
+        {purchase.hasWalletPlans &&
+          secondary(cc.payWithWallet, purchase.payWithWallet)}
+      </>
+    );
+  } else if (purchase.stage === "confirming") {
+    // Confirming your payment (frame 3063:6629): spinner 32 under the text,
+    // no buttons, and the sheet cannot be closed (dismissable is false).
+    body = (
+      <div className="mt-4">
+        <p className="text-body text-ink">{cc.confirmingBody}</p>
+        <SheetSpinner />
+      </div>
+    );
+  } else if (purchase.stage === "subscribed") {
+    // You are now subscribed! (frame 3063:6950): party above the title.
+    hero = <IconPartySuccess className="size-40" />;
+    body = <p className="mt-4 text-body text-ink">{cardSuccessBody}</p>;
+    footer = primary(c.successClose, onClose);
+  } else if (purchase.stage === "paymentReceived") {
+    // Payment received (frame 3063:6790): Close only.
+    body = (
+      <p className="mt-4 text-body text-ink">
+        {variant.cardReceivedBody.replace("{handle}", handle)}
+      </p>
+    );
+    footer = primary(cc.receivedClose, onClose);
   }
 
   return (
@@ -864,6 +904,7 @@ export function SubscriptionPurchaseModal({
         handle={handle}
         variant={variant}
         identity={identity(true)}
+        cardSuccessBody={cardSuccessBody}
         rates={rates}
         terms={terms}
         onTermsChange={setTerms}
