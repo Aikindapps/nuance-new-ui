@@ -3,6 +3,7 @@ import { useAuth } from "../../../contexts/useAuth";
 import { useActors } from "../../../contexts/useActors";
 import type { UserListItem } from "../../../candid/User/User";
 import type { SubscriptionTimeInterval } from "../../../candid/Subscription/Subscription";
+import { isNoSubscriptionRecord } from "../../../lib/noSubscriptionRecord";
 
 // NIC-353 -- SS8.3 Subscriptions section hook.
 //
@@ -60,6 +61,8 @@ export function useMySubscriptions() {
     queryFn: async () => {
       const res = await actors.getReaderSubscriptionDetails();
       if (res.__kind__ === "err") {
+        // NIC-668: a reader who never subscribed has no record -> empty list.
+        if (isNoSubscriptionRecord(res.err)) return [];
         throw new Error(res.err || "load failed");
       }
       const events = res.ok.readerSubscriptions;

@@ -4,6 +4,7 @@ import {
   SubscriptionTimeInterval,
   type SubscriptionEvent,
 } from "../../../candid/Subscription/Subscription";
+import { isNoSubscriptionRecord } from "../../../lib/noSubscriptionRecord";
 
 // NIC-252 §6.9 Publication Subscribers — read-only, editor-gated data hook.
 //
@@ -65,6 +66,16 @@ export function usePublicationSubscribers(handle: string) {
     queryFn: async () => {
       const res = await actors.getWriterSubscriptionDetails(canisterId!);
       if (res.__kind__ === "err") {
+        // NIC-668: a publication that never set up subscriptions has no
+        // record -> empty roster ("Unauthorized." stays an error).
+        if (isNoSubscriptionRecord(res.err)) {
+          return {
+            subscribers: [],
+            feeByInterval: EMPTY_FEES,
+            subscriberCount: 0,
+            newThisWeek: 0,
+          };
+        }
         throw new Error(res.err || "load failed");
       }
       const details = res.ok;
