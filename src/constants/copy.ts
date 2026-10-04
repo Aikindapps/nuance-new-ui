@@ -1325,6 +1325,19 @@ export const subscriptionsCopy = {
   renewsPrefix: "renews",
   walletNote:
     "Managing your subscriptions and billing lives in your Wallet \u2014 arriving with monetization.",
+  // NIC-623 -- card (Stripe) subscriptions, desktop (frame 3094:8914). The
+  // note replaces walletNote when the list has at least one card row.
+  cardNote:
+    "Card subscriptions are managed in Stripe. Manage in Stripe opens your Stripe billing page, where you can update your card or cancel. Wallet subscriptions will be managed in your Wallet \u2014 arriving with monetization.",
+  // Card row status lines; {date} = "Apr 12, 2027".
+  cardActive: "Card \u00b7 Active \u00b7 renews {date}",
+  cardCancels: "Card \u00b7 Cancels on {date} \u00b7 won\u2019t renew",
+  cardEnded: "Card \u00b7 Ended on {date}",
+  manageInStripe: "Manage in Stripe",
+  // Shown in the new tab until Stripe's billing page loads.
+  manageOpening: "Opening your Stripe billing page\u2026",
+  manageError: "Couldn\u2019t open your Stripe billing page. Please try again.",
+  manageNoCustomer: "We couldn\u2019t find a Stripe billing page for your account.",
 };
 
 // NIC-261 -- My Profile self-view (/profile).

@@ -233,18 +233,21 @@ export function CadenceChip({ label }: { label: string }) {
 // Lifetime subscriptions never show a renews date.
 // Accepts sinceMs/renewsMs as raw ms timestamps; prefix strings override the
 // leading word (e.g. sincePrefix="since", renewsPrefix="renews").
+// `statusLine` (NIC-623, card rows) replaces the composed line verbatim.
 export function SubscriptionMeta({
   interval,
   sinceMs,
   renewsMs,
   sincePrefix,
   renewsPrefix,
+  statusLine,
 }: {
   interval: SubscriptionTimeInterval;
   sinceMs?: number;
   renewsMs?: number;
   sincePrefix?: string;
   renewsPrefix?: string;
+  statusLine?: string;
 }) {
   const chipLabel = CADENCE_LABEL[interval];
   const isLifetime = interval === SubscriptionTimeInterval.LifeTime;
@@ -278,6 +281,7 @@ export function SubscriptionMeta({
   } else if (isLifetime) {
     metaLine = "no renewal";
   }
+  if (statusLine) metaLine = statusLine;
 
   return (
     <div className="flex flex-col items-end gap-[calc(6*var(--fpx))] text-right">

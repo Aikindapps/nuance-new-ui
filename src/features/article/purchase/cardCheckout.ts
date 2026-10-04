@@ -130,6 +130,71 @@ export async function createCardCheckout({
   return { kind: "url", url: rec.url };
 }
 
+export type BillingPortalResult =
+  | { kind: "url"; url: string }
+  // The server answered 404: it has no Stripe customer for this reader.
+  | { kind: "noCustomer" }
+  // Anything else: server unreachable, auth step failed, non-2xx, bad body.
+  | { kind: "error"; message: string };
+
+type BillingPortalArgs = {
+  authorize: (nonce: string) => Promise<void>;
+  readerId: string;
+  // This page's address: Stripe's billing page links back here. The server
+  // ignores it until its change on petition NIC-624 (item 5) ships.
+  returnUrl: string;
+  fetchImpl?: typeof fetch;
+};
+
+// Ask the card-payment server for the reader's Stripe billing page (the
+// Stripe Customer Portal: every card subscription of this reader, where they
+// update their card or cancel) -- NIC-623. Same authorisation as checkout.
+// Never throws.
+export async function createBillingPortalSession({
+  authorize,
+  readerId,
+  returnUrl,
+  fetchImpl = fetch,
+}: BillingPortalArgs): Promise<BillingPortalResult> {
+  const nonce = newNonce();
+  try {
+    await authorize(nonce);
+  } catch (e: unknown) {
+    return { kind: "error", message: e instanceof Error ? e.message : "authorize failed" };
+  }
+
+  let res: Response;
+  try {
+    res = await fetchImpl(`${CARD_SERVER_URL}/billing-portal`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ readerId, nonce, returnUrl }),
+    });
+  } catch (e: unknown) {
+    return { kind: "error", message: e instanceof Error ? e.message : "network error" };
+  }
+
+  if (res.status === 404) return { kind: "noCustomer" };
+
+  let body: unknown = null;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+  const rec = (body ?? {}) as { url?: unknown; error?: unknown };
+  if (!res.ok) {
+    return {
+      kind: "error",
+      message: typeof rec.error === "string" ? rec.error : `HTTP ${res.status}`,
+    };
+  }
+  if (typeof rec.url !== "string" || !/^https:\/\//.test(rec.url)) {
+    return { kind: "error", message: "no billing page url" };
+  }
+  return { kind: "url", url: rec.url };
+}
+
 // Open the tab Stripe will load in. Must run synchronously inside the click
 // handler (before any await) so the browser treats it as a user gesture and
 // does not block it. Returns null when the browser blocked it anyway.

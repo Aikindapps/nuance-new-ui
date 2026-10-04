@@ -24,6 +24,17 @@ import type { SubscriptionTimeInterval } from "../../../candid/Subscription/Subs
 // divide, per useWalletHistory / usePublicationSubscribers precedent.
 //
 // Read-only: no billing management (NIC-44).
+//
+// NIC-623 -- card (Stripe) subscriptions. A card-paid event carries
+// paymentMethod Fiat; its endTime is the end of the paid period (moved on each
+// renewal; set to the moment it ended when Stripe ends it, a failed renewal
+// included) and stripeCancelAtPeriodEnd is set once the reader cancels on
+// Stripe's billing page. NOTE: an event's isWriterSubscriptionActive is the
+// WRITER's wallet-plan switch (Subscription canister
+// writerPrincipalIdToIsSubscriptionActive), not "this subscription is live" --
+// a publication that sells by card only has it false. So card-paid events are
+// kept whatever that flag says (ended ones too: the billing page is where the
+// card gets updated); wallet events keep the original filter.
 
 export type SubscriptionRow = {
   user: UserListItem;
@@ -31,6 +42,10 @@ export type SubscriptionRow = {
   interval: SubscriptionTimeInterval;
   endTimeMs: number;
   isPublication: boolean;
+  // NIC-623: paid by card (Stripe), and whether the reader has cancelled it on
+  // Stripe (it then ends at endTimeMs instead of renewing).
+  paidByCard: boolean;
+  cancelsAtPeriodEnd: boolean;
 };
 
 export function useMySubscriptions() {
@@ -49,10 +64,13 @@ export function useMySubscriptions() {
       }
       const events = res.ok.readerSubscriptions;
 
-      // Keep only active; dedupe by writerPrincipalId (latest startTime wins).
+      // Keep events of writers whose wallet plans are on (the original
+      // filter) plus every card-paid event (NIC-623); dedupe by
+      // writerPrincipalId (latest startTime wins).
       const latestByWriter = new Map<string, (typeof events)[number]>();
       for (const e of events) {
-        if (!e.isWriterSubscriptionActive) continue;
+        const paidByCard = e.paymentMethod?.__kind__ === "Fiat";
+        if (!paidByCard && !e.isWriterSubscriptionActive) continue;
         const prev = latestByWriter.get(e.writerPrincipalId);
         if (!prev || e.startTime > prev.startTime) {
           latestByWriter.set(e.writerPrincipalId, e);
@@ -85,6 +103,8 @@ export function useMySubscriptions() {
               interval: e.subscriptionTimeInterval,
               endTimeMs: Number(e.endTime),
               isPublication: pubHandleSet.has(user.handle.toLowerCase()),
+              paidByCard: e.paymentMethod?.__kind__ === "Fiat",
+              cancelsAtPeriodEnd: e.stripeCancelAtPeriodEnd === true,
             },
           ];
         })
