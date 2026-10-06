@@ -469,7 +469,18 @@ export function PublishView({
       {/* Topics block */}
       <div className="flex flex-col gap-[calc(6*var(--fpx))]">
         <span className="text-label font-bold text-ink">{c.topicsLabel}</span>
-        <p className="text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(8*var(--fpx))]">{c.topicsDescription}</p>
+        {/* Tags helper. Desktop (NIC-675, frames 1:38254 / 1:38058 /
+            1:38072): medium 16/24 80%, same as the submit explainer.
+            Phone unchanged. */}
+        <p
+          className={
+            isMobile
+              ? "text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(8*var(--fpx))]"
+              : "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] font-medium text-ink-80 mt-[calc(8*var(--fpx))]"
+          }
+        >
+          {c.topicsDescription}
+        </p>
         <TopicPicker selected={selected} onChange={setSelected} />
       </div>
 
