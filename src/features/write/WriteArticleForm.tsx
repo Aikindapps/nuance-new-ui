@@ -820,14 +820,19 @@ export function WriteArticleForm({
             const isDraft =
               publishView.mode === "publish" ? submitForReview : true;
             setMembersOnly(chosenMembersOnly);
-            // Only the "actually publishing now" path (publish mode, not a
-            // writer's submit-for-review, not an already-published article
-            // being re-saved) gets the error+Retry toast (NIC-412) - every
-            // other path keeps today's plain error toast.
+            // The "actually publishing now" path (publish mode, not an
+            // already-published article being re-saved) gets the error+Retry
+            // toast (NIC-412), and so does a writer's submission into a
+            // publication (NIC-413) - every other path keeps today's plain
+            // error toast.
             const failure =
-              publishView.mode === "publish" && !submitForReview && !isPublished
-                ? { message: publishSheetCopy.publishFailedToast, retry }
-                : undefined;
+              publishView.mode !== "publish"
+                ? undefined
+                : submitForReview
+                  ? { message: publishSheetCopy.submitFailedToast, retry }
+                  : !isPublished
+                    ? { message: publishSheetCopy.publishFailedToast, retry }
+                    : undefined;
             const post = await doSave(
               isDraft,
               picked,

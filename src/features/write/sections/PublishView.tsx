@@ -21,6 +21,7 @@ import {
 import { useIsMobileViewport } from "../../../lib/useIsMobileViewport";
 import { PREMIUM_MINT_VIEW_TITLE_ID } from "./PremiumMintView";
 import { PublishCategoryField } from "./PublishCategoryField";
+import { publishSheetCopy } from "./publishSheetCopy";
 
 export const PUBLISH_VIEW_TITLE_ID = "publish-view-title";
 
@@ -120,7 +121,7 @@ export function PublishView({
   // Writers (non-editor members of the selected publication) can't publish —
   // only editors can. A writer submits the article to the publication's editor
   // review queue instead (saved as a publication draft), so the primary action
-  // reads "Submit for review" and routes as isDraft:true. Without this the only
+  // reads "Submit to publication" and routes as isDraft:true. Without this the only
   // action is "Publish", which the canister rejects with Unauthorized (NIC-269).
   const submitForReview =
     mode === "publish" &&
@@ -139,7 +140,7 @@ export function PublishView({
   // publication has none.
   const showCategory = pubHandle !== null && selectedPub?.isEditor === true;
   // Publish date & time (NIC-418): hidden in Draft mode, hidden for a
-  // writer's "Submit for review", and hidden when editing an already
+  // writer's "Submit to publication", and hidden when editing an already
   // published article - a future date there would rewrite the live
   // publish date and pull the article out of every feed.
   const showSchedule =
@@ -260,12 +261,15 @@ export function PublishView({
 
   const displayLabel = pubHandle ?? c.personalOption;
 
-  const titleText =
-    mode === "publish"
-      ? submitForReview
-        ? c.titleSubmitForReview
-        : c.titlePublish
-      : c.titleDraft;
+  // Phone only (NIC-413): a long name in a picker row (and in the
+  // Publish-to field itself, below) ends in an ellipsis instead of
+  // wrapping. Desktop markup is unchanged.
+  const pickerText = (text: string) =>
+    isMobile ? <span className="min-w-0 truncate">{text}</span> : text;
+
+  // A writer's submission keeps the "Publish" title (frames 2308:5902 /
+  // 1:38254); only the primary button says what happens.
+  const titleText = mode === "publish" ? c.titlePublish : c.titleDraft;
 
   const primaryLabel =
     mode === "publish"
@@ -330,7 +334,11 @@ export function PublishView({
                   : "border-2 border-ink-border-10 bg-ink-border-5",
               ].join(" ")}
             >
-              <span>{displayLabel}</span>
+              {isMobile ? (
+                <span className="min-w-0 truncate">{displayLabel}</span>
+              ) : (
+                <span>{displayLabel}</span>
+              )}
               <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0 text-ink-80" />
             </button>
 
@@ -339,7 +347,14 @@ export function PublishView({
               <ul
                 id={listId}
                 role="listbox"
-                className="absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]"
+                className={[
+                  "absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]",
+                  // Phone (NIC-413): a long publication list scrolls inside
+                  // the foldout; 320 shows My profile + heading + 3 rows.
+                  ...(isMobile
+                    ? ["max-h-[calc(320*var(--fpx))] overflow-y-auto"]
+                    : []),
+                ].join(" ")}
               >
                 {/* "My profile" option */}
                 <li role="option" aria-selected={pubHandle === null}>
@@ -353,9 +368,24 @@ export function PublishView({
                         : "hover:bg-brand-purple-fluor-80",
                     ].join(" ")}
                   >
-                    {c.personalOption}
+                    {pickerText(c.personalOption)}
                   </button>
                 </li>
+                {/* Phone (NIC-413, frame 2307:5902): muted "Publications (N)"
+                    heading. Visual only - each option already names its
+                    publication, so screen readers skip it. */}
+                {isMobile && (
+                  <li
+                    role="presentation"
+                    aria-hidden="true"
+                    className="flex h-[calc(44*var(--fpx))] shrink-0 items-center px-[calc(16*var(--fpx))] text-[length:calc(14*var(--fpx))] leading-[calc(17*var(--fpx))] font-medium text-white/50"
+                  >
+                    {publishSheetCopy.publicationsHeading.replace(
+                      "{count}",
+                      String(publications.length),
+                    )}
+                  </li>
+                )}
                 {publications.map((pub) => (
                   <li
                     key={pub.publicationName}
@@ -377,13 +407,31 @@ export function PublishView({
                           : "hover:bg-brand-purple-fluor-80",
                       ].join(" ")}
                     >
-                      {pub.publicationName}
+                      {pickerText(pub.publicationName)}
                     </button>
                   </li>
                 ))}
               </ul>
             )}
           </div>
+          {/* Phone, writer submitting (NIC-413, frame 2308:5902): what
+              submitting means + a help link. 12 below the field, link 8
+              below the text. */}
+          {isMobile && submitForReview && (
+            <div className="mt-[calc(6*var(--fpx))] flex flex-col gap-[calc(8*var(--fpx))]">
+              <p className="text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink-60">
+                {publishSheetCopy.submitExplainer}
+              </p>
+              <a
+                href={publishSheetCopy.moreOnPublicationsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-[calc(32*var(--fpx))] items-center self-start text-[length:calc(16*var(--fpx))] leading-[calc(28*var(--fpx))] font-medium text-brand-purple hover:underline"
+              >
+                {publishSheetCopy.moreOnPublications}
+              </a>
+            </div>
+          )}
         </div>
       )}
 
