@@ -471,12 +471,14 @@ export function PublishView({
         <span className="text-label font-bold text-ink">{c.topicsLabel}</span>
         {/* Tags helper. Desktop (NIC-675, frames 1:38254 / 1:38058 /
             1:38072): medium 16/24 80%, same as the submit explainer.
-            Phone unchanged. */}
+            Phone 14 / 60%. Spacing at every width (NIC-677): the
+            column's 6 gap only, label -> helper 6 and helper -> field
+            6, as drawn. */}
         <p
           className={
             isMobile
-              ? "text-[length:calc(14*var(--fpx))] text-ink-60 mt-[calc(8*var(--fpx))]"
-              : "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] font-medium text-ink-80 mt-[calc(8*var(--fpx))]"
+              ? "text-[length:calc(14*var(--fpx))] text-ink-60"
+              : "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] font-medium text-ink-80"
           }
         >
           {c.topicsDescription}

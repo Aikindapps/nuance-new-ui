@@ -225,7 +225,7 @@ export const writeArticleCopy = {
     categoryAddFailed: "Couldn't add the category. Please try again.",
     lockedPublicationHelper:
       "Credited to @{writer}. This article stays in {publication}.",
-    topicsDescription: "Add or change tags to help know your readers what it's about.",
+    topicsDescription: "Add or change tags to help your readers know what it's about.",
     backToArticle: "Back to article",
   },
   leaveGuard: {
