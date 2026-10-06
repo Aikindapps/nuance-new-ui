@@ -261,11 +261,12 @@ export function PublishView({
 
   const displayLabel = pubHandle ?? c.personalOption;
 
-  // Phone only (NIC-413): a long name in a picker row (and in the
-  // Publish-to field itself, below) ends in an ellipsis instead of
-  // wrapping. Desktop markup is unchanged.
-  const pickerText = (text: string) =>
-    isMobile ? <span className="min-w-0 truncate">{text}</span> : text;
+  // A long name in a picker row (and in the Publish-to field itself,
+  // below) ends in an ellipsis instead of wrapping (NIC-413 phone,
+  // NIC-674 desktop).
+  const pickerText = (text: string) => (
+    <span className="min-w-0 truncate">{text}</span>
+  );
 
   // A writer's submission keeps the "Publish" title (frames 2308:5902 /
   // 1:38254); only the primary button says what happens.
@@ -334,11 +335,7 @@ export function PublishView({
                   : "border-2 border-ink-border-10 bg-ink-border-5",
               ].join(" ")}
             >
-              {isMobile ? (
-                <span className="min-w-0 truncate">{displayLabel}</span>
-              ) : (
-                <span>{displayLabel}</span>
-              )}
+              <span className="min-w-0 truncate">{displayLabel}</span>
               <IconChevronDown className="size-[calc(24*var(--fpx))] shrink-0 text-ink-80" />
             </button>
 
@@ -349,11 +346,10 @@ export function PublishView({
                 role="listbox"
                 className={[
                   "absolute left-0 z-10 mt-[calc(8*var(--fpx))] w-full rounded-[calc(16*var(--fpx))] bg-ink p-[calc(20*var(--fpx))] shadow-purple-glow flex flex-col gap-[calc(4*var(--fpx))]",
-                  // Phone (NIC-413): a long publication list scrolls inside
-                  // the foldout; 320 shows My profile + heading + 3 rows.
-                  ...(isMobile
-                    ? ["max-h-[calc(320*var(--fpx))] overflow-y-auto"]
-                    : []),
+                  // A long publication list scrolls inside the foldout
+                  // (NIC-413 phone, NIC-674 desktop); 320 shows My
+                  // profile + heading + 3 rows.
+                  "max-h-[calc(320*var(--fpx))] overflow-y-auto",
                 ].join(" ")}
               >
                 {/* "My profile" option */}
@@ -371,21 +367,24 @@ export function PublishView({
                     {pickerText(c.personalOption)}
                   </button>
                 </li>
-                {/* Phone (NIC-413, frame 2307:5902): muted "Publications (N)"
-                    heading. Visual only - each option already names its
-                    publication, so screen readers skip it. */}
-                {isMobile && (
-                  <li
-                    role="presentation"
-                    aria-hidden="true"
-                    className="flex h-[calc(44*var(--fpx))] shrink-0 items-center px-[calc(16*var(--fpx))] text-[length:calc(14*var(--fpx))] leading-[calc(17*var(--fpx))] font-medium text-white/50"
-                  >
-                    {publishSheetCopy.publicationsHeading.replace(
-                      "{count}",
-                      String(publications.length),
-                    )}
-                  </li>
-                )}
+                {/* Muted "Publications (N)" heading: phone frame 2307:5902
+                    (NIC-413), desktop frame 1:38249 (NIC-674). Visual
+                    only - each option already names its publication, so
+                    screen readers skip it. */}
+                <li
+                  role="presentation"
+                  aria-hidden="true"
+                  className={
+                    isMobile
+                      ? "flex h-[calc(44*var(--fpx))] shrink-0 items-center px-[calc(16*var(--fpx))] text-[length:calc(14*var(--fpx))] leading-[calc(17*var(--fpx))] font-medium text-white/50"
+                      : "flex h-[calc(44*var(--fpx))] shrink-0 items-center px-[calc(16*var(--fpx))] pt-[calc(16*var(--fpx))] pb-[calc(4*var(--fpx))] text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] font-medium text-white/60"
+                  }
+                >
+                  {publishSheetCopy.publicationsHeading.replace(
+                    "{count}",
+                    String(publications.length),
+                  )}
+                </li>
                 {publications.map((pub) => (
                   <li
                     key={pub.publicationName}
@@ -414,12 +413,25 @@ export function PublishView({
               </ul>
             )}
           </div>
-          {/* Phone, writer submitting (NIC-413, frame 2308:5902): what
-              submitting means + a help link. 12 below the field, link 8
-              below the text. */}
-          {isMobile && submitForReview && (
-            <div className="mt-[calc(6*var(--fpx))] flex flex-col gap-[calc(8*var(--fpx))]">
-              <p className="text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink-60">
+          {/* Writer submitting: what submitting means + a help link,
+              link 8 below the text. Phone (NIC-413, frame 2308:5902):
+              12 below the field, regular 60%. Desktop (NIC-674, frame
+              1:38258): 32 below the field, medium 80%. */}
+          {submitForReview && (
+            <div
+              className={
+                isMobile
+                  ? "mt-[calc(6*var(--fpx))] flex flex-col gap-[calc(8*var(--fpx))]"
+                  : "mt-[calc(26*var(--fpx))] flex flex-col gap-[calc(8*var(--fpx))]"
+              }
+            >
+              <p
+                className={
+                  isMobile
+                    ? "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink-60"
+                    : "text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] font-medium text-ink-80"
+                }
+              >
                 {publishSheetCopy.submitExplainer}
               </p>
               <a
