@@ -116,28 +116,30 @@ export function TopicsSheet({
     <div className="fixed inset-0 flex flex-col bg-white">
       <div
         className={
-          "relative shrink-0 px-[calc(24*var(--fpx))] " +
+          "shrink-0 px-[calc(24*var(--fpx))] " +
           "pt-[calc(24*var(--fpx))]"
         }
       >
-        <button
-          type="button"
-          aria-label={topicsModalCopy.closeAriaLabel}
-          disabled={isSubmitting}
-          onClick={onSkip}
-          className={
-            "absolute right-[calc(24*var(--fpx))] " +
-            "top-[calc(24*var(--fpx))] flex size-8 " +
-            "items-center justify-center text-brand-purple " +
-            "disabled:opacity-40"
-          }
-        >
-          <IconClose className="size-6" />
-        </button>
+        {/* Close on its own row; title 16 below it, full width
+            (frame 2410:3371 -- same header as the Register sheet) */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            aria-label={topicsModalCopy.closeAriaLabel}
+            disabled={isSubmitting}
+            onClick={onSkip}
+            className={
+              "flex size-8 items-center justify-center " +
+              "text-brand-purple disabled:opacity-40"
+            }
+          >
+            <IconClose className="size-6" />
+          </button>
+        </div>
         <h2
           id={titleId}
           className={
-            "pr-[calc(40*var(--fpx))] text-title-md font-bold text-ink"
+            "mt-[calc(16*var(--fpx))] text-title-md font-bold text-ink"
           }
         >
           {topicsModalCopy.heading}
