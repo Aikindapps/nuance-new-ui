@@ -7,9 +7,16 @@ import {
   secondaryButtonSx,
 } from "../../components/ui/modalButtons";
 import { registerModalCopy, imageUploadCopy } from "../../constants/copy";
+import { useIsMobileViewport } from "../../lib/useIsMobileViewport";
 import { useRegister } from "./useRegister";
 import { AvatarPicker } from "./AvatarPicker";
 import { AvatarCropper } from "./AvatarCropper";
+import { RegisterSheet } from "./RegisterSheet";
+import {
+  CANISTER_HANDLE_EXISTS,
+  CANISTER_INVALID_HANDLE,
+  registerSheetCopy,
+} from "./registerSheetCopy";
 
 // RegisterModal — Figma node 1:1366 ("Nice to meet you!").
 //
@@ -107,12 +114,18 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
   // a blocked blob: preview); shows an inline message instead of silently
   // closing the crop step.
   const [avatarCantOpen, setAvatarCantOpen] = useState(false);
+  // NIC-397 -- phone sheet only: the picked file (before cropping), for
+  // the filename line, and whether a submit has been tried (the sheet's
+  // Create account stays enabled and validates on tap).
+  const [avatarSource, setAvatarSource] = useState<File | null>(null);
+  const [sheetSubmitTried, setSheetSubmitTried] = useState(false);
   // Ref tracks the current object URL so we can revoke it without putting the
   // URL value into the effect's dependency array (avoids calling setState in
   // an effect — react-hooks/set-state-in-effect). The ref is only read in
   // event handlers and the unmount cleanup, never during render.
   const avatarUrlRef = useRef<string | null>(null);
   const register = useRegister();
+  const isMobile = useIsMobileViewport();
 
   // Revoke the object URL on unmount; URL lifecycle on pick/remove is handled
   // by the event handlers below (no setState inside effects).
@@ -133,6 +146,7 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
     avatarUrlRef.current = url;
     setAvatarFile(cropped);
     setAvatarPreview(url);
+    setAvatarSource(cropSource);
     setCropSource(null);
     setAvatarCantOpen(false);
   };
@@ -154,6 +168,7 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
     }
     setAvatarFile(null);
     setAvatarPreview(null);
+    setAvatarSource(null);
     setAvatarCantOpen(false);
   };
 
@@ -174,6 +189,78 @@ export function RegisterModal({ onRegistered, onCancel }: RegisterModalProps) {
       { onSuccess: onRegistered },
     );
   };
+
+  if (isMobile) {
+    const sc = registerSheetCopy;
+    const failure = register.isError
+      ? register.error?.message || registerModalCopy.errorFallback
+      : null;
+    const isHandleFailure =
+      failure === CANISTER_HANDLE_EXISTS ||
+      failure === CANISTER_INVALID_HANDLE;
+    // A handle error from the canister shows only while the field still
+    // holds the handle that was sent.
+    const handleFailure =
+      isHandleFailure && register.variables?.handle === normalizedHandle
+        ? failure === CANISTER_HANDLE_EXISTS
+          ? sc.handleTaken
+          : failure
+        : null;
+    const handleError =
+      sheetSubmitTried && normalizedHandle === ""
+        ? sc.handleRequired
+        : handleFailure;
+
+    const submitFromSheet = () => {
+      if (register.isPending) return;
+      if (!isValid) {
+        setSheetSubmitTried(true);
+        return;
+      }
+      submit();
+    };
+
+    return (
+      <>
+        <RegisterSheet
+          titleId={REGISTER_MODAL_TITLE_ID}
+          handle={handle}
+          onHandleChange={setHandle}
+          displayName={displayName}
+          onDisplayNameChange={setDisplayName}
+          termsAccepted={termsAccepted}
+          onTermsChange={setTermsAccepted}
+          avatarPreview={avatarPreview}
+          avatarFileName={avatarSource?.name ?? null}
+          avatarFileSize={avatarSource?.size ?? null}
+          avatarCantOpen={avatarCantOpen}
+          onSelectAvatar={handleSelectFile}
+          onRemoveAvatar={handleRemoveAvatar}
+          handleError={handleError}
+          displayNameError={
+            sheetSubmitTried && displayName.trim() === ""
+              ? sc.displayNameRequired
+              : null
+          }
+          termsError={
+            sheetSubmitTried && !termsAccepted ? sc.termsRequired : null
+          }
+          formError={failure && !isHandleFailure ? failure : null}
+          isSubmitting={register.isPending}
+          onCancel={onCancel}
+          onSubmit={submitFromSheet}
+        />
+        {cropSource && (
+          <AvatarCropper
+            file={cropSource}
+            onSave={handleCropSave}
+            onCancel={handleCropCancel}
+            onLoadError={handleCropLoadError}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <Popup

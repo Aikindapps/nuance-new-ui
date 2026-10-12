@@ -66,51 +66,7 @@ export function AvatarPicker({
               aria-hidden="true"
               className="flex size-full items-center justify-center"
             >
-              <svg
-                width="38"
-                height="38"
-                viewBox="0 0 38 38"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                {/* Outer photo-frame rectangle */}
-                <rect
-                  x="1"
-                  y="1"
-                  width="36"
-                  height="36"
-                  rx="2.486"
-                  fill="white"
-                  stroke="#202123"
-                  strokeWidth="1.554"
-                />
-                {/* Inner picture rectangle */}
-                <rect
-                  x="4"
-                  y="7"
-                  width="30"
-                  height="24"
-                  rx="1.864"
-                  fill="white"
-                  stroke="#202123"
-                  strokeWidth="1.554"
-                />
-                {/* Mountain / landscape path */}
-                <path
-                  d="M4 24 L12 16 L19 22 L25 17 L34 28 L4 28 Z"
-                  fill="rgba(55,58,73,0.10)"
-                />
-                {/* Sun / circle */}
-                <circle
-                  cx="11"
-                  cy="14"
-                  r="2.5"
-                  fill="rgba(55,58,73,0.05)"
-                  stroke="#202123"
-                  strokeWidth="1.554"
-                />
-              </svg>
+              <AvatarPlaceholderGlyph />
             </span>
           )}
         </button>
@@ -157,5 +113,63 @@ export function AvatarPicker({
         onChange={handleChange}
       />
     </div>
+  );
+}
+
+// The 38x38 "photo" placeholder glyph inside the empty avatar circle.
+// Shared with the phone sheet (RegisterSheet); className lets the sheet
+// size it in design pixels.
+export function AvatarPlaceholderGlyph({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      className={className}
+      width="38"
+      height="38"
+      viewBox="0 0 38 38"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      {/* Outer photo-frame rectangle */}
+      <rect
+        x="1"
+        y="1"
+        width="36"
+        height="36"
+        rx="2.486"
+        fill="white"
+        stroke="#202123"
+        strokeWidth="1.554"
+      />
+      {/* Inner picture rectangle */}
+      <rect
+        x="4"
+        y="7"
+        width="30"
+        height="24"
+        rx="1.864"
+        fill="white"
+        stroke="#202123"
+        strokeWidth="1.554"
+      />
+      {/* Mountain / landscape path */}
+      <path
+        d="M4 24 L12 16 L19 22 L25 17 L34 28 L4 28 Z"
+        fill="rgba(55,58,73,0.10)"
+      />
+      {/* Sun / circle */}
+      <circle
+        cx="11"
+        cy="14"
+        r="2.5"
+        fill="rgba(55,58,73,0.05)"
+        stroke="#202123"
+        strokeWidth="1.554"
+      />
+    </svg>
   );
 }
