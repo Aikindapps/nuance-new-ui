@@ -331,6 +331,10 @@ export const loginModalCopy = {
   helpLabel: "What is internet identity?",
   helpUrl: "https://id.ai/about",
   closeAriaLabel: "Close",
+  // Phone sheet only (NIC-390): the tapped button's busy label and the
+  // line shown above the buttons after a sign-in attempt fails.
+  connectingLabel: "Connecting…",
+  signInError: "Couldn’t sign you in. Please try again.",
 };
 
 // PR #6 onboarding flow (decision #30). RegisterModal — Figma node 1:1366.

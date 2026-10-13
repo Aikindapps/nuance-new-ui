@@ -1,10 +1,13 @@
+import { useState } from "react";
 import Button from "@mui/material/Button";
 import { useAuth } from "../../contexts/useAuth";
 import { useModal } from "../../services/modal";
 import { loginModalCopy } from "../../constants/copy";
+import { useIsMobileViewport } from "../../lib/useIsMobileViewport";
 import { Popup } from "../ui/Popup";
 import { primaryButtonSx } from "../ui/modalButtons";
 import type { OpenIdProvider } from "@icp-sdk/auth/client";
+import { LoginSheet, type LoginProvider } from "./LoginSheet";
 
 // DOM id used by the Modal service's aria-labelledby. Exported so the
 // open() callers can reference the same constant.
@@ -19,19 +22,48 @@ export const LOGIN_MODAL_TITLE_ID = "login-modal-title";
 //
 // Sign-in slots map to decision #24's four providers: classic II + Google
 // + Apple + Microsoft via II 2.0's OpenID bridge.
+//
+// Below the 1024px seam the same modal renders LoginSheet, a full-screen
+// phone sheet (NIC-390), fed from the state kept here.
 
 export function LoginModal() {
   const { login, isLoading, error } = useAuth();
   const modal = useModal();
+  const isMobile = useIsMobileViewport();
+  // Phone sheet only: which button started the sign-in in flight, and
+  // whether the last attempt from this modal failed.
+  const [activeProvider, setActiveProvider] = useState<LoginProvider | null>(
+    null,
+  );
+  const [signInFailed, setSignInFailed] = useState(false);
 
   const handleLogin = async (provider?: OpenIdProvider) => {
+    setActiveProvider(provider ?? "ii");
+    setSignInFailed(false);
     try {
       await login(provider);
       modal.close();
     } catch {
       // error surfaces via useAuth().error; stay open so the user can retry
+      setActiveProvider(null);
+      setSignInFailed(true);
     }
   };
+
+  if (isMobile) {
+    return (
+      <LoginSheet
+        titleId={LOGIN_MODAL_TITLE_ID}
+        activeProvider={activeProvider}
+        isLoading={isLoading}
+        showError={signInFailed}
+        onLogin={(provider) =>
+          handleLogin(provider === "ii" ? undefined : provider)
+        }
+        onClose={modal.close}
+      />
+    );
+  }
 
   return (
     <Popup
