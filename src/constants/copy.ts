@@ -1373,7 +1373,6 @@ export const verifyProfileCopy = {
     "If you sign in to Nuance with a linked Internet Identity, use that same identity on Decide ID.",
   modalCta: "Continue to Decide ID",
   modalCancel: "Cancel",
-  notConfigured: "Verification isn't available right now. Please try again later.",
   startError: "We couldn't start verification. Please try again.",
   callbackLoading: "Confirming your Decide ID verification\u2026",
   callbackSuccessTitle: "Profile verified",

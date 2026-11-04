@@ -149,3 +149,13 @@ whitelisted prod origin) carries existing principals over.
 deploys from any clone target the same canister. Do not confuse it with
 `src/config/canister_ids.json`, which is the runtime map of backend canister
 ids the app talks to.
+
+### Verify profile (Decide ID)
+
+The Decide ID client id is the public production client, built into
+`useDecideIdVerification.ts`; no env var is needed (`VITE_DECIDEID_CLIENT_ID`
+overrides it for a one-off build). The production User canister only accepts
+the return address `https://nuance.xyz/callback`, so on UAT or localhost Verify
+profile stops with "We couldn't start verification" — this is expected. The
+end-to-end check is on https://nuance.xyz after cutover (exactly that origin —
+not www., not a raw canister URL).

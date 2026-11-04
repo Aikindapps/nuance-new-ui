@@ -10,9 +10,16 @@ import { useToast } from "../../../services/toast";
 import { verifyProfileCopy } from "../../../constants/copy";
 
 const DECIDEID_AUTHORIZE_URL = "https://id.decideai.xyz/#/authorize";
+// Public prod Decide ID client (NIC-944). The prod User canister holds its
+// secret and exchanges the code in verifyPoh, so builds must use this id and
+// never the UAT client. It only completes on https://nuance.xyz/callback.
+// VITE_DECIDEID_CLIENT_ID optionally overrides it.
+const PROD_DECIDEID_CLIENT_ID = "6902f824-184a-48e8-ae5b-1ed1ddb15e63";
 const SESSION_KEY = "decideid_oidc_session";
 const CALLBACK_PATH = "/callback";
-const CLIENT_ID = import.meta.env.VITE_DECIDEID_CLIENT_ID as string | undefined;
+const CLIENT_ID: string =
+  (import.meta.env.VITE_DECIDEID_CLIENT_ID as string | undefined) ||
+  PROD_DECIDEID_CLIENT_ID;
 
 type Session = { state: string; redirectUri: string; returnTo: string };
 
@@ -24,10 +31,6 @@ export function useDecideIdVerification() {
   const redirectUri = `${window.location.origin}${CALLBACK_PATH}`;
 
   const start = async (returnTo?: string): Promise<void> => {
-    if (!CLIENT_ID) {
-      toast.show(verifyProfileCopy.notConfigured, "error");
-      return;
-    }
     try {
       const result = await createDecideIdState(redirectUri);
       if (result.__kind__ === "err") {
