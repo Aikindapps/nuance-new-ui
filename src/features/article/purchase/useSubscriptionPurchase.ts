@@ -175,7 +175,7 @@ function intervalFeeField(
 }
 
 // Determine whether WriterSubscriptionDetails has at least one active plan.
-function hasAnyPlan(details: WriterSubscriptionDetails): boolean {
+export function hasAnyPlan(details: WriterSubscriptionDetails): boolean {
   return (
     details.weeklyFee !== undefined ||
     details.monthlyFee !== undefined ||

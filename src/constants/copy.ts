@@ -1557,3 +1557,15 @@ export const publicationMembersCopy = {
   loadErrorBody: "We couldn't load your members. Try again.",
   retry: "Retry",
 } as const;
+
+// NIC-636: the "Like these articles?" Subscribe card on the writer profile
+// and the publication home.
+export const subscribeCardCopy = {
+  title: "Like these articles?",
+  writerBodyBefore: "Subscribe to this author\u2019s articles and get unlimited access to all ",
+  publicationBodyBefore: "Subscribe to this publication and get unlimited access to all ",
+  bodyUnderlined: "membership content",
+  bodyAfter: " for a periodic fee!",
+  button: "Subscribe now!",
+  ariaLabel: "Subscribe",
+} as const;

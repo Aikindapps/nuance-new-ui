@@ -14,6 +14,13 @@ import { usePublicationPosts } from "../features/publication/hooks/usePublicatio
 import { usePublicationCta } from "../features/publication/hooks/usePublicationCta";
 import { CenteredMessage, PageShell } from "../components/ui/CenteredMessage";
 import { publicationCopy } from "../constants/copy";
+import { useIsMobileViewport } from "../lib/useIsMobileViewport";
+import { SubscribeCard } from "../features/subscribe/SubscribeCard";
+import {
+  usePublicationCanisterId,
+  useSubscribeCard,
+} from "../features/subscribe/useSubscribeCard";
+import { useSubscribeWindow } from "../features/subscribe/useSubscribeWindow";
 import { PublicationCtaBar } from "../features/publication/sections/PublicationCtaBar";
 import { isCtaEmpty } from "../features/publication/lib/cta";
 import { usePublicationSettings } from "../features/publication/hooks/usePublicationSettings";
@@ -54,7 +61,11 @@ export function PublicationHome() {
   const categoryParam = category === undefined ? null : category.toLowerCase();
 
   return (
-    <PublicationHomeInner handle={handle} categoryParam={categoryParam} />
+    <PublicationHomeInner
+      key={handle}
+      handle={handle}
+      categoryParam={categoryParam}
+    />
   );
 }
 
@@ -67,6 +78,22 @@ function PublicationHomeInner({
 }) {
   const location = useLocation();
   const publication = usePublication(handle);
+  // Subscribe card (NIC-636): the canister id (the id subscriptions are keyed
+  // on) and the plan read start now, alongside the publication read.
+  const isMobile = useIsMobileViewport();
+  const canisterId = usePublicationCanisterId(handle);
+  const cardPhase = useSubscribeCard({
+    target: canisterId,
+    dataReady: !!publication.data,
+    settled: true,
+    suppressed: false,
+  });
+  const openSubscribe = useSubscribeWindow({
+    isPublication: true,
+    item: publication.data?.item,
+    targetId: canisterId,
+    isOwn: false,
+  });
   // The publication's categories, in saved order. Same public read and
   // query key as the Settings screen, so an editor's save there refreshes
   // these tabs.
@@ -121,6 +148,8 @@ function PublicationHomeInner({
   }
 
   const pub = publication.data?.item;
+  const showCard = cardPhase === "show";
+  const desktopCard = showCard && !isMobile;
   const publishedCount = publication.data?.publishedCount ?? "0";
 
   const emptyMessage =
@@ -170,10 +199,63 @@ function PublicationHomeInner({
 
           {/* ── 3. Identity block ── */}
           <section className="mt-8" aria-label="Publication details">
-            {publication.isLoading ? (
+            {publication.isLoading || (pub && cardPhase === "hold") ? (
               <IdentityBlockSkeleton />
             ) : (
-              pub && (
+              pub && (desktopCard ? (
+                <div className="flex min-h-[calc(360*var(--fpx))] gap-14">
+                  {/* Publisher box: no fill, no border */}
+                  <div className="flex min-w-0 flex-1 gap-14 px-12 py-10">
+                    <Avatar
+                      src={pub.avatar}
+                      label={pub.displayName || pub.handle}
+                      sizeClass="size-[calc(120*var(--fpx))]"
+                      textClass="text-[length:calc(48*var(--fpx))]"
+                      rounded="card"
+                    />
+                    <div className="flex min-w-0 flex-1 flex-col items-start justify-between gap-6">
+                      <div className="flex min-w-0 max-w-full flex-col gap-6">
+                        <h1 className="truncate text-[length:calc(36*var(--fpx))] font-bold leading-tight text-ink">
+                          {pub.displayName || pub.handle}
+                        </h1>
+                        <div className="flex min-w-0 flex-col gap-2">
+                          {pub.bio && (
+                            <p className="truncate text-[length:calc(22*var(--fpx))] font-bold text-ink">
+                              {pub.bio.split("\n")[0]}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap items-center gap-4 text-[length:calc(16*var(--fpx))] font-medium text-ink-60">
+                            <span>
+                              {formatCount(pub.followersCount)}{" "}
+                              {publicationCopy.followersLabel}
+                            </span>
+                            <span className="text-ink-border">|</span>
+                            <span>
+                              {formatCount(publishedCount)}{" "}
+                              {publicationCopy.articlesLabel}
+                            </span>
+                          </div>
+                          {pub.bio && (
+                            <p className="line-clamp-3 text-[length:calc(18*var(--fpx))] font-medium leading-relaxed text-ink-60">
+                              {pub.bio}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <FollowButton
+                        targetHandle={pub.handle}
+                        label={publicationCopy.followButtonLabel}
+                      />
+                    </div>
+                  </div>
+                  <SubscribeCard
+                    variant="publication"
+                    layout="desktop"
+                    onSubscribe={openSubscribe}
+                  />
+                </div>
+              ) : (
+                <>
                 <div className="flex flex-col gap-8 rounded-card border border-black/20 bg-white px-6 py-8 md:flex-row md:items-start md:px-12 md:py-10 lg:gap-12">
                   {/* Logo */}
                   <Avatar
@@ -231,7 +313,17 @@ function PublicationHomeInner({
                     />
                   </div>
                 </div>
-              )
+                {showCard && (
+                  <div className="mt-6">
+                    <SubscribeCard
+                      variant="publication"
+                      layout="phone"
+                      onSubscribe={openSubscribe}
+                    />
+                  </div>
+                )}
+                </>
+              ))
             )}
           </section>
 
