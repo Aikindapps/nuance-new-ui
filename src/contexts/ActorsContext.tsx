@@ -146,6 +146,10 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
         const actor = await userPromise;
         return actor.getUserByPrincipalId(principalText);
       },
+      getUserByHandle: async (handle) => {
+        const actor = await userPromise;
+        return actor.getUserByHandle(handle);
+      },
       // Mutations (PR #6, decision #30). The userPromise/postCorePromise
       // actors are bound to the authed agent whenever identity is non-anon,
       // so registerUser/followTags write as the registering principal.
@@ -433,6 +437,23 @@ export function ActorsProvider({ children }: { children: ReactNode }) {
       updatePublicationCta: async (publisherCanisterId, cta) => {
         const actor = await getPublisher(publisherCanisterId);
         return actor.updatePublicationCta(cta);
+      },
+      // Add / remove publication members (NIC-992).
+      addWriter: async (publisherCanisterId, handle) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.addWriter(handle);
+      },
+      addEditor: async (publisherCanisterId, handle) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.addEditor(handle);
+      },
+      removeWriter: async (publisherCanisterId, handle) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.removeWriter(handle);
+      },
+      removeEditor: async (publisherCanisterId, handle) => {
+        const actor = await getPublisher(publisherCanisterId);
+        return actor.removeEditor(handle);
       },
       // Article Keys (PR #14, decision #43).
       getAllNftCanisters: async () => {

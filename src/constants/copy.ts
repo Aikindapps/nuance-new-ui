@@ -1523,7 +1523,6 @@ export const publicationMembersCopy = {
   reachLink: "Members",
   // Header actions.
   addMember: "Add member",
-  addMemberComingSoon: "Adding members is coming soon.",
   sort: "Sort",
   sortByRole: "Role",
   sortByName: "Name A\u2013Z",
@@ -1543,11 +1542,40 @@ export const publicationMembersCopy = {
   // Empty (no writers).
   emptyHeading: "No writers yet",
   emptyBody: "Invite a writer to publish into your publication.",
-  emptyCta: "Invite a writer",
+  emptyCta: "Add a writer",
   // Load error.
   loadErrorHeading: "Something went wrong",
   loadErrorBody: "We couldn't load your members. Try again.",
   retry: "Retry",
+  // Add panel (NIC-992).
+  addPanelTitle: "Add a member",
+  cancel: "Cancel",
+  handlePlaceholder: "@handle",
+  handleAriaLabel: "Handle of the person to add",
+  roleAriaLabel: "Role",
+  roleWriter: "Writer",
+  roleEditor: "Editor",
+  add: "Add",
+  adding: "Adding\u2026",
+  addHelper: "Writers can publish in this publication. Editors can also manage it.",
+  errorNotFound: "No Nuance account found for @{handle}.",
+  errorAlreadyEditor: "@{handle} is already an editor.",
+  errorAlreadyWriter: "@{handle} is already a writer.",
+  addedAsWriter: "@{handle} added as a writer",
+  addedAsEditor: "@{handle} added as an editor",
+  addFailed: "Couldn't add @{handle}. Try again.",
+  // Row actions + confirm (NIC-992).
+  revokeWriter: "Revoke writing rights",
+  removeEditor: "Remove editor",
+  revokeConfirmTitle: "Revoke @{handle}'s writing rights?",
+  revokeConfirmBody:
+    "@{handle} will no longer be able to publish in this publication. Articles they've already published stay.",
+  removeEditorConfirmTitle: "Remove @{handle} as editor?",
+  removeEditorConfirmBody:
+    "@{handle} will no longer be able to manage this publication or publish in it. Articles already published stay.",
+  removing: "Removing\u2026",
+  removeFailed: "Couldn't remove @{handle}. Try again.",
+  close: "Close",
 } as const;
 
 // NIC-636: the "Like these articles?" Subscribe card on the writer profile

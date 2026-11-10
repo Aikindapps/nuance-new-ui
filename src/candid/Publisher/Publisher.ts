@@ -42,6 +42,10 @@ export interface PublisherInterface {
     brandLogo: string,
   ): Promise<PublicationResult>;
   updatePublicationCta(cta: PublicationCta): Promise<PublicationResult>;
+  addWriter(handle: string): Promise<PublicationResult>;
+  addEditor(handle: string): Promise<PublicationResult>;
+  removeWriter(handle: string): Promise<PublicationResult>;
+  removeEditor(handle: string): Promise<PublicationResult>;
 }
 
 export class Publisher implements PublisherInterface {
@@ -107,6 +111,30 @@ export class Publisher implements PublisherInterface {
   }
   async updatePublicationCta(cta: PublicationCta): Promise<PublicationResult> {
     const result = await this.actor.updatePublicationCta(cta);
+    return "ok" in result
+      ? { __kind__: "ok", ok: result.ok }
+      : { __kind__: "err", err: result.err };
+  }
+  async addWriter(handle: string): Promise<PublicationResult> {
+    const result = await this.actor.addWriter(handle);
+    return "ok" in result
+      ? { __kind__: "ok", ok: result.ok }
+      : { __kind__: "err", err: result.err };
+  }
+  async addEditor(handle: string): Promise<PublicationResult> {
+    const result = await this.actor.addEditor(handle);
+    return "ok" in result
+      ? { __kind__: "ok", ok: result.ok }
+      : { __kind__: "err", err: result.err };
+  }
+  async removeWriter(handle: string): Promise<PublicationResult> {
+    const result = await this.actor.removeWriter(handle);
+    return "ok" in result
+      ? { __kind__: "ok", ok: result.ok }
+      : { __kind__: "err", err: result.err };
+  }
+  async removeEditor(handle: string): Promise<PublicationResult> {
+    const result = await this.actor.removeEditor(handle);
     return "ok" in result
       ? { __kind__: "ok", ok: result.ok }
       : { __kind__: "err", err: result.err };

@@ -10,6 +10,8 @@
 //     editor is authorized for. (A direct PostBucket.updatePostDraft is rejected
 //     because a publication post's author principal is the publication canister,
 //     not the editor.)
+//   * addWriter / addEditor / removeWriter / removeEditor (NIC-992: Members
+//     screen add/remove; each takes one handle, returns Result_2).
 // Kept in the bindgen shape (idlFactory + _SERVICE) so it plugs into createActor
 // exactly like the generated bindings.
 
@@ -88,6 +90,10 @@ export interface _SERVICE {
   'updatePublicationDetails' : ActorMethod<[string, string, string, Array<string>, Array<string>, Array<string>, string, string, SocialLinksObject, string], Result_2>,
   'updatePublicationStyling' : ActorMethod<[string, string, string], Result_2>,
   'updatePublicationCta' : ActorMethod<[PublicationCta], Result_2>,
+  'addWriter' : ActorMethod<[string], Result_2>,
+  'addEditor' : ActorMethod<[string], Result_2>,
+  'removeWriter' : ActorMethod<[string], Result_2>,
+  'removeEditor' : ActorMethod<[string], Result_2>,
 }
 
 export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
@@ -158,5 +164,9 @@ export const idlFactory: IDL.InterfaceFactory = ({ IDL }) => {
     'updatePublicationDetails' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text), IDL.Vec(IDL.Text), IDL.Vec(IDL.Text), IDL.Text, IDL.Text, SocialLinksObject, IDL.Text], [Result_2], []),
     'updatePublicationStyling' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [Result_2], []),
     'updatePublicationCta' : IDL.Func([PublicationCta], [Result_2], []),
+    'addWriter' : IDL.Func([IDL.Text], [Result_2], []),
+    'addEditor' : IDL.Func([IDL.Text], [Result_2], []),
+    'removeWriter' : IDL.Func([IDL.Text], [Result_2], []),
+    'removeEditor' : IDL.Func([IDL.Text], [Result_2], []),
   });
 };

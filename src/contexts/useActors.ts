@@ -117,6 +117,8 @@ export type ActorsValue = {
   // hook layer can decide whether "not registered" is an error or an empty
   // state. PR #4 Phase 2: first consumer is WelcomeBanner.
   getUserByPrincipalId: (principalText: string) => Promise<UserResult>;
+  // Public query by handle (NIC-992: pre-check before adding a member).
+  getUserByHandle: (handle: string) => Promise<UserResult>;
   // --- Mutations (PR #6, decision #30) — the first write calls in the
   // project. They run on the authed agent (PR #4 Phase 4) so msg.caller is
   // the registering principal. ---
@@ -463,6 +465,25 @@ export type ActorsValue = {
   updatePublicationCta: (
     publisherCanisterId: string,
     cta: PublicationCta,
+  ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
+
+  // Add / remove a publication member as an editor (NIC-992). Each takes one
+  // handle; update calls on the publication canister.
+  addWriter: (
+    publisherCanisterId: string,
+    handle: string,
+  ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
+  addEditor: (
+    publisherCanisterId: string,
+    handle: string,
+  ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
+  removeWriter: (
+    publisherCanisterId: string,
+    handle: string,
+  ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
+  removeEditor: (
+    publisherCanisterId: string,
+    handle: string,
   ) => Promise<{ __kind__: "ok"; ok: Publication } | { __kind__: "err"; err: string }>;
 
   // --- Article Keys (PR #14, decision #43) — ext_v2 NFT access keys for

@@ -2,6 +2,7 @@ import { useState } from "react";
 import Button from "@mui/material/Button";
 import { Popup } from "./Popup";
 import { useModal } from "../../services/modal";
+import { ButtonSpinner } from "./ButtonSpinner";
 import { primaryButtonSx, secondaryButtonSx } from "./modalButtons";
 
 export const CONFIRM_DIALOG_TITLE_ID = "confirm-dialog-title";
@@ -15,6 +16,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   closeAriaLabel,
+  busyLabel,
   onConfirm,
 }: {
   title: string;
@@ -22,6 +24,8 @@ export function ConfirmDialog({
   confirmLabel: string;
   cancelLabel: string;
   closeAriaLabel: string;
+  // When set, the confirm button shows a spinner + this label while busy.
+  busyLabel?: string;
   onConfirm: () => Promise<void>;
 }) {
   const modal = useModal();
@@ -47,11 +51,33 @@ export function ConfirmDialog({
       closeAriaLabel={closeAriaLabel}
       footer={
         <>
-          <Button sx={secondaryButtonSx} onClick={() => modal.close()} disabled={busy}>
+          <Button
+            sx={
+              busyLabel !== undefined && busy
+                ? {
+                    ...secondaryButtonSx,
+                    "&.Mui-disabled": {
+                      color: "var(--color-brand-purple)",
+                      border: "1px solid var(--color-brand-purple)",
+                      opacity: 0.5,
+                    },
+                  }
+                : secondaryButtonSx
+            }
+            onClick={() => modal.close()}
+            disabled={busy}
+          >
             {cancelLabel}
           </Button>
           <Button sx={primaryButtonSx} onClick={confirm} disabled={busy}>
-            {confirmLabel}
+            {busyLabel !== undefined && busy ? (
+              <span className="inline-flex items-center gap-[calc(8*var(--fpx))]">
+                <ButtonSpinner />
+                {busyLabel}
+              </span>
+            ) : (
+              confirmLabel
+            )}
           </Button>
         </>
       }

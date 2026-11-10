@@ -10,6 +10,7 @@
 import { useParams } from "react-router-dom";
 import { usePublicationMembership } from "../features/publication/hooks/usePublicationMembership";
 import { usePublicationMembers } from "../features/publication/hooks/usePublicationMembers";
+import { usePublicationMemberActions } from "../features/publication/hooks/usePublicationMemberActions";
 import { MembersRoster } from "../features/publication/sections/MembersRoster";
 import { publicationMembersCopy as copy } from "../constants/copy";
 import { AccountShell } from "../components/account/AccountShell";
@@ -84,6 +85,8 @@ function PublicationMembersInner({ handle }: { handle: string }) {
 function PublicationMembersDataInner({ handle }: { handle: string }) {
   const { members, isLoading, isError, refetch } = usePublicationMembers(handle);
   const { principal } = useAuth();
+  const actions = usePublicationMemberActions(handle);
+  const principalText = principal?.toText() ?? null;
 
   return (
     <>
@@ -95,7 +98,9 @@ function PublicationMembersDataInner({ handle }: { handle: string }) {
         isLoading={isLoading}
         isError={isError}
         onRetry={refetch}
-        currentPrincipal={principal?.toText() ?? null}
+        currentPrincipal={principalText}
+        onAddMember={(raw, role) => actions.addMember(raw, role)}
+        onRemoveMember={async (m) => (await actions.removeMember(m, principalText)).ok}
       />
     </>
   );
