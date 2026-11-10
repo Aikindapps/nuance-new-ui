@@ -4,15 +4,11 @@ import {
   type HoldingRow,
   type SupportedTokenSymbol,
 } from "../../../config/tokens";
-import { formatAmount, fromE8s } from "../../../lib/tokenMath";
+import { formatAmount } from "../../../lib/tokenMath";
 import { walletCopy } from "../../../constants/copy";
 import { tokenIcons } from "../../../images";
 import { useTokenBalances } from "../hooks/useTokenBalances";
 import { useFreeNuaBalance } from "../hooks/useFreeNuaBalance";
-import {
-  useNuaPrices,
-  nuaEquivalentOf,
-} from "../hooks/useNuaEquivalent";
 
 // Phone token balances (Figma 2419:4829): one compact row per token,
 // stacked in a single column with a 1px divider between every row.
@@ -32,7 +28,6 @@ function rawFor(
 export function WalletBalancesMobile() {
   const balances = useTokenBalances();
   const freeNua = useFreeNuaBalance();
-  const prices = useNuaPrices();
 
   const loading = balances.isPending || freeNua.isPending;
 
@@ -81,18 +76,6 @@ export function WalletBalancesMobile() {
             ? walletCopy.balanceError
             : formatAmount(raw, { displayDecimals });
 
-        let nuaEquivalent: string | null = null;
-        if (row === "ICP" || row === "ckBTC") {
-          if (raw !== undefined && prices.data) {
-            const eq = nuaEquivalentOf(
-              prices.data,
-              row as SupportedTokenSymbol,
-              fromE8s(raw),
-            );
-            if (eq != null) nuaEquivalent = `= ${Math.round(eq)} NUA`;
-          }
-        }
-
         const amountColClass =
           "flex shrink-0 flex-col items-end gap-1 " +
           "whitespace-nowrap";
@@ -124,11 +107,6 @@ export function WalletBalancesMobile() {
               <span className="text-title-sm font-bold text-ink">
                 {amount}
               </span>
-              {nuaEquivalent != null && (
-                <span className="text-body text-ink-40">
-                  {nuaEquivalent}
-                </span>
-              )}
             </div>
           </div>
         );

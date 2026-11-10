@@ -16,7 +16,6 @@ import {
 } from "../../../lib/accountIdentifier";
 import { BalancesRow } from "../components/BalancesRow";
 import { useTokenBalances } from "../hooks/useTokenBalances";
-import { useNuaPrices, priceBetween } from "../hooks/useNuaEquivalent";
 import { useWithdraw } from "./useWithdraw";
 
 export const WITHDRAW_TITLE_ID = "withdraw-modal-title";
@@ -37,7 +36,6 @@ function isPrincipalText(text: string): boolean {
 export function WithdrawModal({ onClose }: { onClose: () => void }) {
   const { principal } = useAuth();
   const balances = useTokenBalances();
-  const prices = useNuaPrices();
   const withdraw = useWithdraw();
 
   const [token, setToken] = useState<SupportedTokenSymbol>("NUA");
@@ -84,20 +82,6 @@ export function WithdrawModal({ onClose }: { onClose: () => void }) {
   const amountTooHigh = amountE8s > maxE8s;
   const valid =
     receiverState === "ok" && amountE8s > 0n && !amountTooHigh && terms;
-
-  // "= X NUA | Y ICP | Z ckBTC" cross-rate line (Figma 1:47200). Hidden parts
-  // degrade silently when a Sonic quote is missing.
-  const calcLine = useMemo(() => {
-    const n = parseFloat(amountText);
-    const amount = Number.isFinite(n) && n > 0 ? n : 0;
-    const parts = TOKEN_SYMBOLS.map((target) => {
-      const v =
-        amount === 0 ? 0 : priceBetween(prices.data ?? [], token, target, amount);
-      if (v == null) return null;
-      return `${v.toFixed(TOKENS[target].displayDecimals)} ${target}`;
-    }).filter(Boolean);
-    return parts.length ? `= ${parts.join(" | ")}` : null;
-  }, [amountText, prices.data, token]);
 
   const submit = () => {
     setError(null);
@@ -278,9 +262,6 @@ export function WithdrawModal({ onClose }: { onClose: () => void }) {
               {c.maxLabel}
             </button>
           </div>
-          {calcLine && (
-            <p className="px-2 text-label font-medium text-ink-80">{calcLine}</p>
-          )}
           <p id="withdraw-amount-error" className="text-label text-error empty:hidden">
             {amountTooHigh ? c.errorAmount : null}
           </p>

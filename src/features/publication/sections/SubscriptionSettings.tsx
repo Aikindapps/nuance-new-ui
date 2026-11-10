@@ -3,7 +3,6 @@ import Skeleton from "@mui/material/Skeleton";
 import { Principal } from "@icp-sdk/core/principal";
 import { CenteredMessage } from "../../../components/ui/CenteredMessage";
 import { useSubscriptionSettings } from "../hooks/useSubscriptionSettings";
-import { useSubscriptionRates } from "../../article/purchase/useSubscriptionRates";
 import { useToast } from "../../../services/toast/useToast";
 import { manageSubscriptionsCopy as c } from "../../../constants/copy";
 import {
@@ -89,42 +88,17 @@ function initFormState(details: WriterSubscriptionDetails): FormState {
   };
 }
 
-// Build a synthetic WriterSubscriptionDetails from current form state so
-// useSubscriptionRates can compute live conversions.
-function buildSyntheticDetails(form: FormState): WriterSubscriptionDetails {
-  function toE8sString(key: PlanKey): string | undefined {
-    const { enabled, amountText } = form[key];
-    const n = parseFloat(amountText);
-    if (!enabled || !amountText || isNaN(n) || n <= 0) return undefined;
-    return String(Math.round(n * 1e8));
-  }
-  return {
-    weeklyFee: toE8sString("weekly"),
-    monthlyFee: toE8sString("monthly"),
-    annuallyFee: toE8sString("annually"),
-    lifeTimeFee: toE8sString("lifetime"),
-    paymentReceiverPrincipalId: "",
-    writerPrincipalId: "",
-    writerSubscriptions: [],
-    stripePricing: [],
-    isSubscriptionActive: false,
-    stripeIsActive: false,
-  } as unknown as WriterSubscriptionDetails;
-}
-
 // Individual plan card — Figma 1:42178.
 function PlanCard({
   label,
   state,
   onToggle,
   onAmountChange,
-  conversionLines,
 }: {
   label: string;
   state: PlanState;
   onToggle: () => void;
   onAmountChange: (v: string) => void;
-  conversionLines: string[];
 }) {
   const inputId = useId();
   const errorId = useId();
@@ -196,22 +170,6 @@ function PlanCard({
         </p>
       </div>
 
-      {/* Conversion lines */}
-      <div
-        className="text-[length:calc(16*var(--fpx))] leading-[calc(24*var(--fpx))] text-ink"
-        style={{ opacity: 0.6 }}
-        aria-live="polite"
-      >
-        {conversionLines.length > 0 ? (
-          conversionLines.map((line, i) => <div key={i}>{line}</div>)
-        ) : (
-          // Reserve the same vertical space so the card height is stable.
-          <div className="invisible" aria-hidden="true">
-            {"\u00a0"}
-          </div>
-        )}
-      </div>
-
       {/* Enable/disable toggle — Figma NUR/Toggle */}
       <button
         type="button"
@@ -270,10 +228,6 @@ function SubscriptionSettingsForm({
     const p = initialDetails.paymentReceiverPrincipalId;
     return isValidPrincipal(p) ? p : "";
   });
-
-  // Build synthetic details for live conversion lines.
-  const syntheticDetails = buildSyntheticDetails(form);
-  const rates = useSubscriptionRates(syntheticDetails);
 
   // Validation.
   const paymentTrimmed = paymentAddress.trim();
@@ -358,15 +312,6 @@ function SubscriptionSettingsForm({
     });
   }
 
-  // Build conversion line strings per interval.
-  function conversionLines(interval: SubscriptionTimeInterval): string[] {
-    const plan = rates[interval];
-    if (!plan) return [];
-    return [plan.icpLine, plan.ckBtcLine, plan.usdLine].filter(
-      (l): l is string => l !== null,
-    );
-  }
-
   return (
     <div className="flex flex-col gap-[calc(24*var(--fpx))]">
       {/* Intro text */}
@@ -385,7 +330,6 @@ function SubscriptionSettingsForm({
               state={form[key]}
               onToggle={() => handleToggle(key)}
               onAmountChange={(v) => handleAmountChange(key, v)}
-              conversionLines={conversionLines(interval)}
             />
           );
         })}

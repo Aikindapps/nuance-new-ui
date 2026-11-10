@@ -303,9 +303,10 @@ export type ActorsValue = {
     owner: string,
     subaccount?: Uint8Array,
   ) => Promise<bigint>;
-  // Sonic DEX price quote (anon-safe query) for the "= N NUA" conversion. The
-  // raw Result is returned so the hook can degrade silently on a pool error —
-  // a missing quote hides the conversion line, never blocks the holdings render.
+  // Pool price quote (anon-safe query). Now used only by
+  // src/features/write/hooks/useIcpUsdRate.ts, for the ICPSwap ckUSDC/ICP pool
+  // mohjv-bqaaa-aaaag-qjyia-cai (same `quote` interface). The raw Result is
+  // returned so the caller can degrade silently on a pool error.
   getSonicQuote: (
     poolCanisterId: string,
     args: SwapArgs,

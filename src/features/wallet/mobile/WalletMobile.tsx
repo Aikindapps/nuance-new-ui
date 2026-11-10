@@ -8,7 +8,6 @@ import { useTokenBalances } from "../hooks/useTokenBalances";
 import { useFreeNuaBalance } from "../hooks/useFreeNuaBalance";
 import { useArticleKeys } from "../keys/useArticleKeys";
 import { useWalletHistory } from "../history/useWalletHistory";
-import { useNuaPrices } from "../hooks/useNuaEquivalent";
 
 // Phone /wallet content tree (Figma 2419:4829 default, 2420:4869
 // empty, 2421:4893 loading, 2422:4900 error, 2423:4917 overflow).
@@ -22,14 +21,12 @@ export function WalletMobile() {
   const freeNua = useFreeNuaBalance();
   const keys = useArticleKeys();
   const history = useWalletHistory();
-  const prices = useNuaPrices();
 
   const retryAll = () => {
     balances.refetch();
     freeNua.refetch();
     keys.refetch();
     history.refetch();
-    prices.refetch();
   };
 
   if (balances.isError || freeNua.isError) {

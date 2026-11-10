@@ -6,7 +6,6 @@ import { IconPartySuccess } from "../../../components/ui/icons/IconPartySuccess"
 import { subscriptionPurchaseCopy } from "../../../constants/copy";
 import { primaryButtonSx, secondaryButtonSx } from "../../../components/ui/modalButtons";
 import { useSubscriptionPurchase } from "./useSubscriptionPurchase";
-import { useSubscriptionRates } from "./useSubscriptionRates";
 import { SubscriptionTimeInterval } from "../../../candid/Subscription/Subscription";
 import type { WriterSubscriptionDetails } from "../../../candid/Subscription/Subscription";
 import { fmtUsd } from "./cardCheckout";
@@ -313,13 +312,13 @@ function SheetSpinner({ top = "mt-8" }: { top?: string }) {
 // stroke), so the padding stays 16.
 function SheetPlanRow({
   label,
-  lines,
+  lines = [],
   price,
   selected,
   onSelect,
 }: {
   label: string;
-  lines: string[];
+  lines?: string[];
   price: string;
   selected: boolean;
   onSelect: () => void;
@@ -360,7 +359,6 @@ type SubscribePhoneSheetProps = {
   identity: ReactNode;
   // You are now subscribed! body after Stripe, same text as the popup (NIC-627).
   cardSuccessBody: string;
-  rates: ReturnType<typeof useSubscriptionRates>;
   terms: boolean;
   onTermsChange: (checked: boolean) => void;
   selectedDisplay: string;
@@ -377,7 +375,6 @@ function SubscribePhoneSheet({
   variant,
   identity,
   cardSuccessBody,
-  rates,
   terms,
   onTermsChange,
   selectedDisplay,
@@ -504,17 +501,10 @@ function SubscribePhoneSheet({
             {ORDERED_INTERVALS.map((interval) => {
               const raw = details[feeField(interval)];
               if (!raw) return null;
-              const planRates = rates[interval];
-              const lines = [
-                planRates?.icpLine,
-                planRates?.ckBtcLine,
-                planRates?.usdLine,
-              ].filter((l): l is string => Boolean(l));
               return (
                 <SheetPlanRow
                   key={interval}
                   label={INTERVAL_LABELS[interval]}
-                  lines={lines}
                   price={`${fmtNua(raw)} NUA`}
                   selected={purchase.selected === interval}
                   onSelect={() => purchase.select(interval)}
@@ -782,7 +772,7 @@ export function SubscriptionPurchaseModal({
   // 972 high in the frames): the dialog centres its content, so shift the
   // popup down by half of its growth since the picker opened.
   // (Written straight to the wrapper's style: a ResizeObserver also catches
-  // late growth such as the conversion lines arriving.)
+  // late growth.)
   const popupRef = useRef<HTMLDivElement>(null);
   const pinTop = showTabs && purchase.stage === "confirm";
   useLayoutEffect(() => {
@@ -872,11 +862,6 @@ export function SubscriptionPurchaseModal({
     .replace("{amount}", paidPlan ? fmtUsd(paidPlan.usdCents) : "")
     .replace("{period}", paidPlan ? cardPeriod(paidPlan.interval) : "");
 
-  // Rates for conversion lines on the confirm screen.
-  const rates = useSubscriptionRates(
-    purchase.stage === "confirm" ? purchase.details : null,
-  );
-
   // NIC-276: when the writer/publication offers only ONE plan tier the single
   // card must be CENTERED rather than sitting in the leftmost grid column.
   // Multi-tier layout is untouched.
@@ -905,7 +890,6 @@ export function SubscriptionPurchaseModal({
         variant={variant}
         identity={identity(true)}
         cardSuccessBody={cardSuccessBody}
-        rates={rates}
         terms={terms}
         onTermsChange={setTerms}
         selectedDisplay={selectedDisplay}
@@ -1091,7 +1075,6 @@ export function SubscriptionPurchaseModal({
                 const raw = purchase.details![feeField(interval)];
                 if (!raw) return null;
                 const isSelected = purchase.selected === interval;
-                const planRates = rates[interval];
 
                 return (
                   <div
@@ -1112,13 +1095,6 @@ export function SubscriptionPurchaseModal({
                       <span className="text-[22px] font-bold leading-8 text-ink">
                         {fmtNua(raw)} NUA
                       </span>
-                    </div>
-
-                    {/* Conversion sub-lines (Figma: 400 16/24, #202123 @60%) */}
-                    <div className="flex flex-col gap-0 text-[16px] leading-6 text-ink opacity-60">
-                      {planRates?.icpLine && <span>{planRates.icpLine}</span>}
-                      {planRates?.ckBtcLine && <span>{planRates.ckBtcLine}</span>}
-                      {planRates?.usdLine && <span>{planRates.usdLine}</span>}
                     </div>
 
                     {/* Select / Selected button — INVERTED SEMANTICS per design:

@@ -2,17 +2,15 @@ import {
   DISPLAY_TOKEN_ORDER,
   TOKENS,
   type HoldingRow,
-  type SupportedTokenSymbol,
 } from "../../../config/tokens";
-import { formatAmount, fromE8s } from "../../../lib/tokenMath";
+import { formatAmount } from "../../../lib/tokenMath";
 import { walletCopy } from "../../../constants/copy";
 import { useTokenBalances } from "../hooks/useTokenBalances";
 import { useFreeNuaBalance } from "../hooks/useFreeNuaBalance";
-import { useNuaPrices, nuaEquivalentOf } from "../hooks/useNuaEquivalent";
 import { TokenCard } from "./TokenCard";
 
 // Currency holdings (Figma 1:46399): 2-up token cards. NUA/Free-NUA show a
-// "Nuance token" subtitle and no conversion; ICP/ckBTC show a "= N NUA" line.
+// "Nuance token" subtitle; ICP/ckBTC show their balances only.
 const ROWS: HoldingRow[][] = [
   DISPLAY_TOKEN_ORDER.slice(0, 2),
   DISPLAY_TOKEN_ORDER.slice(2, 4),
@@ -21,7 +19,6 @@ const ROWS: HoldingRow[][] = [
 export function CurrencyHoldings() {
   const balances = useTokenBalances();
   const freeNua = useFreeNuaBalance();
-  const prices = useNuaPrices();
 
   const rawFor = (row: HoldingRow): bigint | undefined =>
     row === "FreeNUA" ? freeNua.data : balances.data?.[row];
@@ -37,21 +34,7 @@ export function CurrencyHoldings() {
       raw === undefined
         ? walletCopy.balanceError
         : formatAmount(raw, { displayDecimals });
-
-    // Conversion line only for ICP/ckBTC; null = unavailable → hidden.
-    let nuaEquivalent: string | null | undefined;
-    if (row === "ICP" || row === "ckBTC") {
-      nuaEquivalent = null;
-      if (raw !== undefined && prices.data) {
-        const eq = nuaEquivalentOf(
-          prices.data,
-          row as SupportedTokenSymbol,
-          fromE8s(raw),
-        );
-        if (eq != null) nuaEquivalent = `= ${Math.round(eq)} NUA`;
-      }
-    }
-    return { row, label, subtitle, amount, nuaEquivalent };
+    return { row, label, subtitle, amount };
   };
 
   return (

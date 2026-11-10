@@ -4,7 +4,6 @@ import { Popup } from "../../../components/ui/Popup";
 import { useAuth } from "../../../contexts/useAuth";
 import { walletCopy } from "../../../constants/copy";
 import {
-  TOKEN_SYMBOLS,
   TOKENS,
   type SupportedTokenSymbol,
 } from "../../../config/tokens";
@@ -14,10 +13,13 @@ import { BalancesRow } from "../components/BalancesRow";
 
 export const DEPOSIT_TITLE_ID = "deposit-modal-title";
 
+// ckBTC deposits are not offered; balances and withdraw still cover all three.
+const DEPOSIT_TOKENS = ["NUA", "ICP"] as const satisfies readonly SupportedTokenSymbol[];
+
 // Deposit modal (Figma §7.2: 1:46991 select → 1:47902 QR). Two pages: pick a
 // currency, then "Show deposit address" reveals the QR + copyable address. The
 // address is deterministic and permanent per principal — ICP by its legacy
-// account identifier (verified in scripts/verify-account-id.ts), NUA/ckBTC by
+// account identifier (verified in scripts/verify-account-id.ts), NUA by
 // the principal — so nothing is generated; the modal only reveals an existing,
 // unchanging address (NIC-281). No outbound transfer here. Modal content
 // renders above ToastProvider, so feedback is the inline copied-label flip,
@@ -146,7 +148,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
             {walletCopy.depositSelectLabel}
           </p>
           <div className="flex gap-2">
-            {TOKEN_SYMBOLS.map((sym) => {
+            {DEPOSIT_TOKENS.map((sym) => {
               const active = sym === selected;
               return (
                 <button

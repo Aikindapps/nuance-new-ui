@@ -1,6 +1,6 @@
-// Token / ledger / DEX configuration for the wallet + tipping features (PR-1, decision #42).
+// Token / ledger configuration for the wallet + tipping features (PR-1, decision #42).
 //
-// These are ICRC-1 ledgers and Sonic DEX pools — NOT Nuance canisters — so they
+// These are ICRC-1 ledgers, NOT Nuance canisters, so they
 // live here as a typed module rather than in canister_ids.json. The Nuance User
 // canister custodies restricted ("Free") NUA, so its id is re-exported from the
 // canonical map to avoid drift.
@@ -92,20 +92,4 @@ export const DISPLAY_TOKEN_ORDER: readonly HoldingRow[] = [
   "NUA",
   "ICP",
   "ckBTC",
-];
-
-/**
- * Sonic DEX pools used to convert non-NUA balances to a NUA-equivalent for the
- * "= N NUA" sub-line. Both pools are ICP-input (so `zeroForOne` is false — see
- * useNuaEquivalent). `outputTokenSymbol` is the key under which a pool's quote is
- * stored as `icpEquivalence` (units of that token per 1 ICP, in e8s).
- */
-export type SonicPool = {
-  canisterId: string;
-  inputTokenSymbol: SupportedTokenSymbol;
-  outputTokenSymbol: SupportedTokenSymbol;
-};
-export const SONIC_POOLS: readonly SonicPool[] = [
-  { canisterId: "ng4fu-zaaaa-aaaak-qtsaq-cai", inputTokenSymbol: "ICP", outputTokenSymbol: "NUA" },
-  { canisterId: "uluvj-yiaaa-aaaak-qlr6a-cai", inputTokenSymbol: "ICP", outputTokenSymbol: "ckBTC" },
 ];
