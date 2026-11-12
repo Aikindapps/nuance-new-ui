@@ -2,6 +2,8 @@
 // exports from here so non-engineers can edit headlines without touching
 // JSX, and so future i18n requires no refactor.
 
+import { helpLinks } from "./helpLinks";
+
 // Metadata keys. The logged-out home serves "popular" and "new"; the
 // logged-in home also serves "following". A given URL reuses the same entry
 // regardless of auth state — anon and authed `/` both use `popular`, `/new`
@@ -102,7 +104,7 @@ export const headerCopy = {
 export const navDrawerCopy = {
   closeMenuAriaLabel: "Close menu",
   navAboutNuance: "About Nuance",
-  aboutUrl: "https://wiki.nuance.xyz",
+  aboutUrl: helpLinks.frontPage,
   navHome: "Home",
   navPopular: "Popular",
   navFollowing: "Following",
@@ -351,8 +353,8 @@ export const registerModalCopy = {
   displayNamePlaceholder: "Display name",
   termsPrefix: "Accept the ",
   termsLinkText: "terms and conditions",
-  // Terms & Conditions page on NuanceWiki (NIC-263).
-  termsUrl: "https://wiki.nuance.xyz/nuance/terms-and-conditions",
+  // Terms & Conditions page on the GitHub help pages (NIC-996).
+  termsUrl: helpLinks.termsAndConditions,
   cancelLabel: "Cancel",
   submitLabel: "Create account",
   submittingLabel: "Creating account…",
@@ -747,7 +749,7 @@ export const tipModalCopy = {
   title: "Start applauding!",
   body: "By applauding this article you tip the writer. One applause is worth one Nuance Token (NUA).",
   readMore: "Read more",
-  readMoreUrl: "https://wiki.nuance.xyz/nuance/tipping/how-to-tip",
+  readMoreUrl: helpLinks.howToTip,
   inWallet: "Currently in your wallet",
   amountLabel: "Applause",
   amountPlaceholder: "Amount",

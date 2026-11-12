@@ -3,6 +3,8 @@
 // 2673:6205 (success) / 2673:6449 (error + Retry). Do NOT edit
 // src/constants/copy.ts from here - the Mint success path keeps using
 // C.toasts.published unchanged (decision D-24).
+import { helpLinks } from "../../../constants/helpLinks";
+
 export const publishSheetCopy = {
   publishedToast: "Your article has been published",
   publishFailedToast: "Couldn't publish.",
@@ -14,8 +16,7 @@ export const publishSheetCopy = {
   submitExplainer:
     "Submit this article for review in a publication. An editor will manage the article there.",
   moreOnPublications: "More on publications",
-  moreOnPublicationsUrl:
-    "https://wiki.nuance.xyz/nuance/publications/how-to-write-for-a-publication",
+  moreOnPublicationsUrl: helpLinks.writeForAPublication,
   // Phone picker: muted heading above the publication rows.
   publicationsHeading: "Publications ({count})",
 } as const;

@@ -1,5 +1,6 @@
 import { useState, type ComponentType } from "react";
 import { Link } from "react-router-dom";
+import { helpLinks } from "../../../../constants/helpLinks";
 import { Avatar } from "../../../../components/ui/Avatar";
 import { formatRelativeTime } from "../../../../lib/formatRelativeTime";
 import { useAuth } from "../../../../contexts/useAuth";
@@ -41,7 +42,7 @@ const CENSORED_BODY = (
   <em className="text-ink-60">
     This comment was removed due to{" "}
     <a
-      href="https://wiki.nuance.xyz/nuance/content-rules"
+      href={helpLinks.contentRules}
       target="_blank"
       rel="noreferrer"
       className="text-brand-purple underline hover:no-underline"
