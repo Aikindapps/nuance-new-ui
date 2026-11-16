@@ -46,7 +46,7 @@ export function UserMenu() {
 
   const handleFollowing = () => {
     handleClose();
-    navigate("/following/manage");
+    navigate("/activity/following");
   };
 
   const handlePublications = () => {

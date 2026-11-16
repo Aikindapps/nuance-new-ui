@@ -53,8 +53,6 @@ const NotificationsPage = lazy(() => import("./routes/NotificationsPage"));
 // the home bundle until the wallet is opened.
 // eslint-disable-next-line react-refresh/only-export-components
 const Wallet = lazy(() => import("./routes/Wallet"));
-// eslint-disable-next-line react-refresh/only-export-components
-const FollowingManage = lazy(() => import("./routes/FollowingManage"));
 // Activity hub (NIC-358) — lazy; the account section only loads on /activity/*.
 // eslint-disable-next-line react-refresh/only-export-components
 const Activity = lazy(() => import("./routes/Activity"));
@@ -83,14 +81,7 @@ function RootLayout() {
 const appRoutes = [
   { path: "/", element: <Home tab="popular" /> },
   { path: "/following", element: <Home tab="following" /> },
-  {
-    path: "/following/manage",
-    element: (
-      <Suspense fallback={<ArticleLoadingShell />}>
-        <FollowingManage />
-      </Suspense>
-    ),
-  },
+  { path: "/following/manage", element: <Navigate to="/activity/following" replace /> },
   { path: "/new", element: <Home tab="new" /> },
   {
     path: "/write",

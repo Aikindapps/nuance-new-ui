@@ -128,6 +128,8 @@ function LoggedInPanel({ onClose }: { onClose: () => void }) {
   const { show: showPubs, firstPubHandle, publications, count } = useMyPublicationsEntry();
   const [homeExpanded, setHomeExpanded] = useState(true);
   const [pubsExpanded, setPubsExpanded] = useState(false);
+  const { pathname } = useLocation();
+  const activityActive = pathname === "/activity" || pathname.startsWith("/activity/");
 
   const displayName = profile.data?.displayName || profile.data?.handle || principal?.toText() || "";
   const handle = profile.data?.handle || "";
@@ -251,23 +253,24 @@ function LoggedInPanel({ onClose }: { onClose: () => void }) {
           {navDrawerCopy.myArticles}
         </NavLink>
 
-        {/* NIC-174: Account-level Following → /following/manage (all users) */}
-        <NavLink
-          to="/following/manage"
-          onClick={onClose}
-          className={({ isActive }) => navRowClass(isActive)}
-        >
-          {navDrawerCopy.accountFollowing}
-        </NavLink>
-
-        {/* NIC-358: Activity hub → /activity/following */}
-        <NavLink
+        {/* NIC-174: Account-level Following; opens Activity → Following (NIC-1057) */}
+        <Link
           to="/activity/following"
           onClick={onClose}
-          className={({ isActive }) => navRowClass(isActive)}
+          className={navRowClass(false)}
+        >
+          {navDrawerCopy.accountFollowing}
+        </Link>
+
+        {/* NIC-358: Activity hub → /activity/following */}
+        <Link
+          to="/activity/following"
+          onClick={onClose}
+          className={navRowClass(activityActive)}
+          aria-current={activityActive ? "page" : undefined}
         >
           {navDrawerCopy.activity}
-        </NavLink>
+        </Link>
 
         {/* NIC-174/NIC-248: Publications → single-pub deep-links; multi-pub expands */}
         {showPubs && firstPubHandle && count === 1 && (

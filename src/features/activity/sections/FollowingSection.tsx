@@ -19,7 +19,7 @@ import type { UserListItem } from "../../../candid/User/User";
 // user follows, combined into one list). Each row carries a "Following"
 // secondary-outlined button; clicking it unfollows with an optimistic remove +
 // Undo toaster + stash-on-undo + onError-revert, ported verbatim from
-// src/routes/FollowingManage.tsx (handleUnfollowAuthor). Renders inside the
+// the retired /following/manage screen (NIC-173, handleUnfollowAuthor). Renders inside the
 // AccountShell content card that Activity.tsx provides, so this is inner
 // content only. Design SS8.3 canonical `1734:4704`; Following + unfollow
 // toaster `1734:5140`.
@@ -32,7 +32,7 @@ type FollowItem = { user: UserListItem; isPublication: boolean };
 // Per-row unfollow toggle. The user is (by construction) already followed here,
 // so the button reads "Following"; clicking it unfollows. Visual mirrors the
 // SS8.3 secondary-outlined button (#5405d4 1.5px stroke, radius 8) - the same
-// component FollowingManage uses.
+// component the retired /following/manage screen used.
 function UnfollowButton({
   handle,
   onClick,
@@ -55,7 +55,7 @@ function UnfollowButton({
 function subLineFor(item: FollowItem): string {
   if (!item.isPublication) return `@${item.user.handle}`;
   // Publications: "<category> \u00b7 <readers> readers" (category = first line of
-  // bio), mirroring FollowingManage's AuthorRow. formatCount already emits the
+  // bio), mirroring the retired /following/manage AuthorRow. formatCount already emits the
   // unit ("128K"), so no literal "k" suffix. The middle dot is written as the
   // \u00b7 escape to keep the source pure ASCII.
   const category = item.user.bio ? item.user.bio.split("\n")[0].trim() : "";
@@ -72,7 +72,7 @@ export function FollowingSection() {
   // Optimistic removal set (lowercased handles) - cleared on Undo / revert.
   const [removedHandles, setRemovedHandles] = useState<Set<string>>(new Set());
   // Stash removed items so a row stays visible on Undo until the re-follow
-  // refetch re-adds it to writers/publications (FollowingManage Fix #3).
+  // refetch re-adds it to writers/publications (retired /following/manage Fix #3).
   const [undoneUsers, setUndoneUsers] = useState<Map<string, FollowItem>>(
     new Map(),
   );
@@ -101,7 +101,7 @@ export function FollowingSection() {
   ];
 
   // Live query minus optimistically removed, then re-add stashed (undone)
-  // items not yet reflected by the query (FollowingManage fromQuery + fromStash).
+  // items not yet reflected by the query (retired /following/manage fromQuery + fromStash).
   const fromQuery = combined.filter(
     (i) => !removedHandles.has(i.user.handle.toLowerCase()),
   );

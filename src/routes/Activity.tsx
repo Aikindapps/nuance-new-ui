@@ -57,7 +57,7 @@ export function Activity() {
     };
   }, [section, authLoading, isAuthenticated]);
 
-  // Auth guard — same shape as FollowingManage / MyArticles.
+  // Auth guard — same shape as MyArticles.
   if (authLoading) return null;
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
